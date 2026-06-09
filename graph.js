@@ -2,7 +2,7 @@
 // a deterministic radial ego-layout, and an SVG renderer. Mirrors diagram.js —
 // string functions, all values escaped, empty input → ''. No DOM, no network.
 
-import { hashRepoId } from './velesdb.js';
+import { hashRepoId } from './store.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const truncate = (s, n) => { s = String(s); return s.length > n ? s.slice(0, n - 1) + '…' : s; };

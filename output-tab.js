@@ -1,4 +1,4 @@
-import { findSimilar, DEFAULT_VELESDB_URL, getEgoGraph } from './velesdb.js';
+import { findSimilar, getEgoGraph } from './store.js';
 import { egoGraphSvg } from './graph.js';
 import { esc, paras, formatStars } from './format.js';
 import { THEMES, initTheme, saveTheme } from './theme.js';
@@ -191,7 +191,7 @@ function renderSynergies(d) {
   if (!syn || !syn.status) {
     host.innerHTML = `<div class="dd-cta">
       <h3>Synergies — Pairs Well With</h3>
-      <p>Repos that <i>compose</i> with <b>${esc(d.repoId)}</b> — tools you'd use alongside it, not instead of it. Grounded in your VelesDB library (★), plus a few notable complements worth adding.</p>
+      <p>Repos that <i>compose</i> with <b>${esc(d.repoId)}</b> — tools you'd use alongside it, not instead of it. Grounded in your library (★), plus a few notable complements worth adding.</p>
       <button class="dd-run" id="syn-run">Find Synergies</button>
     </div>`;
     document.getElementById('syn-run')?.addEventListener('click', () => startSynergies(d));
@@ -217,16 +217,16 @@ function renderSynergies(d) {
   </div>`).join('')}`;
 }
 
-// ─── Similar Repos tab (from your VelesDB library; no AI call) ────────────────
+// ─── Similar Repos tab (from your library; no AI call) ────────────────
 
 async function renderSimilar(d) {
   const host = document.getElementById('t16');
   if (!host) return;
   host.innerHTML = '<div class="dd-progress"><span class="dot"></span>Finding similar repos in your library…</div>';
   let similar = [];
-  try { similar = await findSimilar(d.velesdbUrl, d); } catch { similar = []; }
+  try { similar = await findSimilar(d); } catch { similar = []; }
   if (!similar.length) {
-    host.innerHTML = `<div class="dd-cta"><h3>Similar Repos</h3><p>Repos you've already analysed that are close to <b>${esc(d.repoId)}</b> — by language and category, pulled from your VelesDB library — show up here. Analyse a few more and they'll appear.</p></div>`;
+    host.innerHTML = `<div class="dd-cta"><h3>Similar Repos</h3><p>Repos you've already analysed that are close to <b>${esc(d.repoId)}</b> — by language and category, pulled from your library — show up here. Analyse a few more and they'll appear.</p></div>`;
     return;
   }
   host.innerHTML = `<div class="dd-section-title first">From your library</div>${similar.map(s => `<div class="idea-card">
@@ -236,7 +236,7 @@ async function renderSimilar(d) {
   </div>`).join('')}`;
 }
 
-// ─── Connections tab — walkable semantic ego-graph (VelesDB graph engine) ─────
+// ─── Connections tab — walkable semantic ego-graph (local graph engine) ─────
 
 const CN_LEGEND = `<div class="cn-legend">
   <span><i class="cn-l-alt"></i>alternative</span>
@@ -265,7 +265,7 @@ async function cnDraw(host, d, trail) {
   const repoId = trail[trail.length - 1];
   host.innerHTML = cnCrumbs(trail) + '<div class="dd-progress"><span class="dot"></span>Mapping connections…</div>';
   let graph = null;
-  try { graph = await getEgoGraph(d.velesdbUrl, repoId); } catch { graph = null; }
+  try { graph = await getEgoGraph(repoId); } catch { graph = null; }
 
   if (!graph || !graph.neighbors.length) {
     host.innerHTML = cnCrumbs(trail) + `<div class="dd-cta"><h3>Connections</h3>
@@ -339,7 +339,7 @@ function renderCombinator(d) {
   if (!cb || !cb.status) {
     host.innerHTML = `<div class="dd-cta">
       <h3>Combine — fuse repos into new ideas</h3>
-      <p>Pulls complementary repos from your VelesDB library — different roles, same neighbourhood — and invents concrete projects, scored on novelty and feasibility.</p>
+      <p>Pulls complementary repos from your library — different roles, same neighbourhood — and invents concrete projects, scored on novelty and feasibility.</p>
       <div class="cb-modes">
         <label class="cb-radio"><input type="radio" name="cb-mode" value="repo" checked> From <b>${esc(d.repoId.split('/').pop() || d.repoId)}</b></label>
         <label class="cb-radio"><input type="radio" name="cb-mode" value="library"> Across the whole library</label>
@@ -862,7 +862,7 @@ async function loadVersusChips(d) {
   const host = document.getElementById('vs-chips');
   if (!host) return;
   let similar = [];
-  try { similar = await findSimilar(d.velesdbUrl, d); } catch { /* empty */ }
+  try { similar = await findSimilar(d); } catch { /* empty */ }
   if (!similar.length) return;
   host.innerHTML = `<span style="color:var(--text-muted);font-size:11px;align-self:center">from your library:</span>` +
     similar.map(s => `<span class="vs-chip" data-repo="${esc(s.repoId)}">${esc(s.repoId)}</span>`).join('');
@@ -1263,9 +1263,8 @@ async function watchSaveStatus(data) {
   badge.style.display = 'flex';
 
   const showOffline = (current) => {
-    const url = current?.velesdbUrl || data.velesdbUrl || DEFAULT_VELESDB_URL;
-    const detail = current?.velesdbError ? ` (${current.velesdbError})` : '';
-    badge.textContent = `Not saved — VelesDB unreachable at ${url}${detail}`;
+    const detail = current?.saveError ? ` (${current.saveError})` : '';
+    badge.textContent = `Not saved${detail}`;
     badge.style.color = '#fbbf24';
     badge.style.borderColor = '#ca8a0440';
     badge.style.background = '#ca8a0415';
@@ -1273,7 +1272,7 @@ async function watchSaveStatus(data) {
 
   const applyStatus = (current) => {
     if (current?.saved === true) {
-      badge.textContent = '✦ Saved to VelesDB';
+      badge.textContent = '✦ Saved to your library';
       badge.style.color = '#4ade80';
       badge.style.borderColor = '#16a34a40';
       badge.style.background = '#0d1f12';
@@ -1284,7 +1283,7 @@ async function watchSaveStatus(data) {
       return 'done';
     }
     if (current?.saved === 'pending') {
-      badge.textContent = 'Saving to VelesDB…';
+      badge.textContent = 'Saving…';
       return 'pending';
     }
     return 'wait';
@@ -1293,7 +1292,7 @@ async function watchSaveStatus(data) {
   const initial = applyStatus(data);
   if (initial === 'done') return;
 
-  badge.textContent = 'Saving to VelesDB…';
+  badge.textContent = 'Saving…';
 
   const deadline = Date.now() + 20_000;
 
@@ -1328,7 +1327,7 @@ async function loadLibraryComparison(data) {
   try {
     const block = document.getElementById('library-block');
     if (!block) return;
-    const similar = await findSimilar(data.velesdbUrl, data);
+    const similar = await findSimilar(data);
     if (!similar.length) return;
     block.innerHTML = `
     <div class="veles-box">

@@ -1,7 +1,7 @@
 // Library Home — a triage grid over every analyzed repo in VelesDB. Loads the saved payloads,
 // derives a fit chip per repo (via library-data → verdict.js), and renders a sortable/filterable grid.
 
-import { scrollPoints } from './velesdb.js';
+import { scrollPoints } from './store.js';
 import { libraryRow, sortRows, filterRows, allCapabilities, relativeTime } from './library-data.js';
 
 const esc = (s) =>
@@ -77,11 +77,10 @@ function showEmpty(html) {
 }
 
 async function init() {
-  const { velesdbUrl } = await chrome.storage.local.get('velesdbUrl');
-  const points = await scrollPoints(velesdbUrl);
+  const points = await scrollPoints();
   if (!points.length) {
     showEmpty(
-      `<h2>No repos to show</h2><p>Either VelesDB isn't reachable${velesdbUrl ? ` at <code>${esc(velesdbUrl)}</code>` : ''}, or nothing's been analyzed yet.<br>Analyze a few repos and they'll appear here.</p>`
+      `<h2>No repos to show</h2><p>Nothing's been analyzed yet.<br>Analyze a few repos and they'll appear here.</p>`
     );
     return;
   }
