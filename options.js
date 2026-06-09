@@ -11,14 +11,13 @@ import {
   requestXaiDeviceCode,
   storeXaiOAuthTokens,
 } from './oauth-xai.js';
-import { normalizeVelesdbUrl, pingVelesdb, DEFAULT_VELESDB_URL } from './velesdb.js';
+import { importFromVelesdb } from './migrate/velesdb-import.js';
 import { THEMES, initTheme, saveTheme } from './theme.js';
 import { TONES, DEFAULT_TONE } from './tone.js';
 import { listCached, removeCached } from './cache.js';
 
 // ─── Core settings ───────────────────────────────────────────────────────────
 
-const velesdbInput  = document.getElementById('velesdbUrl');
 const autoSaveInput = document.getElementById('autoSave');
 const saveBtn       = document.getElementById('save');
 const statusEl      = document.getElementById('status');
@@ -39,8 +38,7 @@ function syncNousCustom() {
   nousCustomPanel.classList.toggle('open', nousModelSel.value === '__custom__');
 }
 
-chrome.storage.local.get(['velesdbUrl', 'autoSave'], ({ velesdbUrl, autoSave }) => {
-  velesdbInput.value  = velesdbUrl || DEFAULT_VELESDB_URL;
+chrome.storage.local.get(['autoSave'], ({ autoSave }) => {
   autoSaveInput.checked = autoSave !== false;
 });
 
@@ -149,24 +147,37 @@ function renderThemePicker() {
   }
 }
 
-saveBtn.addEventListener('click', async () => {
-  const velesdbUrl = normalizeVelesdbUrl(velesdbInput.value);
+saveBtn.addEventListener('click', () => {
   const autoSave = autoSaveInput.checked;
-
-  let savedOk = true;
-  if (autoSave) {
-    const reachable = await pingVelesdb(velesdbUrl);
-    if (!reachable) {
-      savedOk = false;
-      showStatus(`✗ Cannot reach VelesDB at ${velesdbUrl} — start the server or check the URL`, '#f87171');
-    }
-  }
-
-  chrome.storage.local.set({ velesdbUrl, autoSave }, () => {
-    velesdbInput.value = velesdbUrl;
-    if (savedOk) showStatus('✓ Saved', '#4ade80');
-  });
+  chrome.storage.local.set({ autoSave }, () => showStatus('✓ Saved', '#4ade80'));
 });
+
+// One-time import: pull a running VelesDB's saved repos into the built-in store.
+const importBtn = document.getElementById('importBtn');
+const importUrlInput = document.getElementById('importUrl');
+const importStatus = document.getElementById('importStatus');
+if (importBtn) {
+  importBtn.addEventListener('click', async () => {
+    importBtn.disabled = true;
+    importStatus.style.color = 'var(--text-sub)';
+    importStatus.textContent = 'Connecting to VelesDB…';
+    try {
+      const { imported, failed, total } = await importFromVelesdb(importUrlInput.value, ({ imported, total }) => {
+        importStatus.textContent = `Importing… ${imported}/${total}`;
+      });
+      importStatus.style.color = '#4ade80';
+      importStatus.textContent =
+        total === 0
+          ? 'No repos found at that VelesDB.'
+          : `✓ Imported ${imported} repo${imported === 1 ? '' : 's'}${failed ? ` (${failed} failed)` : ''}.`;
+    } catch (err) {
+      importStatus.style.color = '#f87171';
+      importStatus.textContent = `✗ ${err.message || 'Could not reach VelesDB'}`;
+    } finally {
+      importBtn.disabled = false;
+    }
+  });
+}
 
 function showStatus(msg, color) {
   statusEl.textContent    = msg;

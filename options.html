@@ -141,18 +141,25 @@
   <div class="section">
     <div class="section-title">Core</div>
 
-    <label>VelesDB Server URL</label>
-    <input type="text" id="velesdbUrl" placeholder="http://localhost:9090">
-    <p class="field-hint" style="margin-bottom:18px">Local database for saving your library.</p>
-
     <label class="checkbox-row" style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;color:var(--text-sub)">
       <input type="checkbox" id="autoSave">
-      <span>Auto-save analyses to VelesDB</span>
+      <span>Auto-save analyses to your library</span>
     </label>
+    <p class="field-hint" style="margin-top:8px">Your library is stored in the browser — no server, nothing to set up.</p>
 
     <label style="margin-top:22px">Delay between AI calls — <span id="aiGapLabel" style="color:var(--accent)">1.2s</span></label>
     <input type="range" id="aiGap" min="0" max="5000" step="100" value="1200" style="width:100%;accent-color:var(--accent)">
     <p class="field-hint">Paces bursts (Run-all lenses, Deep Dive's 3 stages) so slow / rate-limited models like Step 3.7 aren't hit all at once. 0 = no delay.</p>
+  </div>
+
+  <!-- One-time migration from VelesDB -->
+  <div class="section">
+    <div class="section-title">Import from VelesDB</div>
+    <p class="field-hint" style="margin-bottom:12px">One-time migration. If you ran a VelesDB server before, pull your saved repos into the extension's built-in storage while that server is still running. Safe to run more than once.</p>
+    <label>VelesDB URL</label>
+    <input type="text" id="importUrl" value="http://localhost:9090" placeholder="http://localhost:9090">
+    <button class="svc-btn" id="importBtn" style="margin-top:12px">Import library</button>
+    <p class="field-hint" id="importStatus" style="margin-top:10px" aria-live="polite"></p>
   </div>
 
   <!-- Connected Services -->
