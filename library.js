@@ -1,4 +1,4 @@
-// Library Home — a triage grid over every analyzed repo in VelesDB. Loads the saved payloads,
+// Library Home — a triage grid over every analyzed repo in your library. Loads the saved payloads,
 // derives a fit chip per repo (via library-data → verdict.js), and renders a sortable/filterable grid.
 
 import { scrollPoints } from './store.js';

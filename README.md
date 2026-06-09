@@ -9,7 +9,7 @@ A Manifest V3 Chrome extension that turns any GitHub/GitLab repo page into a dee
 - **Library** — every repo you've analyzed, as a sortable/filterable triage grid with fit chips and "scanned N ago" stamps.
 - **Connections, Synergies, Versus, Combinator** — graph-backed views over your saved library.
 
-Analyses are persisted to a local [VelesDB](https://github.com/cyberlife-coder/VelesDB) instance (vector + graph collections).
+Analyses are persisted **in the browser** (IndexedDB) — no server, nothing to install. If you previously used a VelesDB server, the options page has a one-time "Import from VelesDB" action to pull your library across.
 
 ## Providers
 
@@ -29,9 +29,10 @@ Load unpacked: `chrome://extensions` → **Developer mode** → **Load unpacked*
 
 Pure ES modules, no build step. Key files:
 
-- `background.js` — service worker: scan orchestration, AI provider calls, VelesDB writes.
+- `background.js` — service worker: scan orchestration, AI provider calls, store writes.
 - `output-tab.{js,html}` — the result surface (verdict landing + all tabs).
 - `library.{js,html}` + `library-data.js` — the Library home and its pure row/sort/filter helpers.
-- `velesdb.js` — VelesDB client (save/scroll/search + graph edges).
+- `store.js` + `store/` — in-browser persistence (IndexedDB doc store, client-side search ranker, ego-graph builder).
+- `migrate/velesdb-import.js` — one-time import from a legacy VelesDB server.
 - `runner.js` — optional local Rust runner client for measured facts.
 - `tests/` — vitest unit tests for the pure helpers.

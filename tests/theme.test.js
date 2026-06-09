@@ -3,7 +3,7 @@ import { THEMES, DEFAULT_THEME, applyTheme, initTheme, saveTheme } from '../them
 
 beforeEach(() => {
   // The test environment is 'node' (no jsdom), so mock the minimal DOM we touch,
-  // matching the project's pattern of mocking globals (see velesdb.test.js).
+  // matching the project's pattern of mocking globals.
   const attrs = {};
   global.document = {
     documentElement: {

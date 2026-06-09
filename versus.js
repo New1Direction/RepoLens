@@ -1,5 +1,5 @@
 // Versus — head-to-head comparison of two repos. Side A is the scanned repo;
-// side B is a competitor (typed, or picked from the VelesDB library). One AI
+// side B is a competitor (typed, or picked from your library). One AI
 // call produces a decision-oriented comparison. Reuses Deep Dive's extractor.
 
 import { extractJsonObject } from './deepdive.js';

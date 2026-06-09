@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { nodeIdFor, edgeIdFor, egoLayout, egoGraphSvg } from '../graph.js';
-import { hashRepoId } from '../velesdb.js';
+import { hashRepoId } from '../store.js';
 
 describe('nodeIdFor', () => {
   it('hashes a canonical owner/repo unchanged (collapses onto its analyzed node)', () => {

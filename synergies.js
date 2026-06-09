@@ -1,6 +1,6 @@
 // Synergies — complementary repos that work WELL TOGETHER with the scanned one
 // (not alternatives — things you'd use alongside it). Grounded in the user's
-// VelesDB library: candidate repos are pulled from the library, then one AI call
+// library: candidate repos are pulled from the library, then one AI call
 // identifies the real pairings and suggests a few notable complements.
 
 import { extractJsonObject } from './deepdive.js';
