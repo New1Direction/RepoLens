@@ -3,6 +3,7 @@ import { fetchRepoData } from './fetcher.js';
 import { buildPrompt } from './prompt.js';
 import { parseClaudeResponse } from './parser.js';
 import { saveAnalysis, searchLibrary, upsertNode, addEdge, scrollLibrary, scrollPoints, saveRepo } from './store.js';
+import { buildAttemptPlan } from './routing.js';
 import { buildTagPrompt, parseTags } from './tag-prompt.js';
 import { nodeIdFor, edgeIdFor, ideaIdFor } from './graph.js';
 import { deriveCapabilities } from './taxonomy.js';
@@ -292,6 +293,7 @@ const PROVIDER_KEYS = [
   'anthropicKey', 'anthropicModel', 'googleKey', 'googleModel',
   'openrouterKey', 'openrouterModel', 'xaiKey', 'xaiRefresh', 'xaiModel',
   'nousKey', 'nousModel',
+  'partRouting', // per-part model routing map (loaded alongside provider keys)
 ];
 
 // Fetch → AI → parse → store. Used by the initial click and by RERUN (retry).
@@ -299,7 +301,7 @@ async function runAnalysis(sessionKey, detected) {
   const {
     anthropicKey, anthropicModel, googleKey, googleModel,
     openrouterKey, openrouterModel, xaiKey, xaiRefresh, xaiModel,
-    nousKey, nousModel,
+    nousKey, nousModel, partRouting,
     autoSave = true, tone,
   } = await chrome.storage.local.get(
     [...PROVIDER_KEYS, 'autoSave', 'tone']
@@ -319,7 +321,8 @@ async function runAnalysis(sessionKey, detected) {
       openrouterKey, openrouterModel,
       xaiKey, xaiRefresh, xaiModel,
       nousKey, nousModel,
-    }, withTone(tone, buildPrompt(repoData)));
+      partRouting,
+    }, withTone(tone, buildPrompt(repoData)), 'core');
     const analysis = parseClaudeResponse(text);
     const fullData = {
       ...repoData,
@@ -398,15 +401,15 @@ async function runDeepDive(sessionKey, detected) {
     const facts = await scanRepo(keys.runnerUrl, detected.platform, detected.repoId);
 
     await setDeep({ status: 'atoms', degraded: !!source.degraded, facts });
-    const { atoms } = parseAtoms(await callAI(keys, withTone(keys.tone, buildAtomsPrompt(repoData, source, facts))));
+    const { atoms } = parseAtoms(await callAI(keys, withTone(keys.tone, buildAtomsPrompt(repoData, source, facts)), 'deepdive'));
     await setDeep({ atoms });
 
     await setDeep({ status: 'lineage' });
-    const lineage = parseLineage(await callAI(keys, withTone(keys.tone, buildLineagePrompt(atoms))));
+    const lineage = parseLineage(await callAI(keys, withTone(keys.tone, buildLineagePrompt(atoms)), 'deepdive'));
     await setDeep({ lineage });
 
     await setDeep({ status: 'feynman' });
-    const feynman = parseFeynman(await callAI(keys, withTone(keys.tone, buildFeynmanPrompt(repoData, atoms, lineage))));
+    const feynman = parseFeynman(await callAI(keys, withTone(keys.tone, buildFeynmanPrompt(repoData, atoms, lineage)), 'deepdive'));
     await setDeep({ feynman });
 
     await setDeep({ status: 'done' });
@@ -443,7 +446,7 @@ async function runFrameworkLens(sessionKey, detected, frameworks, cfg) {
       await setRun(fw, { status: 'fetching', error: null, result: null });
       if (!source) source = await fetchSource(detected.platform, detected.repoId);
       await setRun(fw, { status: 'running' });
-      const result = cfg.parse(fw, await callAI(keys, withTone(keys.tone, cfg.build(fw, repoData, source))));
+      const result = cfg.parse(fw, await callAI(keys, withTone(keys.tone, cfg.build(fw, repoData, source)), 'lens'));
       await setRun(fw, { status: 'done', result });
     } catch (err) {
       await setRun(fw, { status: 'error', error: err.message || `${cfg.label} failed` });
@@ -477,7 +480,7 @@ async function runSktpg(sessionKey, detected) {
     const source = await fetchSource(detected.platform, detected.repoId);
 
     await setSk({ status: 'running' });
-    const result = parseSktpg(await callAI(keys, withTone(keys.tone, buildSktpgPrompt(repoData, source))));
+    const result = parseSktpg(await callAI(keys, withTone(keys.tone, buildSktpgPrompt(repoData, source)), 'sktpg'));
 
     await setSk({ status: 'done', result });
   } catch (err) {
@@ -509,7 +512,7 @@ async function runVersus(sessionKey, detectedA, competitorInput) {
     ]);
 
     await setVs({ status: 'running' });
-    const result = parseVersus(await callAI(keys, withTone(keys.tone, buildVersusPrompt(a, b))));
+    const result = parseVersus(await callAI(keys, withTone(keys.tone, buildVersusPrompt(a, b)), 'versus'));
 
     await setVs({ status: 'done', result });
 
@@ -549,7 +552,7 @@ async function runSynergies(sessionKey, detected) {
     await setSyn({ status: 'running', error: null, result: null });
     // Seed candidates from the user's library (same ecosystem, by language).
     const candidates = await searchLibrary({ query: repoData.language, topK: 12, excludeRepoId: repoData.repoId });
-    const result = parseSynergies(await callAI(keys, withTone(keys.tone, buildSynergiesPrompt(repoData, candidates))));
+    const result = parseSynergies(await callAI(keys, withTone(keys.tone, buildSynergiesPrompt(repoData, candidates)), 'synergies'));
 
     await setSyn({ status: 'done', result });
 
@@ -603,7 +606,7 @@ async function runCombinator(sessionKey, detected, { mode = 'repo', wildness = 0
     const results = [];
     for (const cand of candidates) {
       try {
-        const idea = parseCombinator(await callAI(keys, withTone(keys.tone, buildCombinatorPrompt(cand.rows))), cand.repoIds);
+        const idea = parseCombinator(await callAI(keys, withTone(keys.tone, buildCombinatorPrompt(cand.rows)), 'combinator'), cand.repoIds);
         results.push({ repoIds: cand.repoIds, ...idea });
       } catch { /* skip a single failed synthesis, keep going */ }
       await setC({ status: 'running', results: [...results] }); // incremental render
@@ -628,7 +631,7 @@ async function runTagLibrary(sessionKey) {
     for (const pt of points) {
       try {
         const meta = pt.payload || {};
-        const caps = parseTags(await callAI(keys, buildTagPrompt(meta)));
+        const caps = parseTags(await callAI(keys, buildTagPrompt(meta), 'retag'));
         if (caps.length) await saveRepo({ ...meta, capabilities: caps }); // re-save preserves the full payload
       } catch { /* skip a single repo, keep going */ }
       done++;
@@ -651,49 +654,41 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const AI_DEFAULT_GAP_MS = 1200;
 let aiChain = Promise.resolve();
 let lastAiStart = 0;
-function callAI(keys, prompt) {
+// Optional `part` (e.g. 'core', 'deepdive') routes to the user's per-part model choice;
+// omitted/unrouted parts use the plain fallback chain.
+function callAI(keys, prompt, part) {
   const run = aiChain.then(async () => {
     const { aiGapMs } = await chrome.storage.local.get('aiGapMs');
     const gap = Number.isFinite(aiGapMs) ? aiGapMs : AI_DEFAULT_GAP_MS;
     const wait = Math.max(0, gap - (Date.now() - lastAiStart));
     if (wait) await sleep(wait);
     lastAiStart = Date.now();
-    return callAIInner(keys, prompt);
+    return callAIInner(keys, prompt, part);
   });
   aiChain = run.catch(() => {}); // keep the queue alive even if a call fails
   return run;
 }
 
-async function callAIInner({ anthropicKey, anthropicModel, googleKey, googleModel, openrouterKey, openrouterModel, xaiKey, xaiRefresh, xaiModel, nousKey, nousModel }, prompt) {
+const PROVIDER_LABEL = { nous: 'Nous', google: 'Gemini', openrouter: 'OpenRouter', xai: 'Grok', anthropic: 'Anthropic' };
+
+// Dispatch one (provider, model) attempt to its provider call function.
+function dispatch(provider, model, keys, prompt) {
+  switch (provider) {
+    case 'nous': return callNous(keys.nousKey, model, prompt);
+    case 'google': return callGemini(keys.googleKey, model, prompt);
+    case 'openrouter': return callOpenRouter(keys.openrouterKey, model, prompt);
+    case 'xai': return callXAI(model, prompt);
+    case 'anthropic': return callAnthropic(model, prompt);
+    default: throw new Error(`Unknown provider: ${provider}`);
+  }
+}
+
+async function callAIInner(keys, prompt, part) {
+  const plan = buildAttemptPlan({ routing: keys.partRouting || {}, part, keys });
   const errors = [];
-
-  // Nous Research first — uses the user's Nous Portal membership key
-  if (nousKey) {
-    try { return await callNous(nousKey, nousModel, prompt); }
-    catch (e) { errors.push(`Nous: ${e.message}`); }
-  }
-
-  // Google next — free-tier / paid AI Studio API key
-  if (googleKey) {
-    try { return await callGemini(googleKey, googleModel, prompt); }
-    catch (e) { errors.push(`Gemini: ${e.message}`); }
-  }
-
-  if (openrouterKey) {
-    try { return await callOpenRouter(openrouterKey, openrouterModel, prompt); }
-    catch (e) { errors.push(`OpenRouter: ${e.message}`); }
-  }
-
-  if (xaiKey || xaiRefresh) {
-    try { return await callXAI(xaiModel, prompt); }
-    catch (e) { errors.push(`Grok: ${e.message}`); }
-  }
-
-  if (anthropicKey) {
-    // Token is only cleared on genuine auth failures (handled inside callAnthropic),
-    // so transient errors (network, overloaded, rate limit) don't force a reconnect.
-    try { return await callAnthropic(anthropicModel, prompt); }
-    catch (e) { errors.push(`Anthropic: ${e.message}`); }
+  for (const { provider, model } of plan) {
+    try { return await dispatch(provider, model, keys, prompt); }
+    catch (e) { errors.push(`${PROVIDER_LABEL[provider] || provider}: ${e.message}`); }
   }
 
   throw new Error(errors.length ? errors.join(' · ') : 'No AI provider configured — open Settings to connect one.');
