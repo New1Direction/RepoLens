@@ -17,7 +17,11 @@
   .lib-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
   .lib-header h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
   .lib-header .count { font: 600 12px/1 var(--mono); color: var(--muted); }
+  .lib-settings { margin-left: auto; background: none; border: 1px solid var(--border); color: var(--sub);
+    border-radius: 8px; padding: 6px 11px; cursor: pointer; font: 600 12px var(--sans); transition: all .14s; }
+  .lib-settings:hover { border-color: var(--border-2); color: var(--text); }
   .lib-tagline { color: var(--sub); font-size: 13px; margin: 0 0 22px; }
+  .lib-note { color: var(--muted); font-size: 12px; margin: -16px 0 18px; }
 
   .lib-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
   .lib-search { flex: 1 1 240px; min-width: 200px; background: var(--panel); border: 1px solid var(--border);
@@ -54,6 +58,15 @@
   .lc-tag { font: 600 9.5px/1 var(--mono); letter-spacing: .04em; color: var(--sub); background: var(--panel-2);
     border: 1px solid var(--border); padding: 3px 6px; border-radius: 5px; }
 
+  /* Per-card management actions — invisible until the card is hovered/focused. */
+  .lc-actions { display: flex; gap: 6px; opacity: 0; transition: opacity .14s; }
+  .lib-card:hover .lc-actions, .lib-card:focus-within .lc-actions { opacity: 1; }
+  .lc-act { font: 600 10.5px/1 var(--mono); color: var(--sub); background: var(--panel-2);
+    border: 1px solid var(--border); padding: 5px 8px; border-radius: 6px; cursor: pointer; transition: all .12s; }
+  .lc-act:hover { border-color: var(--border-2); color: var(--text); }
+  .lc-act-del { margin-left: auto; }
+  .lc-act-del:hover { border-color: #f87171; color: #f87171; }
+
   .lib-empty { text-align: center; padding: 80px 20px; color: var(--sub); }
   .lib-empty h2 { font-size: 17px; color: var(--text); margin: 0 0 8px; }
   .lib-empty code { font: 600 12px var(--mono); background: var(--panel); border: 1px solid var(--border); padding: 2px 7px; border-radius: 5px; color: var(--cyan); }
@@ -62,8 +75,9 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="lib-header"><h1>Library</h1><span class="count" id="count"></span></div>
-    <p class="lib-tagline">Every repo you've analyzed, at a glance — sorted by fit, searchable, filterable by capability.</p>
+    <div class="lib-header"><h1>Library</h1><span class="count" id="count"></span><button class="lib-settings" id="settings" title="RepoLens settings">⚙ Settings</button></div>
+    <p class="lib-tagline">Every repo you've analyzed, at a glance — click a card to reopen its analysis, hover it to re-scan, open the source, or remove it.</p>
+    <p class="lib-note hidden" id="note"></p>
 
     <div class="lib-controls">
       <input class="lib-search" id="search" type="text" placeholder="Search repos…" autocomplete="off">

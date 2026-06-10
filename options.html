@@ -10,6 +10,13 @@
 
   h1 { font-size: 18px; font-weight: 800; color: var(--text-strong); margin-bottom: 6px; }
   .sub { font-size: 12px; color: var(--text-fainter); margin-bottom: 36px; }
+  .sub a { color: var(--accent); text-decoration: none; cursor: pointer; }
+  .sub a:hover { text-decoration: underline; }
+
+  /* Getting started (first run only — options.js hides it once a provider is connected) */
+  .gs-steps { margin: 0 0 0 18px; padding: 0; }
+  .gs-steps li { font-size: 13px; color: var(--text-sub); line-height: 1.7; margin-bottom: 6px; }
+  .gs-steps b { color: var(--text); }
 
   .section { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--border); }
   .section:last-of-type { border-bottom: none; }
@@ -105,7 +112,17 @@
 </head>
 <body>
   <h1>RepoLens</h1>
-  <p class="sub">Everything stored locally. Nothing leaves your machine except calls to each service's own API.</p>
+  <p class="sub">Everything stored locally. Nothing leaves your machine except calls to each service's own API. <a id="open-library-link">Open Library →</a></p>
+
+  <!-- Getting started (shown until a provider is connected) -->
+  <div class="section" id="getting-started" style="display:none">
+    <div class="section-title">Getting Started</div>
+    <ol class="gs-steps">
+      <li><b>Connect one AI provider</b> below — Google AI's free key is the fastest start.</li>
+      <li>Open any <b>GitHub / GitLab / npm / PyPI</b> page and click the RepoLens toolbar icon.</li>
+      <li>Read the <b>Verdict</b>, then explore — press <b>?</b> on any analysis for the full guide.</li>
+    </ol>
+  </div>
 
   <!-- Appearance -->
   <div class="section">

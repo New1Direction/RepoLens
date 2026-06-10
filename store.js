@@ -4,7 +4,7 @@
 // callers can surface errors (matching the old behavior).
 
 import { deriveCapabilities } from './taxonomy.js';
-import { idbPut, idbGet, idbGetAll } from './store/idb.js';
+import { idbPut, idbGet, idbGetAll, idbDelete } from './store/idb.js';
 import { rankRepos } from './store/search.js';
 import { buildEgoGraph } from './store/egograph.js';
 
@@ -30,6 +30,7 @@ export async function saveRepo(analysis) {
     stars: analysis.stars ?? 0,
     category: analysis.category ?? '',
     tags: analysis.tags ?? [],
+    description: analysis.description ?? '',
     saved_at: new Date().toISOString(),
     eli5: analysis.eli5 ?? '',
     compare_hooks: analysis.compare_hooks ?? '',
@@ -47,6 +48,13 @@ export async function saveRepo(analysis) {
 /** Save a full analysis. (No collection init needed — IndexedDB stores auto-create.) */
 export async function saveAnalysis(analysis) {
   await saveRepo(analysis);
+}
+
+/** Remove one repo from the library by id. Best-effort — never throws (offline = no-op). */
+export async function deleteRepo(repoId) {
+  try {
+    await idbDelete('repos', hashRepoId(repoId));
+  } catch { /* store unavailable — caller still drops the local cache copy */ }
 }
 
 async function allPayloads() {

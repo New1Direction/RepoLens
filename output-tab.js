@@ -7,7 +7,7 @@ import { IDEATE_FRAMEWORKS } from './ideate.js';
 import { HEURISTICS_FRAMEWORKS } from './heuristics.js';
 import { toMarkdown, toHtml, slugify } from './exporter.js';
 import { lineageSvg, loopSvg } from './diagram.js';
-import { explainerFor } from './explainers.js';
+import { explainerFor, SCAN_EXPLAINERS } from './explainers.js';
 import { deriveFit, firstSentence, verdictCopyText } from './verdict.js';
 import { pingRunner } from './runner.js';
 import { emptyLens, runOf } from './lens-runs.js';
@@ -1176,6 +1176,52 @@ function initScanTips() {
   nav.addEventListener('focusout', hide);
 }
 initScanTips();
+
+// ─── "?" Guide overlay — feature discovery on demand ──────────────────────────
+// One small button; the overlay explains scanning, the tabs, every lens (from
+// SCAN_EXPLAINERS), the Library, and the keyboard map. A pulse dot marks it
+// until first opened (guideSeen flag).
+function initGuide() {
+  const veil = document.getElementById('guide-veil');
+  const btn = document.getElementById('open-guide');
+  const dot = document.getElementById('guide-dot');
+  if (!veil || !btn) return;
+
+  const lensHost = document.getElementById('guide-lenses');
+  if (lensHost) {
+    lensHost.innerHTML = Object.values(SCAN_EXPLAINERS)
+      .map(e => `<div class="g-lens"><b>${esc(e.title)}</b><span>${esc(e.bestFor)}</span><span class="g-cost">${esc(e.cost)}</span></div>`)
+      .join('');
+  }
+
+  chrome.storage.local.get('guideSeen', ({ guideSeen }) => {
+    if (!guideSeen && dot) dot.hidden = false;
+  });
+
+  const open = () => {
+    veil.classList.add('open');
+    if (dot) dot.hidden = true;
+    chrome.storage.local.set({ guideSeen: true });
+  };
+  const close = () => veil.classList.remove('open');
+
+  btn.addEventListener('click', open);
+  document.getElementById('guide-close')?.addEventListener('click', close);
+  veil.addEventListener('click', (e) => { if (e.target === veil) close(); });
+  document.getElementById('guide-library')?.addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }));
+  document.getElementById('guide-settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
+
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return;
+    if (e.key === '?') {
+      if (veil.classList.contains('open')) close(); else open();
+    } else if (e.key === 'Escape' && veil.classList.contains('open')) {
+      close();
+    }
+  });
+}
+initGuide();
 
 // Run-all: fire every on-demand lens at once (uses each lens's current framework).
 function runAllLenses() {

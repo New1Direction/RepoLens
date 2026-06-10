@@ -3,7 +3,8 @@
 
 import { deriveFit, firstSentence } from './verdict.js';
 
-/** A saved analysis payload → a compact library row (fit chip, health, category, caps, langs). */
+/** A saved analysis payload → a compact library row (fit chip, health, category, caps, langs).
+ * Accepts both store payloads (saved_at) and local-cache analyses (cachedAt, unix ms). */
 export function libraryRow(payload) {
   const p = payload || {};
   const repoId = p.repoId || '';
@@ -18,13 +19,14 @@ export function libraryRow(payload) {
   return {
     repoId,
     name: repoId.split('/').pop() || repoId,
+    platform: p.platform || '',
     fit: hasTriage ? deriveFit(p) : { level: 'unrated', label: 'Unrated', why: 'Re-scan for a fit verdict' },
     health: p.health?.score ?? 0,
     category: p.category || '',
     capabilities: Array.isArray(p.capabilities) ? p.capabilities : [],
     languages: (p.languages || []).slice(0, 3),
     blurb: p.description || firstSentence(p.eli5) || '',
-    savedAt: p.saved_at || '',
+    savedAt: p.saved_at || (p.cachedAt ? new Date(p.cachedAt).toISOString() : ''),
   };
 }
 
@@ -83,4 +85,21 @@ export function allCapabilities(rows) {
     for (const c of row.capabilities) set.add(c);
   }
   return [...set].sort();
+}
+
+/** Where this repo lives, by platform; bare names fall back to a GitHub search. */
+export function sourceUrl(platform, repoId) {
+  const id = String(repoId || '');
+  if (platform === 'gitlab') return `https://gitlab.com/${id}`;
+  if (platform === 'npm') return `https://www.npmjs.com/package/${id}`;
+  if (platform === 'pypi') return `https://pypi.org/project/${id}/`;
+  if (id.includes('/')) return `https://github.com/${id}`;
+  return `https://github.com/search?q=${encodeURIComponent(id)}&type=repositories`;
+}
+
+/** Union two row lists by repoId — primary rows win, secondary fills the gaps.
+ * Returns a NEW array; neither input is mutated. */
+export function mergeRows(primary, secondary) {
+  const seen = new Set(primary.map((r) => r.repoId));
+  return [...primary, ...secondary.filter((r) => r.repoId && !seen.has(r.repoId))];
 }

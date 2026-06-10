@@ -79,6 +79,11 @@ function repoNodePayload(repoId, data = {}, analyzed = true) {
 
 const SESSION_KEY_PREFIX = 'repolens_';
 
+// First run: open Settings so the user can connect a provider and see Getting Started.
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  if (reason === 'install') chrome.runtime.openOptionsPage();
+});
+
 // ─── Listen for content script + output-tab signals ──────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {

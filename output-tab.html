@@ -480,6 +480,28 @@
 .cb-dots { letter-spacing: 1px; color: var(--accent); }
 .cb-first { font-size: 12.5px; color: var(--text-sub); border-top: 1px solid var(--border); padding-top: 8px; }
 .cb-first b { color: var(--accent); }
+
+/* ── "?" Guide overlay — feature discovery on demand ─────────────── */
+#open-guide { position: relative; }
+.guide-dot { position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 1.5s ease-in-out infinite; }
+.guide-veil { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.55); display: none; align-items: flex-start; justify-content: center; overflow: auto; padding: 48px 16px; }
+.guide-veil.open { display: flex; }
+.guide { background: var(--surface); border: 1px solid var(--border-2); border-radius: 14px; max-width: 640px; width: 100%; padding: 22px 26px 26px; box-shadow: 0 24px 64px rgba(0,0,0,.5); }
+.guide-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.guide h2 { font-size: 17px; color: var(--text-strong); }
+.guide .g-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+.g-sec { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); margin: 18px 0 8px; }
+.guide p, .guide li { font-size: 12.5px; color: var(--text-sub); line-height: 1.65; }
+.guide b { color: var(--text); }
+.guide ul { margin: 0; padding-left: 16px; }
+.g-lens { display: flex; gap: 8px; align-items: baseline; padding: 5px 0; border-top: 1px solid var(--border); font-size: 12.5px; }
+.g-lens:first-of-type { border-top: none; }
+.g-lens b { color: var(--text); min-width: 86px; flex-shrink: 0; }
+.g-lens span { color: var(--text-sub); }
+.g-lens .g-cost { margin-left: auto; color: var(--text-faint); font-size: 10.5px; white-space: nowrap; padding-left: 10px; }
+.g-keys { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-sub); }
+.g-keys kbd { background: var(--bg); border: 1px solid var(--border-2); border-radius: 4px; padding: 1px 6px; font: 600 11px ui-monospace, monospace; color: var(--text); }
+.g-btns { display: flex; gap: 8px; margin-top: 18px; }
 </style>
 </head>
 <body>
@@ -519,6 +541,7 @@
         <button class="export-btn" id="open-library" title="Browse every repo you've analyzed">📚 Library</button>
         <button class="export-btn" id="copy-md" title="Copy this analysis as Markdown">Copy MD</button>
         <button class="export-btn" id="export-html" title="Download a self-contained HTML report">Export</button>
+        <button class="export-btn" id="open-guide" title="What can RepoLens do? (press ?)">?<span class="guide-dot" id="guide-dot" hidden></span></button>
       </div>
       <div class="theme-switcher" id="theme-switcher"></div>
       <div class="health-score"></div>
@@ -593,6 +616,38 @@
   <!-- Save status badge (hidden until JS updates it) -->
   <div class="saved-badge" style="display:none"></div>
 
+</div>
+
+<!-- "?" Guide overlay — feature discovery without permanent UI -->
+<div class="guide-veil" id="guide-veil">
+  <div class="guide" role="dialog" aria-modal="true" aria-label="RepoLens guide">
+    <div class="guide-head"><h2>RepoLens in 30 seconds</h2><button class="export-btn" id="guide-close">✕ Close</button></div>
+    <p class="g-sub">One click on any repo page → a full breakdown. Everything below is optional depth.</p>
+
+    <div class="g-sec">Scan anything</div>
+    <p>Open a <b>GitHub · GitLab · npm · PyPI</b> page and click the RepoLens toolbar icon. The <b>Verdict</b> answers adopt-or-skip first; repos you've scanned before load instantly from cache.</p>
+
+    <div class="g-sec">The tabs</div>
+    <ul>
+      <li><b>Verdict → Tech Stack</b> — the core read: what it is, where it fits, what to watch.</li>
+      <li><b>Lenses ▾</b> — on-demand AI deep reads of the source. Hover any lens for when to use it.</li>
+      <li><b>Library ▾</b> — powered by your own scans: comparisons, synergies, the connections map, and idea fusion.</li>
+    </ul>
+
+    <div class="g-sec">Lens cheat-sheet</div>
+    <div id="guide-lenses"></div>
+
+    <div class="g-sec">Your library</div>
+    <p>Every scan is saved automatically. The <b>📚 Library</b> is home base — triage everything you've scanned, reopen any analysis instantly, re-scan or remove repos.</p>
+
+    <div class="g-sec">Keyboard</div>
+    <div class="g-keys"><span><kbd>←</kbd><kbd>→</kbd> cycle tabs</span><span><kbd>1</kbd>–<kbd>9</kbd> jump</span><span><kbd>?</kbd> this guide</span><span><kbd>Esc</kbd> close</span></div>
+
+    <div class="g-btns">
+      <button class="dd-run" id="guide-library" style="margin:0">📚 Open Library</button>
+      <button class="export-btn" id="guide-settings">⚙ Settings</button>
+    </div>
+  </div>
 </div>
 
 <script src="output-tab.js" type="module"></script>

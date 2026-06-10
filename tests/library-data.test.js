@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { libraryRow, sortRows, filterRows, allCapabilities, relativeTime } from '../library-data.js';
+import { libraryRow, sortRows, filterRows, allCapabilities, relativeTime, sourceUrl, mergeRows } from '../library-data.js';
 
 const mk = (repoId, score, warns, caps = [], extra = {}) => ({
   repoId,
@@ -33,6 +33,49 @@ describe('libraryRow', () => {
   it('carries saved_at through as savedAt (empty string when absent)', () => {
     expect(libraryRow(mk('o/r', 92, 0, [], { saved_at: '2026-06-01T00:00:00Z' })).savedAt).toBe('2026-06-01T00:00:00Z');
     expect(libraryRow(mk('o/r', 92, 0)).savedAt).toBe('');
+  });
+  it('carries platform and maps a cache cachedAt (unix ms) to an ISO savedAt', () => {
+    const row = libraryRow(mk('o/r', 92, 0, [], { platform: 'npm', cachedAt: Date.parse('2026-06-01T00:00:00Z') }));
+    expect(row.platform).toBe('npm');
+    expect(row.savedAt).toBe('2026-06-01T00:00:00.000Z');
+  });
+  it('prefers saved_at over cachedAt when both exist', () => {
+    const row = libraryRow(mk('o/r', 92, 0, [], { saved_at: '2026-06-02T00:00:00Z', cachedAt: Date.parse('2026-06-01T00:00:00Z') }));
+    expect(row.savedAt).toBe('2026-06-02T00:00:00Z');
+  });
+});
+
+describe('sourceUrl', () => {
+  it('maps each platform to its project page', () => {
+    expect(sourceUrl('github', 'facebook/react')).toBe('https://github.com/facebook/react');
+    expect(sourceUrl('gitlab', 'inkscape/inkscape')).toBe('https://gitlab.com/inkscape/inkscape');
+    expect(sourceUrl('npm', 'express')).toBe('https://www.npmjs.com/package/express');
+    expect(sourceUrl('pypi', 'requests')).toBe('https://pypi.org/project/requests/');
+  });
+  it('falls back to GitHub for unknown platforms with owner/name ids', () => {
+    expect(sourceUrl('', 'o/r')).toBe('https://github.com/o/r');
+  });
+  it('falls back to a GitHub search for bare names', () => {
+    expect(sourceUrl('', 'mystery')).toBe('https://github.com/search?q=mystery&type=repositories');
+  });
+});
+
+describe('mergeRows', () => {
+  const a = [{ repoId: 'o/a', src: 'saved' }, { repoId: 'o/b', src: 'saved' }];
+  const b = [{ repoId: 'o/b', src: 'cache' }, { repoId: 'o/c', src: 'cache' }, { repoId: '', src: 'cache' }];
+  it('unions by repoId with primary precedence; drops blank ids', () => {
+    const merged = mergeRows(a, b);
+    expect(merged.map(r => r.repoId)).toEqual(['o/a', 'o/b', 'o/c']);
+    expect(merged.find(r => r.repoId === 'o/b').src).toBe('saved');
+  });
+  it('does not mutate either input', () => {
+    mergeRows(a, b);
+    expect(a.length).toBe(2);
+    expect(b.length).toBe(3);
+  });
+  it('handles empty inputs', () => {
+    expect(mergeRows([], b).map(r => r.repoId)).toEqual(['o/b', 'o/c']);
+    expect(mergeRows(a, [])).toHaveLength(2);
   });
 });
 

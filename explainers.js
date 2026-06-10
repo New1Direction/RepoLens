@@ -10,6 +10,8 @@ export const SCAN_EXPLAINERS = {
   16: { title: 'Similar',     bestFor: 'Finding repos already in your library that are close to this one.', skipIf: 'Your library is empty or this is your first scan.', cost: 'Instant · local lookup' },
   18: { title: 'Synergies',   bestFor: 'Finding complementary repos that pair well with this one.', skipIf: 'You only care about this repo in isolation.', cost: '1 AI call · grounded in your library' },
   17: { title: 'Versus',      bestFor: 'A head-to-head comparison against a specific other repo.', skipIf: 'You have no concrete alternative in mind to compare.', cost: '1 AI call' },
+  19: { title: 'Connections', bestFor: 'Walking the semantic map your scans build — alternatives, synergies, versus links, and pinned ideas, one hop at a time.', skipIf: 'Your library is nearly empty — the map needs a few scans first.', cost: 'Instant · local graph' },
+  20: { title: 'Combine',     bestFor: 'Fusing this repo with complementary library repos into concrete new project ideas, scored on novelty and feasibility.', skipIf: 'You haven\'t analyzed the ingredients yet — it builds on your library.', cost: 'Several AI calls — one per combo' },
 };
 
 export function explainerFor(tabId) {

@@ -15,7 +15,7 @@ import { importFromVelesdb } from './migrate/velesdb-import.js';
 import { PARTS, CATALOG } from './models.js';
 import { THEMES, initTheme, saveTheme } from './theme.js';
 import { TONES, DEFAULT_TONE } from './tone.js';
-import { listCached, removeCached } from './cache.js';
+import { listCached, removeCached, openCachedAnalysis } from './cache.js';
 
 // ─── Core settings ───────────────────────────────────────────────────────────
 
@@ -68,20 +68,18 @@ function renderHistory() {
     const row = document.createElement('div');
     row.className = 'hist-row';
     row.innerHTML = `<button class="hist-open">${escH(it.repoId)}</button><span class="hist-meta">${escH(it.platform || '')} · ${escH(date)}</span><button class="hist-del" title="Remove from history">×</button>`;
-    row.querySelector('.hist-open').addEventListener('click', () => openCached(it));
+    row.querySelector('.hist-open').addEventListener('click', () => openCachedAnalysis(it));
     row.querySelector('.hist-del').addEventListener('click', async () => { await removeCached(it.platform, it.repoId); loadHistory(); });
     host.appendChild(row);
   }
 }
 
-async function openCached(it) {
-  const key = 'repolens_' + crypto.randomUUID();
-  await chrome.storage.session.set({ [key]: { ...it, cached: true, loading: false } });
-  chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${key}`) });
-}
-
 historySearch?.addEventListener('input', renderHistory);
 loadHistory();
+
+// ─── Library link ────────────────────────────────────────────────────────────
+document.getElementById('open-library-link')
+  ?.addEventListener('click', () => openTab(chrome.runtime.getURL('library.html')));
 
 // ─── Delay between AI calls (paces bursts; read live by background.js) ────────
 const aiGap = document.getElementById('aiGap');
@@ -309,6 +307,12 @@ chrome.storage.local.get(
     setConnected('openrouter', s.openrouterKey, { method: 'oauth' });
     setConnected('xai', s.xaiKey || s.xaiRefresh, { method: s.xaiRefresh || (s.xaiCredentials && s.xaiCredentials.refresh_token) ? 'oauth' : 'apikey' });
     setConnected('nous', s.nousKey, { method: 'apikey' });
+
+    // First run: walk the user in until any provider is connected.
+    const anyProvider = !!(s.anthropicKey || s.googleKey || s.openrouterKey || s.xaiKey || s.xaiRefresh || s.nousKey);
+    const gettingStarted = document.getElementById('getting-started');
+    if (gettingStarted) gettingStarted.style.display = anyProvider ? 'none' : '';
+
     if (s.anthropicModel) document.getElementById('anthropicModel').value = s.anthropicModel;
     if (s.googleModel) document.getElementById('googleModel').value = s.googleModel;
     if (s.xaiModel) document.getElementById('xaiModel').value = s.xaiModel;

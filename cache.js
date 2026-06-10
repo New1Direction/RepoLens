@@ -40,3 +40,11 @@ export async function listCached() {
 export async function removeCached(platform, repoId) {
   await chrome.storage.local.remove(cacheKey(platform, repoId));
 }
+
+/** Open a cached/saved analysis in a fresh output tab — instant, no AI call.
+ * Shared by Options' History list and the Library's cards. */
+export async function openCachedAnalysis(analysis) {
+  const key = 'repolens_' + crypto.randomUUID();
+  await chrome.storage.session.set({ [key]: { ...analysis, cached: true, loading: false } });
+  chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${key}`) });
+}
