@@ -10,7 +10,7 @@
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
 ![Tests](https://img.shields.io/badge/tests-420%2B_passing-4ade80)
-![Version](https://img.shields.io/badge/version-1.5.0-7c5cff)
+![Version](https://img.shields.io/badge/version-1.6.0-7c5cff)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -42,6 +42,11 @@ Plus **SKTPG** (a one-tap State / Known-pitfalls / Trajectory / Proof / Growth r
 ## 🆕 What's new
 
 Newest first — the highlights. Full, detailed notes live in the **[changelog](CHANGELOG.md)**.
+
+### v1.6.0 — Claude is API-key only
+
+- 🔑 **Removed the Claude *subscription* sign-in.** Anthropic locks Claude Pro/Max tokens to their own Claude Code app and, as of 2026, prohibits subscription sign-in in third-party tools — so that login could never work here without impersonating Claude Code (which risks getting **your** account banned). Connect Claude with a **Console API key** instead.
+- 🆓 **Want $0?** Use **local Ollama** (no key) or **Gemini's free tier** — both already supported. See the [How models & sign-in work](website/content/docs/how-it-works.mdx) guide.
 
 ### v1.5.0 — Sign in with ChatGPT
 
@@ -92,7 +97,7 @@ No accounts. No backend. Your keys, your machine.
 
 ## Models — your keys, your call
 
-Bring your own provider. Five are **first-class** (OAuth where available — Anthropic, Grok, OpenRouter — otherwise an API key) and fan out across a **smart fallback chain**: RepoLens tries them in order and drops to the next if one errors, so a single key is enough to start.
+Bring your own provider. Five are **first-class** (one-click sign-in where the vendor allows it — **Grok**, **OpenRouter**, and **OpenAI/ChatGPT** — otherwise an API key; **Claude** is API-key only) and fan out across a **smart fallback chain**: RepoLens tries them in order and drops to the next if one errors, so a single key is enough to start.
 
 **Nous** (Nous Research) **→ Gemini → OpenRouter → Grok → Anthropic**
 

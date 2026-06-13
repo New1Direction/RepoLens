@@ -26,16 +26,6 @@ import { nodeIdFor, edgeIdFor, ideaIdFor } from './graph.js';
 import { deriveCapabilities } from './taxonomy.js';
 import { combineCandidates } from './combinator.js';
 import { buildCombinatorPrompt, parseCombinator } from './combinator-prompt.js';
-import {
-  ANTHROPIC_OAUTH_ERROR_KEY,
-  ANTHROPIC_OAUTH_STATE_KEY,
-  ANTHROPIC_OAUTH_VERIFIER_KEY,
-  clearAnthropicCredentials,
-  exchangeAnthropicCode,
-  getAnthropicCredentials,
-  isAnthropicOAuthCallbackUrl,
-  refreshAnthropicToken,
-} from './oauth-anthropic.js';
 import { refreshXaiToken, XAI_CHAT_PROXY } from './oauth-xai.js';
 import {
   OPENAI_OAUTH_ERROR_KEY,
@@ -218,79 +208,9 @@ function resolveCompetitor(input) {
   return { platform: 'github', repoId };
 }
 
-// ─── Anthropic OAuth callback handling (robust intercept for claude.ai → console.anthropic.com) ───
-
-// One redirect can fire BOTH webNavigation.onCompleted and tabs.onUpdated, and the
-// auth code is single-use — only the first handler may run the exchange.
+// One redirect can fire BOTH a navigation event and tabs.onUpdated, and the auth
+// code is single-use — this de-dups so only the first handler runs the exchange.
 const _handledOAuthCodes = new Set();
-
-async function handleAnthropicOAuthCallback(rawUrl, tabId) {
-  if (!rawUrl || !isAnthropicOAuthCallbackUrl(rawUrl)) return;
-
-  console.log('[RepoLens OAuth] Callback detected:', rawUrl.split('?')[0]); // strip the single-use ?code=…
-
-  let url;
-  try {
-    url = new URL(rawUrl);
-  } catch {
-    return;
-  }
-
-  const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
-  const error = url.searchParams.get('error');
-  const errorDesc = url.searchParams.get('error_description');
-
-  // Clean verifier/state (the "pending flow" markers). Leave ERROR_KEY for the waiting UI to consume.
-  const cleanupFlowMarkers = async () => {
-    await chrome.storage.local.remove([
-      ANTHROPIC_OAUTH_VERIFIER_KEY,
-      ANTHROPIC_OAUTH_STATE_KEY,
-    ]).catch(() => {});
-  };
-
-  if (error) {
-    const msg = errorDesc || error;
-    console.warn('[RepoLens OAuth] Provider returned error:', msg);
-    await chrome.storage.local.set({ [ANTHROPIC_OAUTH_ERROR_KEY]: `Claude OAuth error: ${msg}` });
-    await cleanupFlowMarkers();
-    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
-    return;
-  }
-
-  if (!code) {
-    console.warn('[RepoLens OAuth] No code in callback URL');
-    await cleanupFlowMarkers();
-    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
-    return;
-  }
-
-  if (_handledOAuthCodes.has(code)) return; // the other listener got here first
-  _handledOAuthCodes.add(code);
-
-  const stored = await chrome.storage.local.get([ANTHROPIC_OAUTH_VERIFIER_KEY, ANTHROPIC_OAUTH_STATE_KEY]);
-  const verifier = stored[ANTHROPIC_OAUTH_VERIFIER_KEY];
-  const storedState = stored[ANTHROPIC_OAUTH_STATE_KEY];
-
-  if (!verifier) {
-    console.warn('[RepoLens OAuth] No stored verifier — flow may have been interrupted or was for another extension');
-    await cleanupFlowMarkers();
-    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
-    return;
-  }
-
-  try {
-    await exchangeAnthropicCode({ code, state, verifier, storedState });
-    console.log('[RepoLens OAuth] Success — tokens stored');
-    await cleanupFlowMarkers();
-    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
-  } catch (err) {
-    console.error('[RepoLens OAuth] Exchange error:', err.message);
-    await chrome.storage.local.set({ [ANTHROPIC_OAUTH_ERROR_KEY]: err.message });
-    await cleanupFlowMarkers();
-    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
-  }
-}
 
 // ─── OpenAI OAuth callback handling ("Sign in with ChatGPT", Codex CLI flow) ───
 //
@@ -366,11 +286,6 @@ async function handleOpenAIOAuthCallback(rawUrl, tabId) {
   }
 }
 
-chrome.webNavigation.onCompleted.addListener((details) => {
-  if (details.frameId !== 0) return;
-  handleAnthropicOAuthCallback(details.url, details.tabId);
-});
-
 // The OpenAI loopback redirect can't load (no local server), so onCompleted never
 // fires for it — onBeforeNavigate runs first and still carries the ?code=.
 chrome.webNavigation.onBeforeNavigate.addListener((details) => {
@@ -380,7 +295,6 @@ chrome.webNavigation.onBeforeNavigate.addListener((details) => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.url) {
-    handleAnthropicOAuthCallback(changeInfo.url, tabId);
     handleOpenAIOAuthCallback(changeInfo.url, tabId);
   }
 });
@@ -978,44 +892,22 @@ async function callAIInner(keys, prompt, part) {
   throw new Error(rankErrors(failures).userMessage);
 }
 
+// Anthropic Messages API with a standard Console API key (sk-ant-api…) via x-api-key.
+// Subscription/OAuth sign-in was removed: Anthropic binds Claude-subscription tokens to
+// the Claude Code client (server-side identity checks) and, as of 2026, prohibits using
+// subscription auth in third-party apps — so the only supported path is a Console key.
 async function callAnthropic(model = 'claude-sonnet-4-6', prompt) {
-  // Two credential styles share the `anthropicKey` slot:
-  //   • a standard API key (sk-ant-api…) → sent via x-api-key  ← supported, reliable
-  //   • an OAuth access token (has a refresh token) → exchanged for an API key, or
-  //     sent raw with the OAuth beta flags as a fallback
-  //
-  // Uses Hermes-hardened getAnthropicCredentials + refreshAnthropicToken (60s skew + inflight dedup)
-  const { anthropicKey, anthropicRefresh } = await chrome.storage.local.get(['anthropicKey', 'anthropicRefresh']);
-  const creds = await getAnthropicCredentials().catch(() => null);
-
-  const isOAuth = !!(anthropicRefresh || creds?.refresh_token);
-  let token = isOAuth ? await refreshAnthropicToken() : anthropicKey;
-  if (!token) throw new Error('No Anthropic credential — add a key in Settings');
-
-  // OAuth tokens need exchange via create_api_key to get a usable API key.
-  // Direct x-api-key with OAuth tokens may fail (401 "invalid x-api-key").
-  // The Claude Code SDK does this exchange internally.
-  let usingRawOAuthToken = false;
-  if (isOAuth) {
-    const exchanged = await exchangeAnthropicOAuthForApiKey(token);
-    usingRawOAuthToken = exchanged === token;
-    token = exchanged;
-  }
-
-  const headers = {
-    'anthropic-version': '2023-06-01',
-    'anthropic-dangerous-direct-browser-access': 'true',
-    'Content-Type': 'application/json',
-    'x-api-key': token,
-  };
-  // A raw OAuth access token (exchange unavailable) only works with the beta flags.
-  if (usingRawOAuthToken) {
-    headers['anthropic-beta'] = 'oauth-2025-04-20,claude-code-20250219';
-  }
+  const { anthropicKey } = await chrome.storage.local.get('anthropicKey');
+  if (!anthropicKey) throw new Error('No Anthropic API key — add one in Settings');
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers,
+    headers: {
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicKey,
+    },
     body: JSON.stringify({
       model,
       max_tokens: 4096,
@@ -1024,64 +916,12 @@ async function callAnthropic(model = 'claude-sonnet-4-6', prompt) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    // Only clear stored OAuth tokens on a real auth failure — never on transient errors.
-    if (res.status === 401 && isOAuth) {
-      // The cached exchanged key may be the stale credential being rejected — drop it
-      // so a reconnect takes effect immediately instead of after the SW restarts.
-      _anthropicExchangedKey = null;
-      _anthropicExchangedKeyExpiry = 0;
-      // Hermes-hardened clear (structured + legacy flat keys)
-      if (typeof clearAnthropicCredentials === 'function') {
-        await clearAnthropicCredentials();
-      } else {
-        await chrome.storage.local.remove(['anthropicKey', 'anthropicRefresh', 'anthropicExpiry', 'anthropicCredentials']);
-      }
-      throw new Error('Anthropic session expired — please reconnect in Settings');
-    }
     throw new Error(err.error?.message ?? `Anthropic API error ${res.status}`);
   }
   const data = await res.json();
   const text = data.content?.[0]?.text;
   if (!text) throw new Error('Anthropic returned no text content');
   return text;
-}
-
-// Cache the exchanged API key (short-lived, ~8h) to avoid hammering the endpoint.
-let _anthropicExchangedKey = null;
-let _anthropicExchangedKeyExpiry = 0;
-
-async function exchangeAnthropicOAuthForApiKey(oauthToken) {
-  // Return cached key if still valid (with 5min skew)
-  if (_anthropicExchangedKey && Date.now() < _anthropicExchangedKeyExpiry - 300_000) {
-    return _anthropicExchangedKey;
-  }
-
-  try {
-    const res = await fetch('https://api.anthropic.com/api/oauth/claude_cli/create_api_key', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${oauthToken}`,
-      },
-      body: JSON.stringify({}),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.api_key) {
-        _anthropicExchangedKey = data.api_key;
-        _anthropicExchangedKeyExpiry = Date.now() + (data.expires_in || 28800) * 1000;
-        return data.api_key;
-      }
-    }
-    // If exchange fails (endpoint might not exist or token type not supported),
-    // fall back to using the raw OAuth token (callAnthropic adds the beta flags).
-    console.warn('[RepoLens] create_api_key exchange failed, falling back to raw OAuth token');
-  } catch (err) {
-    console.warn('[RepoLens] create_api_key exchange error:', err.message);
-  }
-
-  return oauthToken;
 }
 
 async function callGemini(key, model = 'gemini-2.5-flash', prompt) {

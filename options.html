@@ -226,7 +226,7 @@
   <div class="section">
     <div class="section-title">Connected Services</div>
 
-    <!-- Anthropic (OAuth via PKCE — Claude subscription) -->
+    <!-- Anthropic (Console API key) -->
     <div class="svc-card" id="card-anthropic">
       <div class="svc-row">
         <div class="svc-left">
@@ -238,11 +238,10 @@
         </div>
         <button class="svc-btn" id="btn-anthropic">Connect</button>
       </div>
-      <a class="key-toggle" id="toggle-anthropic">Use an API key instead →</a>
       <div class="token-panel" id="panel-anthropic">
         <p class="token-instruction">
-          Paste a standard API key from <a id="link-anthropic">console.anthropic.com/settings/keys</a>.
-          This is the supported, reliable way to use Claude here.
+          Paste a Console API key from <a id="link-anthropic">console.anthropic.com/settings/keys</a>.
+          (Claude subscription sign-in isn’t supported — Anthropic restricts it to the Claude Code app.)
         </p>
         <div class="token-row">
           <input type="password" id="anthropicApiKey" placeholder="sk-ant-api...">

@@ -1,7 +1,7 @@
 /** OpenAI OAuth — "Sign in with ChatGPT" (the same flow the Codex CLI performs).
  *
- * Mirrors oauth-anthropic.js: PKCE authorize → authorization_code exchange →
- * refresh, plus a token-exchange step that mints a usable OpenAI API key from the
+ * PKCE authorize → authorization_code exchange → refresh, plus a token-exchange
+ * step that mints a usable OpenAI API key from the
  * id_token (`requested_token=openai-api-key`) — the documented, stable path the
  * `codex` CLI uses when an account has API access. Inference then runs through the
  * ordinary api.openai.com engine (background.js), so we reuse the proven OpenAI
@@ -11,7 +11,7 @@
  * redirect lands on http://localhost:1455/auth/callback — background.js intercepts
  * that navigation (the local server the CLI would run doesn't exist in a browser).
  *
- * Hardened to the same patterns as oauth-anthropic.js:
+ * Hardened OAuth-credential patterns:
  * - Explicit 60s refresh skew
  * - Structured credential record
  * - In-flight refresh deduplication

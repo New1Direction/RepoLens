@@ -1,4 +1,4 @@
 {
   "title": "RepoLens",
-  "pages": ["index", "getting-started", "the-scan", "models", "storage", "runner"]
+  "pages": ["index", "how-it-works", "getting-started", "the-scan", "models", "storage", "runner"]
 }

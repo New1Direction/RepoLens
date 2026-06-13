@@ -1,0 +1,125 @@
+---
+title: How it works
+description: How RepoLens turns a repo page into a verdict — and the three ways to connect a model, in plain language.
+---
+
+RepoLens is a browser extension that answers one question on any GitHub, GitLab, npm, or PyPI page: **should I use this, and what am I signing up for?** You click once; it reads the repo, asks an AI model you've connected, and opens a tab that **leads with the answer** — not the README's sales pitch.
+
+No account. No server. No telemetry. Your keys and your library live in your browser.
+
+## A scan, step by step
+
+<svg viewBox="0 0 970 112" role="img" aria-label="Pipeline: click the toolbar icon, read the repo, ask a model, get a verdict, save to your library." style={{ width: '100%', height: 'auto', margin: '10px 0' }}>
+  <title>How a scan flows, left to right</title>
+  <g fontFamily="ui-sans-serif, system-ui, sans-serif">
+    <rect x="10" y="22" width="150" height="68" rx="12" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="85" y="51" textAnchor="middle" fontSize="14" fontWeight="600" fill="currentColor">Click</text>
+    <text x="85" y="70" textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.6">the toolbar icon</text>
+
+    <text x="185" y="61" textAnchor="middle" fontSize="20" fill="currentColor" fillOpacity="0.45">→</text>
+
+    <rect x="210" y="22" width="150" height="68" rx="12" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="285" y="51" textAnchor="middle" fontSize="14" fontWeight="600" fill="currentColor">Read the repo</text>
+    <text x="285" y="70" textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.6">README + metadata</text>
+
+    <text x="385" y="61" textAnchor="middle" fontSize="20" fill="currentColor" fillOpacity="0.45">→</text>
+
+    <rect x="410" y="22" width="150" height="68" rx="12" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="485" y="51" textAnchor="middle" fontSize="14" fontWeight="600" fill="currentColor">Ask a model</text>
+    <text x="485" y="70" textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.6">the provider you chose</text>
+
+    <text x="585" y="61" textAnchor="middle" fontSize="20" fill="currentColor" fillOpacity="0.45">→</text>
+
+    <rect x="610" y="22" width="150" height="68" rx="12" fill="#7c5cff" fillOpacity="0.12" stroke="#7c5cff" />
+    <text x="685" y="51" textAnchor="middle" fontSize="14" fontWeight="600" fill="currentColor">Verdict</text>
+    <text x="685" y="70" textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.7">fit + bottom line</text>
+
+    <text x="785" y="61" textAnchor="middle" fontSize="20" fill="currentColor" fillOpacity="0.45">→</text>
+
+    <rect x="810" y="22" width="150" height="68" rx="12" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="885" y="51" textAnchor="middle" fontSize="14" fontWeight="600" fill="currentColor">Library</text>
+    <text x="885" y="70" textAnchor="middle" fontSize="11" fill="currentColor" fillOpacity="0.6">saved on your machine</text>
+  </g>
+</svg>
+
+1. **Click** the RepoLens icon on a repo page.
+2. It **reads** the public README and metadata (file counts, language, stars, license…).
+3. It **asks the model** you connected to weigh that evidence.
+4. It opens a **verdict** — a fit call (*strong / solid / care / risky*), a one-line bottom line, the flags worth knowing, and where to start.
+5. The result is **saved locally** to a searchable library you own.
+
+Want the deeper, *measured* version (real dependency graph, tests, secret scan)? That's the optional [runner](/docs/runner), used by [Deep Dive](/docs/the-scan).
+
+## Connecting a model — three ways
+
+RepoLens never ships a key. You bring a model, and there are three shapes that fit different needs:
+
+| Way | What it means | Best when… |
+|---|---|---|
+| **Sign-in (OAuth)** | One click; you approve it on the vendor's site, no key to copy. Available for **Grok**, **OpenRouter**, and **OpenAI (Sign in with ChatGPT)**. | The vendor supports third-party OAuth and you'd rather not handle a key. |
+| **API key** | Paste a key from the vendor's console. Works for **every** provider — Claude, Gemini, OpenAI, DeepSeek, Groq, and ~20 more. | You already have a key, or the vendor doesn't offer OAuth (e.g. **Claude is API-key only**). |
+| **Local** | Point at **Ollama** on `localhost`. No key, no cloud, no cost. | You want it **free and private** — the AI step never leaves your machine. |
+
+> **Why is Claude API-key only?** Anthropic binds Claude Pro/Max subscription logins to its own Claude Code app (and, as of 2026, prohibits subscription sign-in in third-party tools). The only way to "fix" that would be to impersonate Claude Code — which violates Anthropic's terms and can get **your** account banned. So RepoLens connects Claude with a Console API key (`sk-ant-api…`) and leaves the spoofing alone. OpenAI, by contrast, *offers* a supported sign-in — which is why the ChatGPT login exists.
+
+Pick **one** and you're scanning. See [Models](/docs/models) for the full provider list and per-vendor recommendations.
+
+## One key is enough: the smart fallback chain
+
+You don't have to connect everything. Whatever you connect joins a **fallback chain** — RepoLens tries providers in order and drops to the next if one errors or isn't set up, so a single key (or a local Ollama) is plenty.
+
+<svg viewBox="0 0 970 86" role="img" aria-label="Fallback chain: Nous, then Gemini, then OpenRouter, then Grok, then Anthropic." style={{ width: '100%', height: 'auto', margin: '10px 0' }}>
+  <title>The default fallback order</title>
+  <g fontFamily="ui-sans-serif, system-ui, sans-serif">
+    <rect x="10" y="22" width="150" height="44" rx="10" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="85" y="49" textAnchor="middle" fontSize="13" fill="currentColor">Nous</text>
+    <text x="185" y="50" textAnchor="middle" fontSize="18" fill="currentColor" fillOpacity="0.45">→</text>
+    <rect x="210" y="22" width="150" height="44" rx="10" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="285" y="49" textAnchor="middle" fontSize="13" fill="currentColor">Gemini</text>
+    <text x="385" y="50" textAnchor="middle" fontSize="18" fill="currentColor" fillOpacity="0.45">→</text>
+    <rect x="410" y="22" width="150" height="44" rx="10" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="485" y="49" textAnchor="middle" fontSize="13" fill="currentColor">OpenRouter</text>
+    <text x="585" y="50" textAnchor="middle" fontSize="18" fill="currentColor" fillOpacity="0.45">→</text>
+    <rect x="610" y="22" width="150" height="44" rx="10" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="685" y="49" textAnchor="middle" fontSize="13" fill="currentColor">Grok</text>
+    <text x="785" y="50" textAnchor="middle" fontSize="18" fill="currentColor" fillOpacity="0.45">→</text>
+    <rect x="810" y="22" width="150" height="44" rx="10" fill="none" stroke="currentColor" strokeOpacity="0.3" />
+    <text x="885" y="49" textAnchor="middle" fontSize="13" fill="currentColor">Anthropic</text>
+  </g>
+</svg>
+
+The highest provider in that order that's **connected** becomes your primary; the rest are automatic backups. Any [compatible provider](/docs/models) you add (OpenAI, DeepSeek, a local Ollama…) joins as a fallback too.
+
+Want finer control? A scan is really **eight parts** (core scan, Deep Dive, Versus, …), and you can route **each part to a different model** — heavy judgment to a big model, bulk re-tagging to a cheap fast one. Each routed part still falls back to the chain, so it can't dead-end.
+
+## Run it for $0
+
+Two genuinely-free paths, both first-class:
+
+- **Local Ollama** — install Ollama, run a model, and RepoLens does the AI step on your own machine. No key, no bill, fully private.
+- **Gemini's free tier** — paste a free Google AI Studio key.
+
+(Only the *AI step* is local with Ollama — RepoLens still reads the public repo page over the network.)
+
+## When RepoLens earns its place
+
+- **Evaluating a dependency** — "is this library maintained, sane, and worth the lock-in?" before you `npm install`.
+- **Triaging a list** — scan ten alternatives; the verdict chips + library let you sort by fit at a glance.
+- **Onboarding to a codebase** — Deep Dive walks the core concepts in plain English.
+- **Comparing two tools** — Versus puts them head-to-head on the dimensions that matter.
+- **Due diligence** — license, health signals, and a secret scan in one place.
+
+## Roadmap
+
+Where this is heading. **Ideas and directions, not promises** — and the order will follow what's actually useful.
+
+| Idea | What it would do | Status |
+|---|---|---|
+| **Cost preview** | Estimate tokens/$ for a scan *before* you run it. | Exploring |
+| **Free-starter onboarding** | First-run flow that points you straight at Ollama or Gemini's free tier. | Likely next |
+| **Library sync** | Optional shared/synced store so your library follows you across machines (the storage layer already has the seam for it). | Designing |
+| **Streaming verdicts** | Render the verdict as it generates instead of waiting for the whole response. | Considering |
+| **More one-click sign-ins** | Add OAuth for any vendor that ships supported third-party OAuth. | Ongoing |
+| **Team libraries** | Share a curated, annotated library with a team. | Idea |
+
+Have a request? RepoLens is meant to be hackable — see [Getting started](/docs/getting-started) to run it locally.

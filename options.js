@@ -1,12 +1,5 @@
 import { createPkcePair } from './oauth-pkce.js';
 import {
-  ANTHROPIC_OAUTH_ERROR_KEY,
-  ANTHROPIC_OAUTH_STATE_KEY,
-  ANTHROPIC_OAUTH_VERIFIER_KEY,
-  buildAnthropicAuthorizeUrl,
-  waitForAnthropicOAuthResult,
-} from './oauth-anthropic.js';
-import {
   pollXaiDeviceToken,
   requestXaiDeviceCode,
   storeXaiOAuthTokens,
@@ -363,12 +356,9 @@ function setConnected(service, key, { method } = {}) {
 }
 
 chrome.storage.local.get(
-  ['anthropicKey', 'anthropicRefresh', 'anthropicCredentials', 'anthropicModel', 'googleKey', 'googleModel', 'openrouterKey', 'openrouterModel', 'xaiKey', 'xaiRefresh', 'xaiCredentials', 'xaiModel', 'nousKey', 'nousModel'],
+  ['anthropicKey', 'anthropicModel', 'googleKey', 'googleModel', 'openrouterKey', 'openrouterModel', 'xaiKey', 'xaiRefresh', 'xaiCredentials', 'xaiModel', 'nousKey', 'nousModel'],
   (s) => {
-    // Detect OAuth using both legacy flat keys and the new Hermes-hardened structured storage
-    const hasAnthropicOAuth = s.anthropicRefresh ||
-      (s.anthropicCredentials && s.anthropicCredentials.refresh_token);
-    setConnected('anthropic', s.anthropicKey, { method: hasAnthropicOAuth ? 'oauth' : 'apikey' });
+    setConnected('anthropic', s.anthropicKey, { method: 'apikey' });
     setConnected('google', s.googleKey, { method: 'apikey' });
     setConnected('openrouter', s.openrouterKey, { method: 'oauth' });
     setConnected('xai', s.xaiKey || s.xaiRefresh, { method: s.xaiRefresh || (s.xaiCredentials && s.xaiCredentials.refresh_token) ? 'oauth' : 'apikey' });
@@ -578,45 +568,23 @@ document.getElementById('save-google').addEventListener('click', () => {
   });
 });
 
-// ─── Anthropic — OAuth via PKCE + webNavigation callback ─────────────────────
+// ─── Anthropic — Console API key (sk-ant-api…) ───────────────────────────────
+// Subscription "Sign in with Claude" was removed: Anthropic locks Claude-subscription
+// tokens to the Claude Code client and prohibits subscription auth in third-party apps,
+// so a Console API key is the only supported path.
 
-document.getElementById('btn-anthropic').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-anthropic');
-  const { anthropicKey } = await chrome.storage.local.get('anthropicKey');
-  if (anthropicKey) {
-    // Clear both structured (Hermes-hardened) and legacy flat keys
-    chrome.storage.local.remove(
-      ['anthropicKey', 'anthropicRefresh', 'anthropicExpiry', 'anthropicCredentials'],
-      () => setConnected('anthropic', null)
-    );
-    return;
-  }
-
-  try {
-    setButtonBusy(btn, true);
-
-    const { verifier, challenge, state } = await createPkcePair();
-    await chrome.storage.local.set({
-      [ANTHROPIC_OAUTH_VERIFIER_KEY]: verifier,
-      [ANTHROPIC_OAUTH_STATE_KEY]: state,
-    });
-    await chrome.storage.local.remove([ANTHROPIC_OAUTH_ERROR_KEY]);
-
-    chrome.tabs.create({ url: buildAnthropicAuthorizeUrl({ challenge, state }) });
-
-    const result = await waitForAnthropicOAuthResult();
-    await chrome.storage.local.remove([
-      ANTHROPIC_OAUTH_VERIFIER_KEY,
-      ANTHROPIC_OAUTH_STATE_KEY,
-      ANTHROPIC_OAUTH_ERROR_KEY,
-    ]);
-
-    if (result.error) throw new Error(result.error);
-    setConnected('anthropic', result.key, { method: 'oauth' });
-  } catch (err) {
-    setButtonBusy(btn, false);
-    showStatus('✗ Anthropic: ' + err.message, '#f87171');
-  }
+document.getElementById('btn-anthropic').addEventListener('click', () => {
+  chrome.storage.local.get('anthropicKey', ({ anthropicKey }) => {
+    if (anthropicKey) {
+      // Also sweep any legacy OAuth keys left by an older build.
+      chrome.storage.local.remove(
+        ['anthropicKey', 'anthropicRefresh', 'anthropicExpiry', 'anthropicCredentials'],
+        () => setConnected('anthropic', null)
+      );
+      return;
+    }
+    document.getElementById('panel-anthropic').classList.toggle('open');
+  });
 });
 
 document.getElementById('toggle-anthropic')

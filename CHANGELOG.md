@@ -4,8 +4,38 @@ Every release of RepoLens, newest first. Want the friendly highlights instead of
 the full detail? See **[What's new](README.md)** in the README.
 
 This project follows [Semantic Versioning](https://semver.org/) and groups changes
-by theme. Dates are when the release landed on `main` — 1.1.0 through 1.5.0 shipped
+by theme. Dates are when the release landed on `main` — 1.1.0 through 1.6.0 shipped
 the same day, as a rapid burst of improvements, so they share a date.
+
+## [1.6.0] — 2026-06-13 · _Claude is API-key only_
+
+### Removed
+
+- **The Claude *subscription* sign-in ("Sign in with Claude").** It never reliably
+  worked, and it can't: Anthropic binds Claude Pro/Max OAuth tokens to their own
+  **Claude Code** client (validated server-side via an identity system prompt + beta
+  flags) and, as of 2026, its terms **prohibit using subscription authentication in
+  third-party products**. The only way to make it "work" is to impersonate Claude
+  Code — which is a terms violation that risks getting **the user's own Anthropic
+  account banned** and breaks whenever Anthropic rotates a flag. So we took it out
+  rather than ship spoofing.
+
+### Changed
+
+- **Claude now connects with a Console API key only** (`sk-ant-api…` from
+  console.anthropic.com). The Anthropic card's *Connect* opens the key field directly;
+  `callAnthropic` is a clean `x-api-key` request with no OAuth/exchange branches.
+- Dropped the now-unused `claude.ai`, `platform.claude.com`, and
+  `console.anthropic.com` host permissions (kept `api.anthropic.com` for inference).
+- Deleted the dead `oauth-anthropic.js` module and its callback interception.
+
+### Notes
+
+- **This does not affect the working sign-ins.** **Grok** (Grok CLI device flow),
+  **OpenRouter**, and **OpenAI** (Sign in with ChatGPT, added in 1.5.0) still use
+  one-click OAuth — those vendors *support* third-party OAuth. Anthropic is the one
+  that doesn't.
+- **Free is still easy:** local **Ollama** (no key) or **Gemini's** free tier.
 
 ## [1.5.0] — 2026-06-13 · _Sign in with ChatGPT_
 

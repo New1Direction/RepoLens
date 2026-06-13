@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RepoLens",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "One-click repo explainer. Powered by Claude.",
   "permissions": ["storage", "activeTab", "tabs", "identity", "webNavigation"],
   "host_permissions": [
@@ -13,9 +13,6 @@
     "https://registry.npmjs.org/*",
     "https://pypi.org/pypi/*",
     "https://api.anthropic.com/*",
-    "https://console.anthropic.com/*",
-    "https://claude.ai/*",
-    "https://platform.claude.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://openrouter.ai/*",
     "https://api.x.ai/*",

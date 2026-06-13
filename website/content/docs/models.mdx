@@ -19,11 +19,13 @@ Whichever is highest in that order *and* connected is your primary; the rest are
 
 | Provider | Sign-in | ★ Recommended |
 |---|---|---|
-| Anthropic | OAuth or API key | Claude Sonnet 4.6 (Opus 4.8 for max) |
+| Anthropic | API key *(Console)* | Claude Sonnet 4.6 (Opus 4.8 for max) |
 | Gemini | API key | Gemini 2.5 Pro |
 | OpenRouter | OAuth | Grok 4.3 |
 | xAI Grok | OAuth or API key | Grok 4.3 |
 | Nous | API key | Hermes 4 405B |
+
+> **Why no "Sign in with Claude"?** Anthropic locks Claude Pro/Max subscription tokens to its own Claude Code app and, as of 2026, prohibits subscription sign-in in third-party tools — so RepoLens connects Claude with a **Console API key** (`sk-ant-api…`) only. (The OpenAI card *does* offer ChatGPT sign-in, because OpenAI supports it — see below.)
 
 ## Bring any model
 
