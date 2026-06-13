@@ -9,7 +9,8 @@
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-1a73e8?logo=googlechrome&logoColor=white)
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-340%2B_passing-4ade80)
+![Tests](https://img.shields.io/badge/tests-360%2B_passing-4ade80)
+![Version](https://img.shields.io/badge/version-1.1.0-7c5cff)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -35,6 +36,21 @@ A scan opens to a **verdict landing** and fans out into focused tabs:
 | 🤝 | **Synergies** · **Versus** · **Combinator** | Complements, head-to-heads, and fused project ideas — grounded in *your* library. |
 
 Plus SKTPG, framework lenses, and capability re-tagging.
+
+---
+
+## What's new in 1.1.0 · *Trust & Polish*
+
+> The theme is **trust** — your data moves with you and stays safe, untrusted input never reaches the model raw, provider hiccups recover on their own, and the surfaces are keyboard- and motion-accessible. Full notes in [CHANGELOG.md](CHANGELOG.md).
+
+- **📦 Library Export / Import / Backup** — your whole library (repos + semantic graph + scan cache) to one portable JSON file; restore by merge or replace. Validated and bounded on import, so a bad file fails safe.
+- **🔑 Settings backup** — theme, voice and model routing travel too, allowlist-driven so **API keys and tokens never leave the browser**.
+- **🔎 BM25 search** — rare terms outrank common ones, high-signal fields outweigh buried mentions, results debounced.
+- **🛟 Self-healing scans** — transient provider failures retry with exponential backoff; on failure the UI surfaces the *single most fixable* error.
+- **🛡️ Hardened rendering** — one canonical injection-safe HTML escaper across every render path; repo READMEs sanitized and delimited before they reach the model.
+- **♿ Accessibility** — visible focus rings + `prefers-reduced-motion` guard.
+- **📊 Quality of life** — a Library stats bar, "Recently scanned" / "Stars" sorts (persisted), and a scan-size *token estimate* on the verdict.
+- **🧪 DX** — ESLint + Prettier + coverage + GitHub Actions CI; **360+ unit tests**.
 
 ---
 
