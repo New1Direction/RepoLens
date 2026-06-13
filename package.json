@@ -1,13 +1,23 @@
 {
   "name": "repolens",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,json,css,html,md}\"",
+    "format:check": "prettier --check \"**/*.{js,json,css,html,md}\""
   },
   "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "eslint": "^9.13.0",
     "fake-indexeddb": "^6.2.5",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3",
     "vitest": "^1.6.0"
   }
 }

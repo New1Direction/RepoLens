@@ -1,0 +1,6 @@
+node_modules
+coverage
+website
+package-lock.json
+*.min.js
+icons

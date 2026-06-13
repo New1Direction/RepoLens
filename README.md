@@ -9,7 +9,7 @@
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-1a73e8?logo=googlechrome&logoColor=white)
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-276_passing-4ade80)
+![Tests](https://img.shields.io/badge/tests-340%2B_passing-4ade80)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -30,7 +30,7 @@ A scan opens to a **verdict landing** and fans out into focused tabs:
 |---|---|---|
 | ⚖️ | **Verdict** | Fit call (strong / solid / care / risky), a one-line bottom line, measured facts, and the top things worth noting — first thing you see. |
 | 🧠 | **Deep Dive** | Atoms → lineage → a Feynman-style plain-English explanation. Optionally grounded by **measured facts** from the local runner. |
-| 📚 | **Library** | Every repo you've analyzed, as a sortable / filterable triage grid with fit chips and "scanned N ago" stamps. |
+| 📚 | **Library** | Every repo you've analyzed, as a sortable / filterable triage grid with fit chips, a stats bar, and one-click **Export / Import / Backup**. |
 | 🕸️ | **Connections** | A walkable semantic ego-graph of how your repos relate. |
 | 🤝 | **Synergies** · **Versus** · **Combinator** | Complements, head-to-heads, and fused project ideas — grounded in *your* library. |
 
@@ -71,6 +71,8 @@ Any per-part pick still falls back to the full chain if that provider errors or 
 
 Your whole library lives **in the browser** (IndexedDB). No database, no daemon, no setup — it works the moment you load the extension, and it's Web-Store-ready.
 
+Because it's *your* data, you can take it with you: **Library → Export** writes your whole library — analyzed repos, the semantic graph, and the local scan cache — to one portable JSON file, and **Import** restores it (merge or replace) on any machine. Backups are validated and bounded on import, so a bad file fails safe.
+
 Migrating from an old VelesDB server? **Options → Import from VelesDB** pulls your library across in one click.
 
 ---
@@ -86,12 +88,15 @@ Then click the RepoLens icon on any repo page.
 ## Develop
 
 ```bash
-npm install      # installs vitest
-npm test         # 276 unit tests across the pure helpers
+npm install            # installs vitest + lint/format tooling
+npm test               # unit tests across the pure helpers
 npm run test:watch
+npm run test:coverage  # v8 coverage for the pure modules
+npm run lint           # eslint (flat config)
+npm run format:check   # prettier
 ```
 
-Pure ES modules, **no build step**.
+CI (`.github/workflows/ci.yml`) runs the suite on every push and PR. Pure ES modules, **no build step**.
 
 ---
 
@@ -118,6 +123,9 @@ The extension auto-detects it and the Deep Dive pill turns green. Without it, De
 | `routing.js` · `models.js` | Per-part model routing + the provider × model catalog |
 | `migrate/velesdb-import.js` | One-time import from a legacy VelesDB server |
 | `runner.js` | Client for the optional Rust deeper-scan runner |
+| `backup.js` · `store.js` · `cache.js` | Library Export / Import / Backup — versioned envelope, validated + bounded on restore |
+| `safe-html.js` | One canonical HTML escaper + an injection-safe `html\`\`` template (replaces the old per-file `esc()` copies) |
+| `errors.js` · `retry.js` | Provider-error ranking (surface the one fixable failure) + exponential-backoff retries |
 | `tests/` | Vitest unit tests for the pure helpers |
 
 ---

@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      # `npm install` (not `npm ci`) so the lockfile can pick up the newly added
+      # dev tooling without a separate commit.
+      - run: npm install
+      - name: Unit tests
+        run: npm test
+      - name: Lint (advisory)
+        run: npm run lint
+        continue-on-error: true
+      - name: Format check (advisory)
+        run: npm run format:check
+        continue-on-error: true
