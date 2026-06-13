@@ -48,3 +48,27 @@ export async function openCachedAnalysis(analysis) {
   await chrome.storage.session.set({ [key]: { ...analysis, cached: true, loading: false } });
   chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${key}`) });
 }
+
+const KNOWN_PLATFORMS = new Set(['github', 'gitlab', 'npm', 'pypi']);
+
+/** Restore cached analyses from a backup. 'replace' clears the cache first;
+ * 'merge' (default) upserts by repo. Only entries for known platforms are
+ * accepted, so a crafted backup can't inject odd cache keys. Returns how many
+ * entries were written. */
+export async function importCache(entries = [], { mode = 'merge' } = {}) {
+  if (mode === 'replace') await clearCache();
+  const valid = (entries || []).filter((c) => c && c.repoId && KNOWN_PLATFORMS.has(c.platform));
+  const obj = {};
+  for (const c of valid) obj[cacheKey(c.platform, c.repoId)] = c;
+  if (Object.keys(obj).length) await chrome.storage.local.set(obj);
+  return valid.length;
+}
+
+/** Remove every cached analysis (the rlcache:* keys), leaving settings intact.
+ * Returns the number of entries cleared. */
+export async function clearCache() {
+  const all = await chrome.storage.local.get(null);
+  const keys = Object.keys(all).filter((k) => k.startsWith(PREFIX));
+  if (keys.length) await chrome.storage.local.remove(keys);
+  return keys.length;
+}

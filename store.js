@@ -4,7 +4,7 @@
 // callers can surface errors (matching the old behavior).
 
 import { deriveCapabilities } from './taxonomy.js';
-import { idbPut, idbGet, idbGetAll, idbDelete } from './store/idb.js';
+import { idbPut, idbGet, idbGetAll, idbDelete, idbClear } from './store/idb.js';
 import { rankRepos } from './store/search.js';
 import { buildEgoGraph } from './store/egograph.js';
 
@@ -139,4 +139,43 @@ export async function getEgoGraph(repoId) {
   } catch {
     return null;
   }
+}
+
+// ─── backup: whole-library export / import ────────────────────────────────────
+
+const validRows = (rows) => (rows || []).filter((r) => r && r.id != null);
+
+/** Gather every row from all three stores for a backup envelope. */
+export async function exportStores() {
+  const [repos, nodes, edges] = await Promise.all([
+    idbGetAll('repos'),
+    idbGetAll('nodes'),
+    idbGetAll('edges'),
+  ]);
+  return { repos: repos || [], nodes: nodes || [], edges: edges || [] };
+}
+
+/**
+ * Write backed-up rows into the stores.
+ * - mode 'replace' wipes each store first (a clean restore).
+ * - mode 'merge' (default) upserts: matching ids are overwritten, the rest kept.
+ * Returns the number of rows written per store. Throws on store failure so the
+ * caller can surface a clear error (matching saveRepo's contract).
+ * @param {{ repos?: object[], nodes?: object[], edges?: object[] }} rows
+ * @param {{ mode?: 'merge'|'replace' }} [opts]
+ */
+export async function importStores({ repos = [], nodes = [], edges = [] } = {}, { mode = 'merge' } = {}) {
+  if (mode === 'replace') {
+    await Promise.all([idbClear('repos'), idbClear('nodes'), idbClear('edges')]);
+  }
+  const vr = validRows(repos), vn = validRows(nodes), ve = validRows(edges);
+  for (const row of vr) await idbPut('repos', row);
+  for (const row of vn) await idbPut('nodes', row);
+  for (const row of ve) await idbPut('edges', row);
+  return { repos: vr.length, nodes: vn.length, edges: ve.length };
+}
+
+/** Wipe the whole library (all three stores). Backs the "Clear library" action. */
+export async function clearLibrary() {
+  await Promise.all([idbClear('repos'), idbClear('nodes'), idbClear('edges')]);
 }

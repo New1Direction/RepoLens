@@ -78,6 +78,27 @@ export function filterRows(rows, { query = '', capability = '' } = {}) {
   });
 }
 
+/** Aggregate counts for the Library stats bar. Pure — tallies rows by fit level
+ * and the mean health of the rows that actually carry one. */
+const FIT_LEVELS = ['strong', 'solid', 'care', 'risky', 'unrated'];
+
+export function libraryStats(rows) {
+  const list = rows || [];
+  const byFit = { strong: 0, solid: 0, care: 0, risky: 0, unrated: 0 };
+  let healthSum = 0, healthCount = 0;
+  for (const r of list) {
+    const level = r.fit?.level;
+    const key = FIT_LEVELS.includes(level) ? level : 'unrated';
+    byFit[key] += 1;
+    if (r.health > 0) { healthSum += r.health; healthCount += 1; }
+  }
+  return {
+    total: list.length,
+    byFit,
+    avgHealth: healthCount ? Math.round(healthSum / healthCount) : null,
+  };
+}
+
 /** Sorted unique capabilities across all rows (for the filter chips). */
 export function allCapabilities(rows) {
   const set = new Set();

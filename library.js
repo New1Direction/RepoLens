@@ -3,12 +3,13 @@
 // show), and each card manages its repo: click to reopen the saved analysis, hover for
 // re-scan / source / remove actions.
 
-import { scrollPoints, deleteRepo } from './store.js';
-import { listCached, removeCached, openCachedAnalysis } from './cache.js';
-import { libraryRow, sortRows, filterRows, allCapabilities, relativeTime, sourceUrl, mergeRows } from './library-data.js';
+import { scrollPoints, deleteRepo, exportStores, importStores, clearLibrary } from './store.js';
+import { listCached, removeCached, openCachedAnalysis, importCache, clearCache } from './cache.js';
+import { libraryRow, sortRows, filterRows, allCapabilities, relativeTime, sourceUrl, mergeRows, libraryStats } from './library-data.js';
+import { buildBackup, validateBackup, summarizeBackup, backupFilename } from './backup.js';
+import { html, escapeHtml as esc } from './safe-html.js';
 
-const esc = (s) =>
-  String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const MAX_BACKUP_BYTES = 50 * 1024 * 1024; // refuse absurd import files before parsing
 
 const LANG_COLORS = {
   JavaScript: '#f1e05a', TypeScript: '#3178c6', Python: '#3572A5', Rust: '#dea584', Go: '#00ADD8',
@@ -112,6 +113,152 @@ async function removeRepo(repoId, btn) {
   allRows = allRows.filter((row) => row.repoId !== repoId);
   renderCaps();
   render();
+  renderStats();
+}
+
+// ─── stats bar ────────────────────────────────────────────────────────────────
+
+function renderStats() {
+  const host = document.getElementById('stats');
+  if (!host) return;
+  const s = libraryStats(allRows);
+  if (!s.total) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  host.classList.remove('hidden');
+  const pill = (level, n) => (n ? html`<span class="ls-pill ${level}">${n} ${level}</span>` : '');
+  host.innerHTML = String(html`
+    <span class="ls-total">${s.total} repo${s.total === 1 ? '' : 's'}</span>
+    <span class="ls-pills">${['strong', 'solid', 'care', 'risky', 'unrated'].map((lvl) => pill(lvl, s.byFit[lvl]))}</span>
+    ${s.avgHealth != null ? html`<span class="ls-health">avg health ${s.avgHealth}</span>` : ''}
+  `);
+}
+
+// ─── backup: export / import / clear ───────────────────────────────────────────
+
+function setStatus(msg, isErr = false) {
+  const el = document.getElementById('status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+  el.classList.toggle('err', !!isErr);
+}
+
+async function exportLibrary() {
+  try {
+    setStatus('Preparing backup…');
+    const [stores, cached] = await Promise.all([exportStores(), listCached().catch(() => [])]);
+    const backup = buildBackup({ repos: stores.repos, nodes: stores.nodes, edges: stores.edges, cache: cached });
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = backupFilename(backup.exportedAt);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const c = backup.counts;
+    setStatus(`Exported ${c.repos} repo${c.repos === 1 ? '' : 's'}, ${c.cache} cached, ${c.edges} connection${c.edges === 1 ? '' : 's'}.`);
+  } catch (e) {
+    setStatus('Export failed: ' + (e?.message || e), true);
+  }
+}
+
+function pickImportFile() {
+  document.getElementById('file-input')?.click();
+}
+
+async function onFileChosen(e) {
+  const file = e.target.files?.[0];
+  e.target.value = ''; // let the same file be re-picked later
+  if (!file) return;
+  if (file.size > MAX_BACKUP_BYTES) {
+    setStatus('That backup is too large (max 50 MB).', true);
+    return;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(await file.text());
+  } catch {
+    setStatus('That file isn’t valid JSON.', true);
+    return;
+  }
+  const { ok, errors, warnings, value } = validateBackup(parsed);
+  if (!ok) {
+    setStatus(errors[0] || 'That isn’t a RepoLens backup file.', true);
+    return;
+  }
+  showImportConfirm(value, summarizeBackup(parsed), warnings || []);
+}
+
+function showImportConfirm(value, counts, warnings = []) {
+  const host = document.getElementById('import-confirm');
+  if (!host) return;
+  setStatus('');
+  host.classList.remove('hidden');
+  const warn = warnings.length ? html`<p class="lic-msg" style="color:var(--fit-care)">${warnings[0]}</p>` : '';
+  host.innerHTML = String(html`
+    ${warn}
+    <p class="lic-msg">This backup has <b>${counts.repos}</b> repo${counts.repos === 1 ? '' : 's'}, <b>${counts.cache}</b> cached scan${counts.cache === 1 ? '' : 's'} and <b>${counts.edges}</b> connection${counts.edges === 1 ? '' : 's'}. How should it be applied?</p>
+    <div class="lic-actions">
+      <button class="lib-btn" id="imp-merge" title="Add these repos to your library, overwriting any with the same id">Merge into my library</button>
+      <button class="lib-btn lib-btn-danger" id="imp-replace" title="Wipe the current library and restore only this backup">Replace everything</button>
+      <button class="lib-btn" id="imp-cancel">Cancel</button>
+    </div>
+  `);
+  host.querySelector('#imp-merge').addEventListener('click', () => applyImport(value, 'merge'));
+  host.querySelector('#imp-replace').addEventListener('click', () => applyImport(value, 'replace'));
+  host.querySelector('#imp-cancel').addEventListener('click', () => host.classList.add('hidden'));
+}
+
+async function applyImport(value, mode) {
+  document.getElementById('import-confirm')?.classList.add('hidden');
+  try {
+    setStatus(mode === 'replace' ? 'Replacing library…' : 'Merging backup…');
+    const written = await importStores(value, { mode });
+    const cacheN = await importCache(value.cache, { mode }).catch(() => 0);
+    const cachePart = cacheN ? `, ${cacheN} cached scan${cacheN === 1 ? '' : 's'}` : '';
+    setStatus(`Imported ${written.repos} repo${written.repos === 1 ? '' : 's'}${cachePart}. Reloading…`);
+    setTimeout(() => location.reload(), 700);
+  } catch (e) {
+    setStatus('Import failed: ' + (e?.message || e), true);
+  }
+}
+
+// Two-step inline confirm, mirroring the per-card remove arm.
+let clearArmed = false;
+let clearTimer = null;
+async function clearLibraryFlow(btn) {
+  if (!clearArmed) {
+    clearArmed = true;
+    btn.classList.add('armed');
+    btn.textContent = '🗑 Confirm?';
+    clearTimer = setTimeout(() => {
+      clearArmed = false;
+      btn.classList.remove('armed');
+      btn.textContent = '🗑 Clear';
+    }, 3000);
+    return;
+  }
+  clearTimeout(clearTimer);
+  clearArmed = false;
+  btn.classList.remove('armed');
+  btn.textContent = '🗑 Clear';
+  try {
+    setStatus('Clearing library…');
+    await clearLibrary();
+    await clearCache().catch(() => {});
+    setStatus('Library cleared. Reloading…');
+    setTimeout(() => location.reload(), 600);
+  } catch (e) {
+    setStatus('Clear failed: ' + (e?.message || e), true);
+  }
+}
+
+function wireToolbar() {
+  document.getElementById('export')?.addEventListener('click', exportLibrary);
+  document.getElementById('import')?.addEventListener('click', pickImportFile);
+  document.getElementById('file-input')?.addEventListener('change', onFileChosen);
+  document.getElementById('clear')?.addEventListener('click', (e) => clearLibraryFlow(e.currentTarget));
 }
 
 function renderCaps() {
@@ -127,16 +274,19 @@ function renderCaps() {
   });
 }
 
-function showEmpty(html) {
+// Renders a static, code-owned empty-state string. STATIC ONLY — never pass
+// user-influenced data here (it is assigned straight to innerHTML).
+function showEmpty(staticHtml) {
   document.getElementById('grid').classList.add('hidden');
   document.getElementById('caps').classList.add('hidden');
   const e = document.getElementById('empty');
   e.classList.remove('hidden');
-  e.innerHTML = html;
+  e.innerHTML = staticHtml;
 }
 
 async function init() {
   document.getElementById('settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
+  wireToolbar(); // before the empty-state return, so Import works on an empty library
 
   const [points, cachedList] = await Promise.all([
     scrollPoints(),
@@ -170,6 +320,7 @@ async function init() {
   }
   renderCaps();
   render();
+  renderStats();
   document.getElementById('search').addEventListener('input', (e) => { state.query = e.target.value; render(); });
   document.getElementById('sort').addEventListener('change', (e) => { state.sort = e.target.value; render(); });
 }
