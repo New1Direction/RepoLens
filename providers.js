@@ -128,6 +128,12 @@ export const COMPAT_PROVIDERS = [
     models: [],
   },
   {
+    id: 'azure', label: 'Azure OpenAI', protocol: 'azure', needsOrigin: true, needsVersion: true,
+    hint: 'Resource endpoint + API version; Model = your deployment name', keyHint: 'Azure key',
+    endpoint: '', host: 'https://*/*', docsUrl: 'https://portal.azure.com', defaultApiVersion: '2024-10-21',
+    models: [], // deployment names are per-resource — set yours in the Model field
+  },
+  {
     id: 'ollama_cloud', label: 'Ollama Cloud', protocol: 'openai',
     hint: 'ollama.com', keyHint: 'API key',
     endpoint: 'https://ollama.com/v1/chat/completions',
@@ -194,6 +200,7 @@ export const provModelName = (id) => `${id}Model`;    // chosen model id
 export const provBaseName = (id) => `${id}BaseUrl`;   // endpoint override (+ custom base)
 export const provEnabledName = (id) => `${id}Enabled`; // keyless providers (Ollama local)
 export const provProtoName = (id) => `${id}Proto`;    // custom: 'openai' | 'anthropic'
+export const provVerName = (id) => `${id}ApiVersion`; // azure api-version
 
 // Every storage key this registry can touch — for allowlisted reads / cleanup.
 export function compatStorageKeys() {
@@ -202,6 +209,7 @@ export function compatStorageKeys() {
     out.push(provKeyName(p.id), provModelName(p.id), provBaseName(p.id));
     if (p.keyless) out.push(provEnabledName(p.id));
     if (p.custom) out.push(provProtoName(p.id));
+    if (p.needsVersion) out.push(provVerName(p.id));
   }
   return out;
 }
@@ -212,6 +220,7 @@ export function isCompatConnected(id, keys = {}) {
   if (!p) return false;
   if (p.keyless) return !!keys[provEnabledName(id)];
   if (p.custom) return !!keys[provBaseName(id)]; // endpoint is the minimum; key is optional (local servers)
+  if (p.protocol === 'azure') return !!(keys[provBaseName(id)] && keys[provKeyName(id)]); // resource + key
   return !!keys[provKeyName(id)];
 }
 
@@ -253,6 +262,14 @@ export function normalizeAnthropicUrl(input) {
 export function compatEndpoint(id, keys = {}) {
   const p = compatProviderById(id);
   if (!p) return '';
+  if (p.protocol === 'azure') {
+    // Azure embeds the deployment (model) and api-version in the URL.
+    const base = (keys[provBaseName(id)] || '').trim().replace(/\/+$/, '');
+    const model = compatModelFor(id, keys);
+    if (!base || !model || !/^https?:\/\//i.test(base)) return '';
+    const ver = (keys[provVerName(id)] || p.defaultApiVersion || '2024-10-21').trim();
+    return `${base}/openai/deployments/${encodeURIComponent(model)}/chat/completions?api-version=${encodeURIComponent(ver)}`;
+  }
   const proto = compatProtocol(id, keys);
   const override = (keys[provBaseName(id)] || '').trim();
   if (override) return proto === 'anthropic' ? normalizeAnthropicUrl(override) : normalizeOpenAiUrl(override);

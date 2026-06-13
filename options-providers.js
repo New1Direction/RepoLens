@@ -10,6 +10,7 @@ import {
   provBaseName,
   provEnabledName,
   provProtoName,
+  provVerName,
   compatStorageKeys,
   isCompatConnected,
   compatModelFor,
@@ -84,8 +85,20 @@ function buildCard(p, snapshot) {
 
   // ── connect / key panel ──────────────────────────────────────────────────
   const panel = el('div', { class: 'token-panel', id: `cc-panel-${p.id}` });
-  let protoSel, baseInput, keyInput;
-  if (p.custom) {
+  let protoSel, baseInput, keyInput, verInput;
+  if (p.protocol === 'azure') {
+    baseInput = el('input', { type: 'text', placeholder: 'https://<resource>.openai.azure.com' });
+    baseInput.value = snapshot[provBaseName(p.id)] || '';
+    verInput = el('input', { type: 'text', placeholder: `api-version (e.g. ${p.defaultApiVersion})` });
+    verInput.value = snapshot[provVerName(p.id)] || p.defaultApiVersion || '';
+    keyInput = el('input', { type: 'password', placeholder: 'Azure API key' });
+    panel.append(
+      el('p', { class: 'token-instruction', text: 'Resource endpoint, API version, and key. Set your deployment name as the Model below.' }),
+      el('div', { class: 'cc-row' }, [baseInput]),
+      el('div', { class: 'cc-row' }, [verInput]),
+      el('div', { class: 'token-row' }, [keyInput, el('button', { text: 'Save', onclick: saveAzure })]),
+    );
+  } else if (p.custom) {
     protoSel = el('select', { class: 'model-select' }, [
       el('option', { value: 'openai', text: 'OpenAI-compatible' }),
       el('option', { value: 'anthropic', text: 'Anthropic-compatible' }),
@@ -140,8 +153,8 @@ function buildCard(p, snapshot) {
   modelRow.append(el('span', { class: 'model-label', text: 'Model' }), modelSel, modelCustom);
   card.appendChild(modelRow);
 
-  // ── advanced: endpoint override (built-ins only; custom sets base in its panel) ──
-  if (!p.custom) {
+  // ── advanced: endpoint override (built-ins only; custom + azure set base in their panel) ──
+  if (!p.custom && p.protocol !== 'azure') {
     const ovInput = el('input', { type: 'text', placeholder: p.endpoint || 'endpoint URL' });
     ovInput.value = snapshot[provBaseName(p.id)] || '';
     const ovSave = el('button', { class: 'cc-test-btn', text: 'Save endpoint', onclick: async () => {
@@ -180,7 +193,7 @@ function buildCard(p, snapshot) {
   btn.addEventListener('click', async () => {
     if (await isOn()) {
       if (p.keyless) await remove(provEnabledName(p.id));
-      else if (p.custom) await remove([provBaseName(p.id), provKeyName(p.id)]); // endpoint is what marks custom connected
+      else if (p.custom || p.protocol === 'azure') await remove([provBaseName(p.id), provKeyName(p.id)]); // endpoint marks these connected
       else await remove(provKeyName(p.id));
       setState(false);
       return;
@@ -202,6 +215,18 @@ function buildCard(p, snapshot) {
     if (!base) { baseInput.focus(); return; }
     await requestOrigin(base); // custom hosts aren't pre-declared — ask for the origin
     const patch = { [provBaseName(p.id)]: base, [provProtoName(p.id)]: protoSel.value };
+    const key = keyInput.value.trim();
+    if (key) patch[provKeyName(p.id)] = key;
+    await set(patch);
+    keyInput.value = '';
+    setState(isCompatConnected(p.id, await get(compatStorageKeys())));
+  }
+
+  async function saveAzure() {
+    const base = baseInput.value.trim();
+    if (!base) { baseInput.focus(); return; }
+    await requestOrigin(base); // the resource host isn't pre-declared
+    const patch = { [provBaseName(p.id)]: base, [provVerName(p.id)]: verInput.value.trim() || p.defaultApiVersion };
     const key = keyInput.value.trim();
     if (key) patch[provKeyName(p.id)] = key;
     await set(patch);

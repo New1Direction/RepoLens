@@ -738,15 +738,24 @@ function callCompat(provider, model, keys, prompt) {
   const protocol = compatProtocol(provider, keys);
   const m = model || compatModelFor(provider, keys);
   if (!m) throw new Error(`${providerLabel(provider)}: choose a model in Settings`);
-  return protocol === 'anthropic'
-    ? callAnthropicCompatible({ endpoint, key, model: m, prompt, label: providerLabel(provider) })
-    : callOpenAICompatible({ endpoint, key, model: m, prompt, label: providerLabel(provider) });
+  if (protocol === 'anthropic') {
+    return callAnthropicCompatible({ endpoint, key, model: m, prompt, label: providerLabel(provider) });
+  }
+  // OpenAI-compatible (and Azure, which differs only in the auth header).
+  return callOpenAICompatible({
+    endpoint, key, model: m, prompt, label: providerLabel(provider),
+    headerStyle: protocol === 'azure' ? 'azure' : 'bearer',
+  });
 }
 
 // OpenAI-compatible chat completion. `key` may be empty for keyless local servers (Ollama).
-async function callOpenAICompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096 }) {
+// headerStyle 'azure' sends `api-key: <key>` (Azure OpenAI); otherwise `Authorization: Bearer`.
+async function callOpenAICompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096, headerStyle = 'bearer' }) {
   const headers = { 'Content-Type': 'application/json' };
-  if (key) headers['Authorization'] = `Bearer ${key}`;
+  if (key) {
+    if (headerStyle === 'azure') headers['api-key'] = key;
+    else headers['Authorization'] = `Bearer ${key}`;
+  }
   const res = await fetch(endpoint, {
     method: 'POST',
     headers,

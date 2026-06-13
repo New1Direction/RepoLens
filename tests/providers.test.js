@@ -22,12 +22,13 @@ import {
 } from '../providers.js';
 
 describe('registry integrity', () => {
-  it('every provider has id/label/protocol and a non-empty endpoint (except custom)', () => {
+  it('every provider has id/label/protocol and a non-empty endpoint (except custom/azure)', () => {
     for (const p of COMPAT_PROVIDERS) {
       expect(p.id).toBeTruthy();
       expect(p.label).toBeTruthy();
-      expect(['openai', 'anthropic']).toContain(p.protocol);
-      if (!p.custom) expect(p.endpoint).toMatch(/^https?:\/\//);
+      expect(['openai', 'anthropic', 'azure']).toContain(p.protocol);
+      // custom + azure build their endpoint dynamically from user-entered settings
+      if (!p.custom && p.protocol !== 'azure') expect(p.endpoint).toMatch(/^https?:\/\//);
     }
   });
   it('ids are unique', () => {
@@ -151,6 +152,21 @@ describe('compatEndpoint', () => {
       .toBe('https://my.test/v1/messages');
     expect(compatEndpoint('custom', { customBaseUrl: 'https://my.test/v1' }))
       .toBe('https://my.test/v1/chat/completions');
+  });
+  it('azure embeds the deployment + api-version and needs a resource endpoint + model', () => {
+    expect(compatEndpoint('azure', { azureBaseUrl: 'https://r.openai.azure.com/', azureModel: 'gpt4o', azureApiVersion: '2024-10-21' }))
+      .toBe('https://r.openai.azure.com/openai/deployments/gpt4o/chat/completions?api-version=2024-10-21');
+    expect(compatEndpoint('azure', { azureBaseUrl: 'https://r.openai.azure.com', azureModel: 'd1' }))
+      .toMatch(/\/openai\/deployments\/d1\/chat\/completions\?api-version=/); // default version
+    expect(compatEndpoint('azure', { azureBaseUrl: 'https://r.openai.azure.com' })).toBe(''); // no deployment yet
+  });
+});
+
+describe('azure connectivity', () => {
+  it('needs both a resource endpoint and a key', () => {
+    expect(isCompatConnected('azure', { azureBaseUrl: 'https://r.openai.azure.com' })).toBe(false);
+    expect(isCompatConnected('azure', { azureKey: 'k' })).toBe(false);
+    expect(isCompatConnected('azure', { azureBaseUrl: 'https://r.openai.azure.com', azureKey: 'k' })).toBe(true);
   });
 });
 

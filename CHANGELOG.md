@@ -12,8 +12,9 @@ All notable changes to RepoLens are documented here. This project follows
   **OpenAI-compatible** or **Anthropic-compatible** endpoint through one
   data-driven registry: **OpenAI, DeepSeek, Groq, NVIDIA NIM, Kimi (Moonshot
   .ai / .cn / Coding), Zhipu GLM, Aliyun Qwen, Xiaomi MiMo, Volcengine Ark,
-  Ollama Cloud, MiniMax (Global / 中国)**, local **Ollama** (no key needed), and a
-  universal **Custom** endpoint (OpenAI- or Anthropic-compatible, your URL).
+  Ollama Cloud, MiniMax (Global / 中国)**, local **Ollama** (no key needed),
+  **Azure OpenAI** (resource endpoint + deployment), and a universal **Custom**
+  endpoint (OpenAI- or Anthropic-compatible, your URL).
 - **Independent per-vendor keys** — each provider stores its own key, so
   switching never loses another's. Keys live only in this browser and are never
   exported with your settings.
