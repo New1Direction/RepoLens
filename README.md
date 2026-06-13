@@ -9,8 +9,8 @@
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-1a73e8?logo=googlechrome&logoColor=white)
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-400%2B_passing-4ade80)
-![Version](https://img.shields.io/badge/version-1.4.0-7c5cff)
+![Tests](https://img.shields.io/badge/tests-420%2B_passing-4ade80)
+![Version](https://img.shields.io/badge/version-1.5.0-7c5cff)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -42,6 +42,11 @@ Plus **SKTPG** (a one-tap State / Known-pitfalls / Trajectory / Proof / Growth r
 ## 🆕 What's new
 
 Newest first — the highlights. Full, detailed notes live in the **[changelog](CHANGELOG.md)**.
+
+### v1.5.0 — Sign in with ChatGPT
+
+- 🔓 **Connect OpenAI without a key** — *Sign in with ChatGPT* uses the **same login the Codex CLI does**: approve it on OpenAI's page and RepoLens handles the rest. Joins Claude (Claude Code login) and Grok (Grok CLI login) — the three big CLI sign-ins are now all here.
+- ℹ️ **Needs API access on your ChatGPT plan** to mint the key. If it's not included, RepoLens says so and you can paste an API key instead. Your ChatGPT login stays on OpenAI's site — only tokens come back, and they never leave this browser.
 
 ### v1.4.0 — Bring any model
 
@@ -93,7 +98,9 @@ Bring your own provider. Five are **first-class** (OAuth where available — Ant
 
 On top of those, RepoLens works with **almost any other AI service** through one registry — **OpenAI, DeepSeek, Groq, NVIDIA NIM, Kimi (Moonshot), Zhipu GLM, Qwen (Aliyun), Xiaomi MiMo, Volcengine Ark, Ollama Cloud, MiniMax, Azure OpenAI**, local **Ollama** (no key needed), and a universal **Custom** endpoint. Each keeps its **own key** (switching never loses data), has a model picker, an optional **endpoint override**, and built-in **connection / function self-tests**. Connect just one and it works — it joins the fallback chain automatically.
 
-> Local-only? Point at **Ollama** on `localhost` — no key, no cloud. (Local *CLI* tools like a `claude`/`codex` binary aren't offered: a browser extension is sandboxed and can't launch a program — but it can talk to a local HTTP model server, which is what Ollama is.)
+> **Sign in with ChatGPT.** The OpenAI card also offers a one-click **ChatGPT login** — the same OAuth the **Codex CLI** uses — so you can connect without pasting a key (it needs API access on your ChatGPT plan; otherwise paste a key).
+
+> Local-only? Point at **Ollama** on `localhost` — no key, no cloud. (Spawning a local *CLI* binary like `claude`/`codex` still isn't possible — a browser extension is sandboxed and can't launch a program — but it can do those CLIs' **OAuth logins**, and talk to a local HTTP model server like Ollama.)
 
 Each provider has a model dropdown (★ marks the recommended pick), and you can **route each part of a scan to a different model**:
 

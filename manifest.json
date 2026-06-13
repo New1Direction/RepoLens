@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RepoLens",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "One-click repo explainer. Powered by Claude.",
   "permissions": ["storage", "activeTab", "tabs", "identity", "webNavigation"],
   "host_permissions": [
@@ -24,6 +24,7 @@
     "https://grok.com/*",
     "https://cli-chat-proxy.grok.com/*",
     "https://api.openai.com/*",
+    "https://auth.openai.com/*",
     "https://api.deepseek.com/*",
     "https://api.groq.com/*",
     "https://integrate.api.nvidia.com/*",

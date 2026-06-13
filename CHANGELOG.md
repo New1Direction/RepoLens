@@ -4,8 +4,32 @@ Every release of RepoLens, newest first. Want the friendly highlights instead of
 the full detail? See **[What's new](README.md)** in the README.
 
 This project follows [Semantic Versioning](https://semver.org/) and groups changes
-by theme. Dates are when the release landed on `main` — 1.1.0 through 1.4.0 shipped
+by theme. Dates are when the release landed on `main` — 1.1.0 through 1.5.0 shipped
 the same day, as a rapid burst of improvements, so they share a date.
+
+## [1.5.0] — 2026-06-13 · _Sign in with ChatGPT_
+
+### Added
+
+- **Sign in with ChatGPT for OpenAI.** Connect OpenAI without pasting a key —
+  RepoLens performs the **same OAuth login the Codex CLI uses**. Click *Sign in
+  with ChatGPT*, approve it on OpenAI's page, and RepoLens captures the redirect
+  and turns it into a working OpenAI key for you, behind the scenes. This rounds
+  out the one-click sign-ins: **Claude** already uses the Claude Code login and
+  **Grok** the Grok CLI login, so the three big coding-CLI logins are now all here.
+- The OpenAI card shows **Connected (ChatGPT)** when you're signed in this way,
+  and **Test function** exercises the real sign-in → key → model path.
+
+### Notes
+
+- **Needs API access on your ChatGPT account.** Turning the sign-in into a usable
+  key is OpenAI's own token exchange, which requires your plan to include API
+  access. If it doesn't, RepoLens tells you plainly and you can paste an OpenAI
+  API key — or use any other provider — instead.
+- Still **no spawning of a local `claude` / `codex` binary** — a browser extension
+  can't launch a process. What's new is the *OAuth* those CLIs use, not the CLI.
+  Your ChatGPT credentials never touch RepoLens; the login happens on OpenAI's site
+  and only tokens come back, stored in this browser and never exported.
 
 ## [1.4.0] — 2026-06-13 · _Bring any model_
 

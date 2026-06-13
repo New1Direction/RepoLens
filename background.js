@@ -38,6 +38,17 @@ import {
 } from './oauth-anthropic.js';
 import { refreshXaiToken, XAI_CHAT_PROXY } from './oauth-xai.js';
 import {
+  OPENAI_OAUTH_ERROR_KEY,
+  OPENAI_OAUTH_STATE_KEY,
+  OPENAI_OAUTH_VERIFIER_KEY,
+  OPENAI_CREDENTIALS_KEY,
+  clearOpenAICredentials,
+  exchangeOpenAICode,
+  isOpenAIOAuthCallbackUrl,
+  mintOpenAIApiKey,
+  refreshOpenAIToken,
+} from './oauth-openai.js';
+import {
   fetchSource,
   buildAtomsPrompt, parseAtoms,
   buildLineagePrompt, parseLineage,
@@ -187,7 +198,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // Provider self-test from Settings — connection + function check for a registry provider.
   if (msg.type === 'TEST_PROVIDER' && msg.provider) {
     (async () => {
-      const keys = await chrome.storage.local.get(compatStorageKeys()); // only registry-provider settings
+      const keys = await chrome.storage.local.get([...compatStorageKeys(), OPENAI_CREDENTIALS_KEY]); // registry settings + ChatGPT-login record
       try {
         sendResponse(await testProvider(msg.provider, keys));
       } catch (e) {
@@ -281,14 +292,96 @@ async function handleAnthropicOAuthCallback(rawUrl, tabId) {
   }
 }
 
+// ─── OpenAI OAuth callback handling ("Sign in with ChatGPT", Codex CLI flow) ───
+//
+// The redirect lands on http://localhost:1455/auth/callback — the loopback server
+// the CLI runs doesn't exist in a browser, so the navigation can't complete. We
+// intercept it (onBeforeNavigate fires first, with the ?code=), exchange the code,
+// then mint an API key so inference uses the standard OpenAI engine.
+
+async function handleOpenAIOAuthCallback(rawUrl, tabId) {
+  if (!rawUrl || !isOpenAIOAuthCallbackUrl(rawUrl)) return;
+
+  console.log('[RepoLens OAuth] OpenAI callback detected:', rawUrl.split('?')[0]); // strip ?code=…
+
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return;
+  }
+
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  const error = url.searchParams.get('error');
+  const errorDesc = url.searchParams.get('error_description');
+
+  const cleanupFlowMarkers = async () => {
+    await chrome.storage.local.remove([
+      OPENAI_OAUTH_VERIFIER_KEY,
+      OPENAI_OAUTH_STATE_KEY,
+    ]).catch(() => {});
+  };
+
+  if (error) {
+    const msg = errorDesc || error;
+    console.warn('[RepoLens OAuth] OpenAI provider returned error:', msg);
+    await chrome.storage.local.set({ [OPENAI_OAUTH_ERROR_KEY]: `ChatGPT sign-in error: ${msg}` });
+    await cleanupFlowMarkers();
+    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
+    return;
+  }
+
+  if (!code) return; // an early loopback hit without the auth code — ignore
+
+  if (_handledOAuthCodes.has(code)) return; // the other listener got here first
+  _handledOAuthCodes.add(code);
+
+  const stored = await chrome.storage.local.get([OPENAI_OAUTH_VERIFIER_KEY, OPENAI_OAUTH_STATE_KEY]);
+  const verifier = stored[OPENAI_OAUTH_VERIFIER_KEY];
+  const storedState = stored[OPENAI_OAUTH_STATE_KEY];
+
+  if (!verifier) {
+    console.warn('[RepoLens OAuth] No stored OpenAI verifier — flow interrupted or for another extension');
+    await cleanupFlowMarkers(); // clear any stale state marker from an interrupted flow
+    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
+    return;
+  }
+
+  try {
+    const creds = await exchangeOpenAICode({ code, state, verifier, storedState });
+    // Mint a usable API key so scans run through the ordinary OpenAI engine.
+    const apiKey = await mintOpenAIApiKey(creds.id_token);
+    await chrome.storage.local.set({ openaiKey: apiKey });
+    console.log('[RepoLens OAuth] OpenAI success — signed in via ChatGPT');
+    await cleanupFlowMarkers();
+    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
+  } catch (err) {
+    console.error('[RepoLens OAuth] OpenAI exchange error:', err.message);
+    // No usable key ⇒ don't leave half-finished OAuth state that reads as "connected".
+    await clearOpenAICredentials().catch(() => {});
+    await chrome.storage.local.set({ [OPENAI_OAUTH_ERROR_KEY]: err.message });
+    await cleanupFlowMarkers();
+    if (tabId) chrome.tabs.remove(tabId).catch(() => {});
+  }
+}
+
 chrome.webNavigation.onCompleted.addListener((details) => {
   if (details.frameId !== 0) return;
   handleAnthropicOAuthCallback(details.url, details.tabId);
 });
 
+// The OpenAI loopback redirect can't load (no local server), so onCompleted never
+// fires for it — onBeforeNavigate runs first and still carries the ?code=.
+chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+  if (details.frameId !== 0) return;
+  handleOpenAIOAuthCallback(details.url, details.tabId);
+});
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.url) {
     handleAnthropicOAuthCallback(changeInfo.url, tabId);
+    handleOpenAIOAuthCallback(changeInfo.url, tabId);
   }
 });
 
@@ -339,6 +432,7 @@ const PROVIDER_KEYS = [
   'openrouterKey', 'openrouterModel', 'xaiKey', 'xaiRefresh', 'xaiModel',
   'nousKey', 'nousModel',
   ...compatStorageKeys(), // registry providers' key / model / endpoint / enabled / proto slots
+  OPENAI_CREDENTIALS_KEY, // ChatGPT-login OAuth record (drives re-mint on 401)
   'partRouting', // per-part model routing map (loaded alongside provider keys)
 ];
 
@@ -725,6 +819,11 @@ function dispatch(provider, model, keys, prompt) {
     case 'xai': return callXAI(model, prompt);
     case 'anthropic': return callAnthropic(model, prompt);
     default:
+      // OpenAI connected via "Sign in with ChatGPT": mint/refresh the API key from the
+      // OAuth session on demand instead of using a statically-stored key.
+      if (provider === 'openai' && keys[OPENAI_CREDENTIALS_KEY]?.refresh_token) {
+        return callOpenAIOAuth(model, prompt);
+      }
       if (compatProviderById(provider)) return callCompat(provider, model, keys, prompt);
       throw new Error(`Unknown provider: ${provider}`);
   }
@@ -768,6 +867,46 @@ async function callOpenAICompatible({ endpoint, key, model, prompt, label = 'Pro
   return parseOpenAiText(await res.json());
 }
 
+// OpenAI via "Sign in with ChatGPT" (the Codex CLI OAuth flow). The OAuth session is
+// exchanged for a normal OpenAI API key; on a 401 we refresh the session, re-mint, and
+// retry once. Inference itself is the standard api.openai.com chat-completions engine.
+async function callOpenAIOAuth(model = 'gpt-4.1', prompt) {
+  let { openaiKey } = await chrome.storage.local.get('openaiKey');
+  if (!openaiKey) openaiKey = await mintAndStoreOpenAIKey();
+
+  let res = await openaiChat(openaiKey, model, prompt);
+  if (res.status === 401) {
+    openaiKey = await mintAndStoreOpenAIKey(); // the minted key may have been revoked — re-mint once
+    res = await openaiChat(openaiKey, model, prompt);
+  }
+  if (!res.ok) {
+    if (res.status === 401) {
+      await clearOpenAICredentials();
+      throw new Error('OpenAI session expired — please reconnect in Settings');
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message ?? `OpenAI API error ${res.status}`);
+  }
+  return parseOpenAiText(await res.json());
+}
+
+// Refresh the ChatGPT OAuth session and mint a fresh OpenAI API key into the shared slot.
+async function mintAndStoreOpenAIKey() {
+  const creds = await refreshOpenAIToken({ force: true }); // guarantee a fresh id_token to exchange
+  const key = await mintOpenAIApiKey(creds?.id_token);
+  await chrome.storage.local.set({ openaiKey: key });
+  return key;
+}
+
+// Bare OpenAI chat request returning the raw Response, so callers can branch on 401.
+function openaiChat(key, model, prompt) {
+  return fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(openaiBody(model, prompt, 4096)),
+  });
+}
+
 // Anthropic-compatible Messages API (x-api-key + anthropic-version).
 async function callAnthropicCompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096 }) {
   const res = await fetch(endpoint, {
@@ -792,13 +931,17 @@ async function callAnthropicCompatible({ endpoint, key, model, prompt, label = '
 async function testProvider(provider, keys) {
   const p = compatProviderById(provider);
   if (!p) return { ok: false, connection: false, function: false, detail: 'Unknown provider' };
-  if (!isCompatConnected(provider, keys)) {
+  // OpenAI connected via "Sign in with ChatGPT" exercises the OAuth → mint → call path.
+  const isOpenAiOAuth = provider === 'openai' && !!keys[OPENAI_CREDENTIALS_KEY]?.refresh_token;
+  if (!isCompatConnected(provider, keys) && !isOpenAiOAuth) {
     return { ok: false, connection: false, function: false, detail: 'Not configured — add a key / endpoint first.' };
   }
   const out = { ok: false, connection: false, function: false, detail: '' };
   try {
-    const reply = await callCompat(provider, compatModelFor(provider, keys), keys,
-      'Reply with exactly the word READY and nothing else.');
+    const probe = 'Reply with exactly the word READY and nothing else.';
+    const reply = isOpenAiOAuth
+      ? await callOpenAIOAuth(compatModelFor(provider, keys), probe)
+      : await callCompat(provider, compatModelFor(provider, keys), keys, probe);
     out.connection = true;
     out.function = /ready/i.test(reply || '');
     out.ok = out.function;

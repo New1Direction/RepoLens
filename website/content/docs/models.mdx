@@ -30,6 +30,7 @@ Whichever is highest in that order *and* connected is your primary; the rest are
 Under **Options → More model providers**, RepoLens speaks **any OpenAI- or Anthropic-compatible endpoint** — so you're not limited to the five above:
 
 - **OpenAI** · **DeepSeek** · **Groq** · **NVIDIA NIM** · **Kimi (Moonshot)** · **Zhipu GLM** · **Qwen (Aliyun)** · **Xiaomi MiMo** · **Volcengine Ark** · **Ollama Cloud** · **MiniMax**
+- **OpenAI — Sign in with ChatGPT** — the OpenAI card has a one-click **ChatGPT login** (the same OAuth the **Codex CLI** uses), so you can connect without pasting a key. It mints a working key from your account behind the scenes — which needs **API access on your ChatGPT plan**; if that isn't included, RepoLens says so and you can paste an API key instead.
 - **Azure OpenAI** — point at your resource endpoint and deployment.
 - **Ollama (Local)** — runs on `localhost`, **no key needed**. The simplest way to scan fully offline.
 - **Custom** — any other OpenAI- or Anthropic-compatible server. Paste the URL, pick the protocol, done.
@@ -42,7 +43,7 @@ Every provider keeps its **own key**, so switching between them never loses your
 
 **Connect just one and you're done.** Any provider you connect — first-class or compatible — joins the fallback chain automatically, so a single key (or a local Ollama) is enough to start scanning.
 
-> **Why no "Claude Code CLI / Codex CLI" option?** Those run a program on your computer. A browser extension is sandboxed and can't launch a local process — so RepoLens can't shell out to a CLI. **Local Ollama** covers the same "no cloud, no key" need over plain HTTP instead.
+> **What about the Claude Code / Codex / Grok CLIs?** RepoLens can't *run* those binaries — a browser extension is sandboxed and can't launch a local process. But it **does perform the same OAuth logins they use**: Anthropic's sign-in is the Claude Code login, *Sign in with ChatGPT* on the OpenAI card is the Codex login, and xAI's is the Grok CLI login. So you get the CLIs' sign-in convenience without the binary. For a truly local, keyless model, point at **Ollama** over plain HTTP.
 
 ## Models per scan part
 

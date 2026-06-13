@@ -15,6 +15,15 @@ import {
   isCompatConnected,
   compatModelFor,
 } from './providers.js';
+import { createPkcePair } from './oauth-pkce.js';
+import {
+  OPENAI_CREDENTIALS_KEY,
+  OPENAI_OAUTH_ERROR_KEY,
+  OPENAI_OAUTH_STATE_KEY,
+  OPENAI_OAUTH_VERIFIER_KEY,
+  buildOpenAIAuthorizeUrl,
+  waitForOpenAIOAuthResult,
+} from './oauth-openai.js';
 
 const CUSTOM = '__custom__';
 
@@ -57,7 +66,7 @@ export function compatPartGroups() {
 
 export async function renderCompatProviders(host) {
   if (!host) return;
-  const snapshot = await get(compatStorageKeys());
+  const snapshot = await get([...compatStorageKeys(), OPENAI_CREDENTIALS_KEY]); // creds → "Connected (ChatGPT)" badge
   host.innerHTML = '';
   for (const p of COMPAT_PROVIDERS) host.appendChild(buildCard(p, snapshot));
 }
@@ -122,6 +131,18 @@ function buildCard(p, snapshot) {
       docs,
     );
   }
+  // ── OpenAI only: "Sign in with ChatGPT" (Codex CLI OAuth), above the key field ──
+  let openAiOAuthBtn = null;
+  if (p.id === 'openai') {
+    openAiOAuthBtn = el('button', { class: 'svc-btn', id: 'cc-openai-oauth', text: 'Sign in with ChatGPT' });
+    const note = el('p', {
+      class: 'token-instruction',
+      text: 'Use your ChatGPT account — the same login the Codex CLI uses. Needs API access on your plan; if it’s not included, paste an API key below instead.',
+    });
+    panel.prepend(el('div', { class: 'cc-row' }, [openAiOAuthBtn]), note);
+    openAiOAuthBtn.addEventListener('click', connectOpenAiOAuth);
+  }
+
   if (panel.childNodes.length) card.appendChild(panel);
 
   // ── model row ────────────────────────────────────────────────────────────
@@ -175,10 +196,13 @@ function buildCard(p, snapshot) {
   card.appendChild(el('div', { class: 'cc-tests' }, [testConn, testFn, result]));
 
   // ── behaviour ──────────────────────────────────────────────────────────────
-  function setState(connected) {
+  function setState(connected, via) {
     dot.classList.toggle('on', connected);
     status.classList.toggle('on', connected);
-    status.textContent = connected ? (p.keyless ? 'Enabled (local)' : 'Connected (API key)') : 'Not connected';
+    status.textContent = !connected ? 'Not connected'
+      : via === 'chatgpt' ? 'Connected (ChatGPT)'
+      : p.keyless ? 'Enabled (local)'
+      : 'Connected (API key)';
     card.classList.toggle('connected', connected);
     btn.textContent = connected ? (p.keyless ? 'Disable' : 'Disconnect') : (p.keyless ? 'Enable' : 'Connect');
     btn.classList.toggle('disconnect', connected);
@@ -186,7 +210,38 @@ function buildCard(p, snapshot) {
     if (connected) panel.classList.remove('open');
   }
 
+  // "Sign in with ChatGPT" — PKCE authorize in a new tab; background.js intercepts the
+  // loopback redirect, exchanges the code, and mints an OpenAI API key into openaiKey.
+  async function connectOpenAiOAuth() {
+    const restore = () => { openAiOAuthBtn.disabled = false; openAiOAuthBtn.textContent = 'Sign in with ChatGPT'; };
+    try {
+      openAiOAuthBtn.disabled = true;
+      openAiOAuthBtn.textContent = 'Signing in…';
+      const { verifier, challenge, state } = await createPkcePair();
+      await set({ [OPENAI_OAUTH_VERIFIER_KEY]: verifier, [OPENAI_OAUTH_STATE_KEY]: state });
+      await remove([OPENAI_OAUTH_ERROR_KEY]);
+      chrome.tabs.create({ url: buildOpenAIAuthorizeUrl({ challenge, state }) });
+      const oauthRes = await waitForOpenAIOAuthResult();
+      await remove([OPENAI_OAUTH_VERIFIER_KEY, OPENAI_OAUTH_STATE_KEY, OPENAI_OAUTH_ERROR_KEY]);
+      restore();
+      if (oauthRes.error) throw new Error(oauthRes.error);
+      result.className = 'cc-test-result ok';
+      result.textContent = '✓ Signed in with ChatGPT';
+      setState(true, 'chatgpt');
+    } catch (e) {
+      restore();
+      result.className = 'cc-test-result err';
+      result.textContent = `✗ ${e?.message || e}`;
+    }
+  }
+
   async function isOn() {
+    // OpenAI can be connected via ChatGPT OAuth alone (creds set) before any call has
+    // minted the shared key slot — treat that as connected so Disconnect always works.
+    if (p.id === 'openai') {
+      const s = await get([...compatStorageKeys(), OPENAI_CREDENTIALS_KEY]);
+      return isCompatConnected(p.id, s) || !!s[OPENAI_CREDENTIALS_KEY]?.refresh_token;
+    }
     return isCompatConnected(p.id, await get(compatStorageKeys()));
   }
 
@@ -194,6 +249,7 @@ function buildCard(p, snapshot) {
     if (await isOn()) {
       if (p.keyless) await remove(provEnabledName(p.id));
       else if (p.custom || p.protocol === 'azure') await remove([provBaseName(p.id), provKeyName(p.id)]); // endpoint marks these connected
+      else if (p.id === 'openai') await remove([provKeyName(p.id), OPENAI_CREDENTIALS_KEY]); // minted key + ChatGPT session, together
       else await remove(provKeyName(p.id));
       setState(false);
       return;
@@ -206,6 +262,7 @@ function buildCard(p, snapshot) {
     const key = keyInput.value.trim();
     if (!key) return;
     await set({ [provKeyName(p.id)]: key });
+    if (p.id === 'openai') await remove([OPENAI_CREDENTIALS_KEY]); // a pasted key ⇒ leave ChatGPT mode
     keyInput.value = '';
     setState(true);
   }
@@ -252,6 +309,7 @@ function buildCard(p, snapshot) {
     }
   }
 
-  setState(isCompatConnected(p.id, snapshot));
+  const initVia = (p.id === 'openai' && snapshot[OPENAI_CREDENTIALS_KEY]?.refresh_token) ? 'chatgpt' : undefined;
+  setState(isCompatConnected(p.id, snapshot), initVia);
   return card;
 }
