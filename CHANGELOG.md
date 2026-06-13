@@ -3,6 +3,49 @@
 All notable changes to RepoLens are documented here. This project follows
 [Semantic Versioning](https://semver.org/) and groups changes by theme.
 
+## [1.4.0] — 2026-06-13 · _Bring any model_
+
+### Added
+
+- **A dozen-plus new model providers**, on top of the five first-class ones
+  (Anthropic, Gemini, OpenRouter, Grok, Nous). RepoLens now speaks any
+  **OpenAI-compatible** or **Anthropic-compatible** endpoint through one
+  data-driven registry: **OpenAI, DeepSeek, Groq, NVIDIA NIM, Kimi (Moonshot
+  .ai / .cn / Coding), Zhipu GLM, Aliyun Qwen, Xiaomi MiMo, Volcengine Ark,
+  Ollama Cloud, MiniMax (Global / 中国)**, local **Ollama** (no key needed),
+  **Azure OpenAI** (resource endpoint + deployment), and a universal **Custom**
+  endpoint (OpenAI- or Anthropic-compatible, your URL).
+- **Independent per-vendor keys** — each provider stores its own key, so
+  switching never loses another's. Keys live only in this browser and are never
+  exported with your settings.
+- **Per-vendor model pickers** (with a recommended ★) plus a free-form Custom
+  model, and an **Advanced endpoint override** for proxies/regional gateways.
+- **Provider self-tests** — *Test connection* checks the endpoint answers;
+  *Test function* asks the model to follow a tiny instruction.
+- Compatible providers also appear in the **per-scan-part router**, and any one
+  you connect becomes a valid fallback in the smart chain — so connecting *only*
+  (say) DeepSeek or a local Ollama just works.
+
+### Notes
+
+- Custom/overridden endpoints request their host permission at save time (MV3),
+  and only http(s) URLs are accepted.
+- Local *CLI* providers (a `claude` / `codex` binary) aren't offered: a browser
+  extension is sandboxed and cannot launch a local process. Local **Ollama**
+  (an HTTP server) is supported instead.
+
+## [1.3.0] — 2026-06-13 · _Bulk triage_
+
+### Added
+
+- **Bulk multi-select delete in the Library.** A new **Select** toggle in the
+  toolbar reveals a checkbox on every card and a selection action bar — pick any
+  number of repos (or **Select all** the current filter) and remove them in one
+  confirmed action. Each removal clears both the saved library row and its local
+  scan cache, exactly like the single-card remove. The default triage view stays
+  uncluttered; **Esc** or **Done** leaves selection mode, and changing the
+  selection cancels a pending delete confirm.
+
 ## [1.2.0] — 2026-06-13 · _Themes that actually theme_
 
 ### Added
@@ -96,5 +139,7 @@ motion-accessible. Plus a sharper search and a few quality-of-life touches.
 - Optional Rust deeper-scan runner for measured facts.
 - One-time import from a legacy VelesDB server.
 
+[1.4.0]: https://github.com/New1Direction/repolens/releases/tag/v1.4.0
+[1.3.0]: https://github.com/New1Direction/repolens/releases/tag/v1.3.0
 [1.2.0]: https://github.com/New1Direction/repolens/releases/tag/v1.2.0
 [1.1.0]: https://github.com/New1Direction/repolens/releases/tag/v1.1.0

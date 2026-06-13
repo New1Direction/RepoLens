@@ -1,6 +1,6 @@
 {
   "name": "repolens",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "test": "vitest run",

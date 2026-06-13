@@ -9,8 +9,8 @@
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-1a73e8?logo=googlechrome&logoColor=white)
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-360%2B_passing-4ade80)
-![Version](https://img.shields.io/badge/version-1.2.0-7c5cff)
+![Tests](https://img.shields.io/badge/tests-400%2B_passing-4ade80)
+![Version](https://img.shields.io/badge/version-1.4.0-7c5cff)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -31,7 +31,7 @@ A scan opens to a **verdict landing** and fans out into focused tabs:
 |---|---|---|
 | ⚖️ | **Verdict** | Fit call (strong / solid / care / risky), a one-line bottom line, measured facts, and the top things worth noting — first thing you see. |
 | 🧠 | **Deep Dive** | Atoms → lineage → a Feynman-style plain-English explanation. Optionally grounded by **measured facts** from the local runner. |
-| 📚 | **Library** | Every repo you've analyzed, as a sortable / filterable triage grid with fit chips, a stats bar, and one-click **Export / Import / Backup**. |
+| 📚 | **Library** | Every repo you've analyzed, as a sortable / filterable triage grid with fit chips, a stats bar, **bulk multi-select delete**, and one-click **Export / Import / Backup**. |
 | 🕸️ | **Connections** | A walkable semantic ego-graph of how your repos relate. |
 | 🤝 | **Synergies** · **Versus** · **Combinator** | Complements, head-to-heads, and fused project ideas — grounded in *your* library. |
 
@@ -40,6 +40,10 @@ Plus SKTPG, framework lenses, and capability re-tagging.
 ---
 
 ## What's new
+
+**1.4.0 · Bring any model** — a dozen-plus new providers via one OpenAI-/Anthropic-compatible registry: **OpenAI, DeepSeek, Groq, NVIDIA, Kimi, Zhipu, Qwen, MiniMax, Ollama** (local, no key) and a universal **Custom** endpoint — each with its own key, model picker, endpoint override, and *connection / function* self-tests. Connect just one and it works.
+
+**1.3.0 · Bulk triage** — the Library gets a **Select** mode: check any number of repos (or *Select all*) and remove them in one confirmed action. Esc/Done to leave, and changing the selection cancels a pending delete.
 
 **1.2.0 · Themes that actually theme** — **5 new themes** (Nord, Gruvbox, Rosé Pine, Catppuccin Latte, Solarized Light — 13 in all), and a full fix so **light themes are properly themed**: the verdict landing, Library page and status colours no longer leak dark bubbles onto light palettes. Status colours now derive per-theme via `color-mix`, so every theme stays legible. See [CHANGELOG.md](CHANGELOG.md).
 
@@ -75,15 +79,19 @@ No accounts. No backend. Your keys, your machine.
 
 ## Models — your keys, your call
 
-Bring your own provider. RepoLens fans out across a **smart fallback chain** — tries one, drops to the next on any error:
+Bring your own provider. Five are **first-class** (OAuth or API key) and fan out across a **smart fallback chain** — tries one, drops to the next on any error:
 
 **Nous → Gemini → OpenRouter → Grok → Anthropic**
 
-Each provider has a model dropdown (★ marks the recommended pick), and — new — you can **route each part of a scan to a different model**:
+On top of those, RepoLens speaks **any OpenAI- or Anthropic-compatible endpoint** through one registry — **OpenAI, DeepSeek, Groq, NVIDIA NIM, Kimi (Moonshot), Zhipu GLM, Qwen, Xiaomi MiMo, Volcengine, Ollama Cloud, MiniMax**, local **Ollama** (no key needed), and a universal **Custom** endpoint. Each keeps its **own key** (switching never loses data), has a model picker, an optional **endpoint override**, and built-in **connection / function self-tests**. Connect just one and it works — it joins the fallback chain automatically.
+
+> Local-only? Point at **Ollama** on `localhost` — no key, no cloud. (A browser extension can't launch a `claude`/`codex` CLI binary, but it can talk to a local HTTP model server.)
+
+Each provider has a model dropdown (★ marks the recommended pick), and you can **route each part of a scan to a different model**:
 
 > Core scan → *Claude Opus 4.8* for the deep judgment. Re-tag → a cheap, fast model. Deep Dive → whatever you like.
 
-Any per-part pick still falls back to the full chain if that provider errors or isn't connected, so nothing can dead-end. Set it all in **Options → Models per scan part**.
+Any per-part pick still falls back to the full chain if that provider errors or isn't connected, so nothing can dead-end. Set it all in **Options → More model providers** and **Models per scan part**.
 
 ---
 
@@ -141,6 +149,7 @@ The extension auto-detects it and the Deep Dive pill turns green. Without it, De
 | `library.{js,html}` · `library-data.js` | The Library home + its pure row/sort/filter helpers |
 | `store.js` · `store/` | In-browser persistence (IndexedDB doc store, client-side search ranker, ego-graph builder) |
 | `routing.js` · `models.js` | Per-part model routing + the provider × model catalog |
+| `providers.js` · `options-providers.js` | OpenAI/Anthropic-compatible provider registry + the data-driven Settings cards (keys, models, endpoint override, self-tests) |
 | `migrate/velesdb-import.js` | One-time import from a legacy VelesDB server |
 | `runner.js` | Client for the optional Rust deeper-scan runner |
 | `backup.js` · `store.js` · `cache.js` | Library Export / Import / Backup — versioned envelope, validated + bounded on restore |

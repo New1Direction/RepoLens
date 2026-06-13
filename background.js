@@ -4,6 +4,20 @@ import { buildPrompt } from './prompt.js';
 import { parseClaudeResponse } from './parser.js';
 import { saveAnalysis, searchLibrary, upsertNode, addEdge, scrollLibrary, scrollPoints, saveRepo } from './store.js';
 import { buildAttemptPlan } from './routing.js';
+import {
+  COMPAT_PROVIDERS,
+  compatProviderById,
+  compatEndpoint,
+  compatModelFor,
+  compatProtocol,
+  isCompatConnected,
+  provKeyName,
+  openaiBody,
+  anthropicBody,
+  parseOpenAiText,
+  parseAnthropicText,
+  compatStorageKeys,
+} from './providers.js';
 import { withRetry } from './retry.js';
 import { categorizeError, rankErrors } from './errors.js';
 import { estimateTokens } from './estimate.js';
@@ -169,6 +183,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     runTagLibrary(msg.sessionKey);
     return true;
   }
+
+  // Provider self-test from Settings — connection + function check for a registry provider.
+  if (msg.type === 'TEST_PROVIDER' && msg.provider) {
+    (async () => {
+      const keys = await chrome.storage.local.get(compatStorageKeys()); // only registry-provider settings
+      try {
+        sendResponse(await testProvider(msg.provider, keys));
+      } catch (e) {
+        sendResponse({ ok: false, connection: false, function: false, detail: e?.message || String(e) });
+      }
+    })();
+    return true; // async sendResponse
+  }
 });
 
 // Turn a competitor input (URL or "owner/name") into { platform, repoId }.
@@ -189,7 +216,7 @@ const _handledOAuthCodes = new Set();
 async function handleAnthropicOAuthCallback(rawUrl, tabId) {
   if (!rawUrl || !isAnthropicOAuthCallbackUrl(rawUrl)) return;
 
-  console.log('[RepoLens OAuth] Callback detected:', rawUrl);
+  console.log('[RepoLens OAuth] Callback detected:', rawUrl.split('?')[0]); // strip the single-use ?code=…
 
   let url;
   try {
@@ -287,10 +314,13 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 
   // Gate: at least one provider must be configured (runAnalysis reads the rest).
-  const { anthropicKey, googleKey, openrouterKey, xaiKey, xaiRefresh, nousKey } =
-    await chrome.storage.local.get(['anthropicKey', 'googleKey', 'openrouterKey', 'xaiKey', 'xaiRefresh', 'nousKey']);
-
-  if (!googleKey && !openrouterKey && !anthropicKey && !xaiKey && !xaiRefresh && !nousKey) {
+  const gateKeys = await chrome.storage.local.get(
+    ['anthropicKey', 'googleKey', 'openrouterKey', 'xaiKey', 'xaiRefresh', 'nousKey', ...compatStorageKeys()]
+  );
+  const firstClass = gateKeys.anthropicKey || gateKeys.googleKey || gateKeys.openrouterKey ||
+    gateKeys.xaiKey || gateKeys.xaiRefresh || gateKeys.nousKey;
+  const anyCompat = COMPAT_PROVIDERS.some((p) => isCompatConnected(p.id, gateKeys));
+  if (!firstClass && !anyCompat) {
     chrome.runtime.openOptionsPage();
     return;
   }
@@ -308,19 +338,17 @@ const PROVIDER_KEYS = [
   'anthropicKey', 'anthropicModel', 'googleKey', 'googleModel',
   'openrouterKey', 'openrouterModel', 'xaiKey', 'xaiRefresh', 'xaiModel',
   'nousKey', 'nousModel',
+  ...compatStorageKeys(), // registry providers' key / model / endpoint / enabled / proto slots
   'partRouting', // per-part model routing map (loaded alongside provider keys)
 ];
 
 // Fetch → AI → parse → store. Used by the initial click and by RERUN (retry).
 async function runAnalysis(sessionKey, detected) {
-  const {
-    anthropicKey, anthropicModel, googleKey, googleModel,
-    openrouterKey, openrouterModel, xaiKey, xaiRefresh, xaiModel,
-    nousKey, nousModel, partRouting,
-    autoSave = true, tone,
-  } = await chrome.storage.local.get(
-    [...PROVIDER_KEYS, 'autoSave', 'tone']
-  );
+  // Load every provider credential + model + routing in one read; pass the whole
+  // object to callAI so registry (compat) providers are reachable too — not just
+  // the five first-class ones. Extra keys (autoSave/tone) are ignored downstream.
+  const settings = await chrome.storage.local.get([...PROVIDER_KEYS, 'autoSave', 'tone']);
+  const { autoSave = true, tone } = settings;
 
   try {
     // Fetch metadata + README
@@ -329,16 +357,10 @@ async function runAnalysis(sessionKey, detected) {
     // Signal AI is thinking (tab shows cycling copy)
     await chrome.storage.session.set({ [sessionKey]: { loading: true, status: 'thinking', ...detected } });
 
-    // Call AI provider — tried in order: Nous > Gemini > OpenRouter > Grok > Anthropic
+    // Call AI provider — tried in order: Nous > Gemini > OpenRouter > Grok > Anthropic,
+    // then any connected compatible provider.
     const corePrompt = withTone(tone, buildPrompt(repoData));
-    const text = await callAI({
-      anthropicKey, anthropicModel,
-      googleKey, googleModel,
-      openrouterKey, openrouterModel,
-      xaiKey, xaiRefresh, xaiModel,
-      nousKey, nousModel,
-      partRouting,
-    }, corePrompt, 'core');
+    const text = await callAI(settings, corePrompt, 'core');
     const analysis = parseClaudeResponse(text);
     const fullData = {
       ...repoData,
@@ -688,7 +710,13 @@ function callAI(keys, prompt, part) {
 
 const PROVIDER_LABEL = { nous: 'Nous', google: 'Gemini', openrouter: 'OpenRouter', xai: 'Grok', anthropic: 'Anthropic' };
 
-// Dispatch one (provider, model) attempt to its provider call function.
+function providerLabel(provider) {
+  return PROVIDER_LABEL[provider] || compatProviderById(provider)?.label || provider;
+}
+
+// Dispatch one (provider, model) attempt to its provider call function. The five
+// first-class providers have bespoke calls; everything else is a registry provider
+// served by the generic OpenAI/Anthropic-compatible engines.
 function dispatch(provider, model, keys, prompt) {
   switch (provider) {
     case 'nous': return callNous(keys.nousKey, model, prompt);
@@ -696,15 +724,100 @@ function dispatch(provider, model, keys, prompt) {
     case 'openrouter': return callOpenRouter(keys.openrouterKey, model, prompt);
     case 'xai': return callXAI(model, prompt);
     case 'anthropic': return callAnthropic(model, prompt);
-    default: throw new Error(`Unknown provider: ${provider}`);
+    default:
+      if (compatProviderById(provider)) return callCompat(provider, model, keys, prompt);
+      throw new Error(`Unknown provider: ${provider}`);
   }
+}
+
+// Generic dispatch for a registry (OpenAI/Anthropic-compatible) provider.
+function callCompat(provider, model, keys, prompt) {
+  const endpoint = compatEndpoint(provider, keys);
+  if (!endpoint) throw new Error(`${providerLabel(provider)}: no endpoint configured`);
+  const key = keys[provKeyName(provider)] || '';
+  const protocol = compatProtocol(provider, keys);
+  const m = model || compatModelFor(provider, keys);
+  if (!m) throw new Error(`${providerLabel(provider)}: choose a model in Settings`);
+  if (protocol === 'anthropic') {
+    return callAnthropicCompatible({ endpoint, key, model: m, prompt, label: providerLabel(provider) });
+  }
+  // OpenAI-compatible (and Azure, which differs only in the auth header).
+  return callOpenAICompatible({
+    endpoint, key, model: m, prompt, label: providerLabel(provider),
+    headerStyle: protocol === 'azure' ? 'azure' : 'bearer',
+  });
+}
+
+// OpenAI-compatible chat completion. `key` may be empty for keyless local servers (Ollama).
+// headerStyle 'azure' sends `api-key: <key>` (Azure OpenAI); otherwise `Authorization: Bearer`.
+async function callOpenAICompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096, headerStyle = 'bearer' }) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (key) {
+    if (headerStyle === 'azure') headers['api-key'] = key;
+    else headers['Authorization'] = `Bearer ${key}`;
+  }
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(openaiBody(model, prompt, maxTokens)),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message ?? err.message ?? `${label} API error ${res.status}`);
+  }
+  return parseOpenAiText(await res.json());
+}
+
+// Anthropic-compatible Messages API (x-api-key + anthropic-version).
+async function callAnthropicCompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096 }) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'x-api-key': key,
+    },
+    body: JSON.stringify(anthropicBody(model, prompt, maxTokens)),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message ?? err.message ?? `${label} API error ${res.status}`);
+  }
+  return parseAnthropicText(await res.json());
+}
+
+// Provider self-test for the Settings UI. Connection = the endpoint answered at all
+// (even an auth/4xx error proves reachability); Function = the model echoed our token.
+async function testProvider(provider, keys) {
+  const p = compatProviderById(provider);
+  if (!p) return { ok: false, connection: false, function: false, detail: 'Unknown provider' };
+  if (!isCompatConnected(provider, keys)) {
+    return { ok: false, connection: false, function: false, detail: 'Not configured — add a key / endpoint first.' };
+  }
+  const out = { ok: false, connection: false, function: false, detail: '' };
+  try {
+    const reply = await callCompat(provider, compatModelFor(provider, keys), keys,
+      'Reply with exactly the word READY and nothing else.');
+    out.connection = true;
+    out.function = /ready/i.test(reply || '');
+    out.ok = out.function;
+    out.detail = out.function ? 'Model responded correctly.' : `Reached the model, but the reply was unexpected: ${String(reply).slice(0, 80)}`;
+  } catch (e) {
+    const msg = e?.message || String(e);
+    // A structured API error (auth/model/quota) still proves the endpoint is reachable.
+    const reachable = !/Failed to fetch|NetworkError|ENOTFOUND|ECONNREFUSED|load failed/i.test(msg);
+    out.connection = reachable;
+    out.detail = reachable ? `Endpoint reachable, but the call failed: ${msg}` : `Could not reach the endpoint: ${msg}`;
+  }
+  return out;
 }
 
 async function callAIInner(keys, prompt, part) {
   const plan = buildAttemptPlan({ routing: keys.partRouting || {}, part, keys });
   const failures = [];
   for (const { provider, model } of plan) {
-    const label = PROVIDER_LABEL[provider] || provider;
+    const label = providerLabel(provider);
     try {
       // Retry transient failures (429 / 5xx / network) with backoff before falling
       // through to the next provider; auth/model errors fail over immediately.

@@ -26,6 +26,12 @@ let allRows = [];
 let cacheByRepo = new Map(); // repoId → full cached analysis (instant reopen)
 const state = { query: '', sort: 'fit', capability: '' };
 
+// Bulk selection: a toolbar toggle reveals per-card checkboxes; the action bar
+// removes every checked repo in one go. `selected` holds repoIds (kept even when
+// a row is filtered out of view, so the count reflects the true selection).
+let selectionMode = false;
+const selected = new Set();
+
 function card(r) {
   const owner = r.repoId.includes('/') ? r.repoId.slice(0, r.repoId.indexOf('/')) : '';
   const dots = r.languages
@@ -33,8 +39,10 @@ function card(r) {
     .join('');
   const tags = r.capabilities.slice(0, 4).map((c) => `<span class="lc-tag">${esc(c)}</span>`).join('');
   const when = relativeTime(r.savedAt);
-  return `<div class="lib-card" data-repo="${esc(r.repoId)}" title="${r.hasCache ? 'Open the saved analysis (instant, no AI call)' : 'Open the project page'}">
+  const sel = selected.has(r.repoId);
+  return `<div class="lib-card${sel ? ' is-selected' : ''}" data-repo="${esc(r.repoId)}" title="${r.hasCache ? 'Open the saved analysis (instant, no AI call)' : 'Open the project page'}">
     <div class="lc-top">
+      <input type="checkbox" class="lc-check"${sel ? ' checked' : ''} aria-label="Select ${esc(r.name)} for removal" title="Select for bulk removal">
       <span class="lc-name">${esc(r.name)}</span>
       ${owner ? `<span class="lc-owner">${esc(owner)}</span>` : ''}
       <span class="lc-chip fit-${r.fit.level}">${esc(r.fit.label)}</span>
@@ -64,8 +72,15 @@ function render() {
   grid.querySelectorAll('.lib-card').forEach((el) => {
     el.addEventListener('click', (e) => {
       if (e.target.closest('.lc-act')) return; // action buttons handle themselves
+      if (selectionMode) {
+        if (e.target.closest('.lc-check')) return; // the checkbox's own change handles it
+        toggleSelect(el.dataset.repo, el);
+        return;
+      }
       openRow(el.dataset.repo);
     });
+    const cb = el.querySelector('.lc-check');
+    cb?.addEventListener('change', () => toggleSelect(el.dataset.repo, el, cb.checked));
   });
   grid.querySelectorAll('.lc-act').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -75,6 +90,7 @@ function render() {
       else if (btn.dataset.act === 'remove') removeRepo(repoId, btn);
     });
   });
+  if (selectionMode) updateSelectionBar(); // keep the bar's count / "Select all" label in sync
 }
 
 const rowFor = (repoId) => allRows.find((r) => r.repoId === repoId);
@@ -118,6 +134,118 @@ async function removeRepo(repoId, btn) {
   renderCaps();
   render();
   renderStats();
+}
+
+// ─── bulk multi-select delete ──────────────────────────────────────────────────
+
+// repoIds currently passing the search/capability filter (what "Select all" acts on).
+const visibleIds = () => sortRows(filterRows(allRows, state), state.sort).map((r) => r.repoId);
+
+function toggleSelect(repoId, cardEl, force) {
+  const next = force === undefined ? !selected.has(repoId) : force;
+  if (next) selected.add(repoId);
+  else selected.delete(repoId);
+  cardEl.classList.toggle('is-selected', next);
+  const cb = cardEl.querySelector('.lc-check');
+  if (cb) cb.checked = next;
+  updateSelectionBar();
+}
+
+function updateSelectionBar() {
+  const n = selected.size;
+  const count = document.getElementById('sel-count');
+  if (count) count.textContent = `${n} selected`;
+  const del = document.getElementById('sel-del');
+  if (del) {
+    del.disabled = !n;
+    if (delArmed) { delArmed = false; clearTimeout(delTimer); delTimer = null; resetDelBtn(del); } // a changed selection cancels a pending confirm
+  }
+  const all = document.getElementById('sel-all');
+  if (all) {
+    const vis = visibleIds();
+    const allChosen = vis.length > 0 && vis.every((id) => selected.has(id));
+    all.textContent = allChosen ? 'Select none' : 'Select all';
+  }
+}
+
+function selectAllToggle() {
+  const vis = visibleIds();
+  const allChosen = vis.length > 0 && vis.every((id) => selected.has(id));
+  vis.forEach((id) => (allChosen ? selected.delete(id) : selected.add(id)));
+  render(); // reflect the new checkbox / is-selected state across the grid
+  updateSelectionBar();
+}
+
+function resetDelBtn(btn) {
+  if (!btn) return;
+  btn.classList.remove('armed');
+  btn.textContent = 'Delete selected';
+}
+
+// doRender=false lets a caller (deleteSelected) tear the mode down and then run
+// its own single renderCaps→render→renderStats pass, avoiding a stale double render.
+function setSelectionMode(on, doRender = true) {
+  selectionMode = on;
+  document.getElementById('grid')?.classList.toggle('selecting', on);
+  document.getElementById('selbar')?.classList.toggle('hidden', !on);
+  const btn = document.getElementById('select');
+  if (btn) {
+    btn.setAttribute('aria-pressed', String(on));
+    btn.textContent = on ? '☑ Selecting…' : '☑ Select';
+  }
+  if (!on) {
+    selected.clear();
+    clearTimeout(delTimer);
+    delTimer = null;
+    delArmed = false;
+    resetDelBtn(document.getElementById('sel-del'));
+  }
+  if (doRender) {
+    render();
+    updateSelectionBar();
+  }
+}
+
+// Two-step inline confirm, mirroring the per-card remove + Clear flows.
+let delArmed = false;
+let delTimer = null;
+function deleteSelectedFlow(btn) {
+  if (!selected.size) return;
+  if (!delArmed) {
+    delArmed = true;
+    btn.classList.add('armed');
+    btn.textContent = `Delete ${selected.size}? Confirm`;
+    delTimer = setTimeout(() => { delArmed = false; resetDelBtn(btn); }, 3000);
+    return;
+  }
+  clearTimeout(delTimer);
+  delTimer = null;
+  delArmed = false;
+  resetDelBtn(btn);
+  deleteSelected();
+}
+
+async function deleteSelected() {
+  const ids = [...selected];
+  if (!ids.length) return;
+  setStatus(`Removing ${ids.length} repo${ids.length === 1 ? '' : 's'}…`);
+  for (const repoId of ids) {
+    const cached = cacheByRepo.get(repoId);
+    if (cached) {
+      try { await removeCached(cached.platform, cached.repoId); } catch { /* already gone */ }
+    }
+    await deleteRepo(repoId); // best-effort; never throws
+    cacheByRepo.delete(repoId);
+  }
+  const idSet = new Set(ids);
+  allRows = allRows.filter((r) => !idSet.has(r.repoId));
+  selected.clear();
+  if (!allRows.length) { location.reload(); return; } // fall back to the clean empty state
+  setSelectionMode(false, false); // tear down the mode; we render once below
+  renderCaps();
+  render();
+  renderStats();
+  setStatus(`Removed ${ids.length} repo${ids.length === 1 ? '' : 's'}.`);
 }
 
 // ─── stats bar ────────────────────────────────────────────────────────────────
@@ -263,6 +391,13 @@ function wireToolbar() {
   document.getElementById('import')?.addEventListener('click', pickImportFile);
   document.getElementById('file-input')?.addEventListener('change', onFileChosen);
   document.getElementById('clear')?.addEventListener('click', (e) => clearLibraryFlow(e.currentTarget));
+  document.getElementById('select')?.addEventListener('click', () => setSelectionMode(!selectionMode));
+  document.getElementById('sel-all')?.addEventListener('click', selectAllToggle);
+  document.getElementById('sel-del')?.addEventListener('click', (e) => deleteSelectedFlow(e.currentTarget));
+  document.getElementById('sel-done')?.addEventListener('click', () => setSelectionMode(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && selectionMode) setSelectionMode(false);
+  });
 }
 
 function renderCaps() {

@@ -14,6 +14,7 @@ import {
 import { importFromVelesdb } from './migrate/velesdb-import.js';
 import { SAFE_SETTING_KEYS, buildSettingsBackup, validateSettingsBackup } from './settings-backup.js';
 import { PARTS, CATALOG } from './models.js';
+import { renderCompatProviders, compatPartGroups, anyCompatConnected } from './options-providers.js';
 import { THEMES, initTheme, saveTheme } from './theme.js';
 import { TONES, DEFAULT_TONE } from './tone.js';
 import { listCached, removeCached, openCachedAnalysis } from './cache.js';
@@ -246,7 +247,11 @@ function buildPartSelect(part, current) {
   def.textContent = 'Default (smart fallback)';
   sel.appendChild(def);
 
-  for (const [provider, { label, models }] of Object.entries(CATALOG)) {
+  const groups = [
+    ...Object.entries(CATALOG).map(([provider, { label, models }]) => ({ provider, label, models })),
+    ...compatPartGroups(), // OpenAI/Anthropic-compatible registry providers
+  ];
+  for (const { provider, label, models } of groups) {
     const group = document.createElement('optgroup');
     group.label = label;
     for (const m of models) {
@@ -287,6 +292,13 @@ async function renderPartModels() {
   }
 }
 renderPartModels();
+
+// More providers (OpenAI/Anthropic-compatible registry) + dismiss the first-run
+// nudge if one of them is the connected provider.
+renderCompatProviders(document.getElementById('compat-providers'));
+anyCompatConnected().then((on) => {
+  if (on) { const gs = document.getElementById('getting-started'); if (gs) gs.style.display = 'none'; }
+});
 
 function showStatus(msg, color) {
   statusEl.textContent    = msg;

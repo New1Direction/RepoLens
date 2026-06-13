@@ -111,6 +111,25 @@
     .lib-card:hover { transform: none; }
   }
 
+  /* Bulk selection mode — pick several repos and remove them in one action. */
+  .lib-selbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 0 0 16px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--cyan); border-radius: 11px; }
+  .lsb-count { font: 700 12.5px var(--sans); color: var(--text); }
+  .lib-selbar #sel-done { margin-left: auto; }
+  .lib-btn[disabled] { opacity: .45; cursor: not-allowed; }
+  #select[aria-pressed="true"] { border-color: var(--cyan); color: var(--cyan); }
+
+  .lc-check { display: none; appearance: none; -webkit-appearance: none; width: 17px; height: 17px;
+    flex-shrink: 0; border: 1.5px solid var(--border-2); border-radius: 5px; cursor: pointer;
+    position: relative; background: var(--panel-2); transition: background .12s, border-color .12s; }
+  #grid.selecting .lc-check { display: inline-block; }
+  .lc-check:checked { background: var(--cyan); border-color: var(--cyan); }
+  .lc-check:checked::after { content: '✓'; position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 11px; font-weight: 800; color: var(--bg); }
+  #grid.selecting .lc-actions { display: none; }
+  #grid.selecting .lib-card:hover { transform: none; box-shadow: none; }
+  .lib-card.is-selected { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan) inset; }
+
   .hidden { display: none; }
 </style>
 </head>
@@ -119,6 +138,7 @@
     <div class="lib-header">
       <h1>Library</h1><span class="count" id="count"></span>
       <div class="lib-actions">
+        <button class="lib-btn" id="select" title="Select several repos to remove at once" aria-pressed="false">☑ Select</button>
         <button class="lib-btn" id="export" title="Download your whole library as a JSON backup" aria-label="Export library as a backup file">⬇ Export</button>
         <button class="lib-btn" id="import" title="Restore a library from a backup file" aria-label="Import a library backup file">⬆ Import</button>
         <button class="lib-btn lib-btn-danger" id="clear" title="Remove every repo from this library" aria-label="Clear the whole library">🗑 Clear</button>
@@ -130,6 +150,12 @@
     <div class="lib-stats hidden" id="stats"></div>
     <p class="lib-status hidden" id="status" role="status" aria-live="polite"></p>
     <div class="lib-import-confirm hidden" id="import-confirm"></div>
+    <div class="lib-selbar hidden" id="selbar" role="region" aria-label="Bulk selection">
+      <span class="lsb-count" id="sel-count" aria-live="polite">0 selected</span>
+      <button class="lib-btn" id="sel-all">Select all</button>
+      <button class="lib-btn lib-btn-danger" id="sel-del" disabled>Delete selected</button>
+      <button class="lib-btn" id="sel-done" title="Leave selection mode">Done</button>
+    </div>
     <input type="file" id="file-input" accept="application/json,.json" hidden>
 
     <div class="lib-controls">

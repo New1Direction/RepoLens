@@ -85,6 +85,29 @@
   .model-select:focus { border-color: var(--accent); }
   .model-select option { background: var(--surface); }
 
+  /* Registry (compatible) provider cards */
+  .svc-hint { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; }
+  .svc-tag { font-size: 9px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--border-2); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+  .cc-adv { margin-top: 10px; }
+  .cc-adv > summary { list-style: none; cursor: pointer; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-faint); }
+  .cc-adv > summary::-webkit-details-marker { display: none; }
+  .cc-adv > summary::before { content: '▸ '; color: var(--accent); }
+  .cc-adv[open] > summary::before { content: '▾ '; }
+  .cc-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .cc-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 7px 10px; font-size: 12px; color: var(--text); outline: none; }
+  .cc-row input:focus { border-color: var(--accent); }
+  .cc-tests { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .cc-test-btn { background: var(--surface); border: 1px solid var(--border-2); color: var(--text-sub);
+    border-radius: 6px; padding: 5px 11px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .cc-test-btn:hover { color: var(--text); border-color: var(--accent); }
+  .cc-test-btn:disabled { opacity: .5; cursor: progress; }
+  .cc-test-result { font-size: 11px; color: var(--text-sub); }
+  .cc-test-result.ok { color: var(--ok-ink); }
+  .cc-test-result.err { color: var(--bad-ink); }
+
   /* Save + status */
   .save-btn { background: var(--accent-deep); color: var(--text-strong); border: none; border-radius: 6px; padding: 10px 22px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; }
   .save-btn:hover { background: var(--accent-deep-hover); }
@@ -387,6 +410,13 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- More providers (OpenAI- / Anthropic-compatible + custom) — rendered from the registry -->
+  <div class="section">
+    <div class="section-title">More model providers</div>
+    <p class="field-hint" style="margin-bottom:16px">Any OpenAI- or Anthropic-compatible endpoint. Each keeps its own key, so switching never loses data. <b>Test connection</b> checks the endpoint answers; <b>Test function</b> asks the model to follow a tiny instruction. Local <b>Ollama</b> needs no key.</p>
+    <div id="compat-providers"></div>
   </div>
 
   <!-- Per-part model routing -->

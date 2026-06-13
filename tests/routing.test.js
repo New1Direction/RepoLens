@@ -69,4 +69,30 @@ describe('buildAttemptPlan', () => {
     const g = plan.find((p) => p.provider === 'google');
     expect(g.model).toBe('gemini-2.5-pro');
   });
+
+  // ── registry (OpenAI/Anthropic-compatible) providers ───────────────────────
+  it('a connected registry provider is a usable fallback when nothing in the chain is connected', () => {
+    const plan = buildAttemptPlan({ keys: { deepseekKey: 'sk-x' } });
+    expect(plan).toEqual([{ provider: 'deepseek', model: 'deepseek-chat' }]);
+  });
+
+  it('a registry provider can be the per-part override and is tried first', () => {
+    const keys = { ...allKeys, groqKey: 'gsk-x' };
+    const plan = buildAttemptPlan({ routing: { core: 'groq:llama-3.3-70b-versatile' }, part: 'core', keys });
+    expect(plan[0]).toEqual({ provider: 'groq', model: 'llama-3.3-70b-versatile' });
+    // and groq also appears (once) as a registry fallback — de-duped on provider:model
+    expect(plan.filter((p) => p.provider === 'groq')).toHaveLength(1);
+  });
+
+  it('keyless Ollama counts as connected only when enabled', () => {
+    expect(isConnected('ollama', {})).toBe(false);
+    expect(isConnected('ollama', { ollamaEnabled: true })).toBe(true);
+    const plan = buildAttemptPlan({ keys: { ollamaEnabled: true, ollamaModel: 'llama3.1' } });
+    expect(plan).toEqual([{ provider: 'ollama', model: 'llama3.1' }]);
+  });
+
+  it('chain providers still take precedence over registry fallbacks in order', () => {
+    const plan = buildAttemptPlan({ keys: { ...allKeys, deepseekKey: 'sk-x' } });
+    expect(ids(plan)).toEqual([...CHAIN, 'deepseek']);
+  });
 });

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RepoLens",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "One-click repo explainer. Powered by Claude.",
   "permissions": ["storage", "activeTab", "tabs", "identity", "webNavigation"],
   "host_permissions": [
@@ -23,8 +23,26 @@
     "https://inference-api.nousresearch.com/*",
     "https://grok.com/*",
     "https://cli-chat-proxy.grok.com/*",
+    "https://api.openai.com/*",
+    "https://api.deepseek.com/*",
+    "https://api.groq.com/*",
+    "https://integrate.api.nvidia.com/*",
+    "https://api.moonshot.ai/*",
+    "https://api.moonshot.cn/*",
+    "https://api.kimi.com/*",
+    "https://open.bigmodel.cn/*",
+    "https://dashscope.aliyuncs.com/*",
+    "https://api.xiaomimimo.com/*",
+    "https://ark.cn-beijing.volces.com/*",
+    "https://ollama.com/*",
+    "https://api.minimax.io/*",
+    "https://api.minimaxi.com/*",
     "http://localhost/*",
     "http://127.0.0.1/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
   ],
   "background": {
     "service_worker": "background.js",
