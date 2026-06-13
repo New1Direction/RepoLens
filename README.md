@@ -17,7 +17,7 @@
 
 ---
 
-RepoLens is a **Manifest V3 Chrome extension**. Land on a GitHub, GitLab, npm, or PyPI page, click the toolbar icon, and it reads the repo, runs it past the AI provider of your choice, and opens a tab with a **verdict-first** breakdown — not the README's marketing, the actual shape of the thing.
+RepoLens is a **Manifest V3 Chrome extension**. Land on a GitHub, GitLab, npm, or PyPI page, click the toolbar icon, and it reads the repo, runs it past the AI provider of your choice, and opens a tab with a **verdict-first** breakdown — it opens with a straight answer (*should you use this?*) before any prose, not the README's marketing.
 
 > Stars tell you a project is popular. They don't tell you whether it fits *your* problem. RepoLens answers the question you actually have: **should I use this, and what am I signing up for?**
 
@@ -30,35 +30,43 @@ A scan opens to a **verdict landing** and fans out into focused tabs:
 | | Tab | What it does |
 |---|---|---|
 | ⚖️ | **Verdict** | Fit call (strong / solid / care / risky), a one-line bottom line, measured facts, and the top things worth noting — first thing you see. |
-| 🧠 | **Deep Dive** | Atoms → lineage → a Feynman-style plain-English explanation. Optionally grounded by **measured facts** from the local runner. |
+| 🧠 | **Deep Dive** | The core concepts → how they build on each other → a plain-English ("explain it like I'm five") walkthrough. Optionally grounded by **measured facts** from the local runner. |
 | 📚 | **Library** | Every repo you've analyzed, as a sortable / filterable triage grid with fit chips, a stats bar, **bulk multi-select delete**, and one-click **Export / Import / Backup**. |
-| 🕸️ | **Connections** | A walkable semantic ego-graph of how your repos relate. |
+| 🕸️ | **Connections** | A walkable map centred on the current repo, showing how it relates to the others you've scanned. |
 | 🤝 | **Synergies** · **Versus** · **Combinator** | Complements, head-to-heads, and fused project ideas — grounded in *your* library. |
 
-Plus SKTPG, framework lenses, and capability re-tagging.
+Plus **SKTPG** (a one-tap State / Known-pitfalls / Trajectory / Proof / Growth read), framework lenses, and capability re-tagging.
 
 ---
 
-## What's new
+## 🆕 What's new
 
-**1.4.0 · Bring any model** — a dozen-plus new providers via one OpenAI-/Anthropic-compatible registry: **OpenAI, DeepSeek, Groq, NVIDIA, Kimi, Zhipu, Qwen, MiniMax, Ollama** (local, no key) and a universal **Custom** endpoint — each with its own key, model picker, endpoint override, and *connection / function* self-tests. Connect just one and it works.
+Newest first — the highlights. Full, detailed notes live in the **[changelog](CHANGELOG.md)**.
 
-**1.3.0 · Bulk triage** — the Library gets a **Select** mode: check any number of repos (or *Select all*) and remove them in one confirmed action. Esc/Done to leave, and changing the selection cancels a pending delete.
+### v1.4.0 — Bring any model
 
-**1.2.0 · Themes that actually theme** — **5 new themes** (Nord, Gruvbox, Rosé Pine, Catppuccin Latte, Solarized Light — 13 in all), and a full fix so **light themes are properly themed**: the verdict landing, Library page and status colours no longer leak dark bubbles onto light palettes. Status colours now derive per-theme via `color-mix`, so every theme stays legible. See [CHANGELOG.md](CHANGELOG.md).
+Use almost any AI provider, not just the built-in five.
 
-### 1.1.0 · *Trust & Polish*
+- ➕ **20+ providers built in** — OpenAI, DeepSeek, Groq, NVIDIA NIM, Kimi, Zhipu GLM, Qwen, MiniMax, Azure OpenAI, and more.
+- 🖥️ **Run the AI locally** — use **Ollama** on your own machine, with **no key at all** (only the AI step is local; RepoLens still reads the repo page online).
+- 🔌 **Any service** — a **Custom** option connects almost any other AI provider: paste the address it gives you, pick the format, done.
+- ✅ **One-click tests** — *Test connection* and *Test function* tell you a provider really works before you rely on it.
+- 🔑 Each provider keeps its **own key**, stored only in your browser — switching never loses your other setups.
 
-> The theme is **trust** — your data moves with you and stays safe, untrusted input never reaches the model raw, provider hiccups recover on their own, and the surfaces are keyboard- and motion-accessible. Full notes in [CHANGELOG.md](CHANGELOG.md).
+### v1.3.0 — Bulk cleanup
 
-- **📦 Library Export / Import / Backup** — your whole library (repos + semantic graph + scan cache) to one portable JSON file; restore by merge or replace. Validated and bounded on import, so a bad file fails safe.
-- **🔑 Settings backup** — theme, voice and model routing travel too, allowlist-driven so **API keys and tokens never leave the browser**.
-- **🔎 BM25 search** — rare terms outrank common ones, high-signal fields outweigh buried mentions, results debounced.
-- **🛟 Self-healing scans** — transient provider failures retry with exponential backoff; on failure the UI surfaces the *single most fixable* error.
-- **🛡️ Hardened rendering** — one canonical injection-safe HTML escaper across every render path; repo READMEs sanitized and delimited before they reach the model.
-- **♿ Accessibility** — visible focus rings + `prefers-reduced-motion` guard.
-- **📊 Quality of life** — a Library stats bar, "Recently scanned" / "Stars" sorts (persisted), and a scan-size *token estimate* on the verdict.
-- **🧪 DX** — ESLint + Prettier + coverage + GitHub Actions CI; **360+ unit tests**.
+- 🗂️ **Select multiple repos** in the Library and delete them in one confirmed action (or *Select all*). **Esc** to back out.
+
+### v1.2.0 — 13 themes, done right
+
+- 🎨 **5 new themes** — Nord, Gruvbox, Rosé Pine, Catppuccin Latte, Solarized Light (13 in all).
+- 💡 **Light themes fixed** — no more dark patches bleeding through; every theme now reads crisp and clear, light or dark.
+
+### v1.1.0 — Trust & polish
+
+- 💾 **Back up your library** — export everything (repos, connections, history) to one file and import it on any machine.
+- 🔐 **Settings backup that never leaks your keys** — your preferences travel; your API keys stay put.
+- 🔎 **Smarter search**, 🔁 **auto-retry** when a provider hiccups, and ♿ **accessibility** (focus rings, reduced motion) across the board.
 
 ---
 
@@ -79,13 +87,13 @@ No accounts. No backend. Your keys, your machine.
 
 ## Models — your keys, your call
 
-Bring your own provider. Five are **first-class** (OAuth or API key) and fan out across a **smart fallback chain** — tries one, drops to the next on any error:
+Bring your own provider. Five are **first-class** (OAuth where available — Anthropic, Grok, OpenRouter — otherwise an API key) and fan out across a **smart fallback chain**: RepoLens tries them in order and drops to the next if one errors, so a single key is enough to start.
 
-**Nous → Gemini → OpenRouter → Grok → Anthropic**
+**Nous** (Nous Research) **→ Gemini → OpenRouter → Grok → Anthropic**
 
-On top of those, RepoLens speaks **any OpenAI- or Anthropic-compatible endpoint** through one registry — **OpenAI, DeepSeek, Groq, NVIDIA NIM, Kimi (Moonshot), Zhipu GLM, Qwen, Xiaomi MiMo, Volcengine, Ollama Cloud, MiniMax**, local **Ollama** (no key needed), and a universal **Custom** endpoint. Each keeps its **own key** (switching never loses data), has a model picker, an optional **endpoint override**, and built-in **connection / function self-tests**. Connect just one and it works — it joins the fallback chain automatically.
+On top of those, RepoLens works with **almost any other AI service** through one registry — **OpenAI, DeepSeek, Groq, NVIDIA NIM, Kimi (Moonshot), Zhipu GLM, Qwen (Aliyun), Xiaomi MiMo, Volcengine Ark, Ollama Cloud, MiniMax, Azure OpenAI**, local **Ollama** (no key needed), and a universal **Custom** endpoint. Each keeps its **own key** (switching never loses data), has a model picker, an optional **endpoint override**, and built-in **connection / function self-tests**. Connect just one and it works — it joins the fallback chain automatically.
 
-> Local-only? Point at **Ollama** on `localhost` — no key, no cloud. (A browser extension can't launch a `claude`/`codex` CLI binary, but it can talk to a local HTTP model server.)
+> Local-only? Point at **Ollama** on `localhost` — no key, no cloud. (Local *CLI* tools like a `claude`/`codex` binary aren't offered: a browser extension is sandboxed and can't launch a program — but it can talk to a local HTTP model server, which is what Ollama is.)
 
 Each provider has a model dropdown (★ marks the recommended pick), and you can **route each part of a scan to a different model**:
 
@@ -107,13 +115,17 @@ Migrating from an old VelesDB server? **Options → Import from VelesDB** pulls 
 
 ## Install
 
+First get the code — `git clone` the repo (or download the ZIP and unzip it). Then:
+
 ```text
-chrome://extensions  →  Developer mode  →  Load unpacked  →  select this folder
+chrome://extensions  →  Developer mode (top-right)  →  Load unpacked  →  select the folder
 ```
 
 Then click the RepoLens icon on any repo page.
 
 ## Develop
+
+> For contributors — if you just want to *use* RepoLens, you're done after **Install** above.
 
 ```bash
 npm install            # installs vitest + lint/format tooling
@@ -130,7 +142,7 @@ CI (`.github/workflows/ci.yml`) runs the suite on every push and PR. Pure ES mod
 
 ## Optional: the deeper-scan runner
 
-For Deep Dive grounded in *measured* facts (real file counts, languages, dependency graph, license, architecture, tests/CI, secret scan), run the companion **Rust** daemon — it downloads a repo's source and analyzes it statically (it never executes repo code):
+For Deep Dive grounded in *measured* facts (real file counts, languages, dependency graph, license, architecture, tests/CI, secret scan), run the companion **Rust** daemon — it downloads a repo's source and analyzes it statically (it never executes repo code). Requires [Rust](https://rustup.rs); from the runner directory:
 
 ```bash
 cargo run --release -- serve   # listens on localhost:9191

@@ -1,7 +1,11 @@
 # Changelog
 
-All notable changes to RepoLens are documented here. This project follows
-[Semantic Versioning](https://semver.org/) and groups changes by theme.
+Every release of RepoLens, newest first. Want the friendly highlights instead of
+the full detail? See **[What's new](README.md)** in the README.
+
+This project follows [Semantic Versioning](https://semver.org/) and groups changes
+by theme. Dates are when the release landed on `main` — 1.1.0 through 1.4.0 shipped
+the same day, as a rapid burst of improvements, so they share a date.
 
 ## [1.4.0] — 2026-06-13 · _Bring any model_
 
@@ -28,8 +32,8 @@ All notable changes to RepoLens are documented here. This project follows
 
 ### Notes
 
-- Custom/overridden endpoints request their host permission at save time (MV3),
-  and only http(s) URLs are accepted.
+- When you connect a custom AI address, Chrome asks you to approve that site once —
+  that's expected. Only secure `http(s)` addresses are accepted.
 - Local *CLI* providers (a `claude` / `codex` binary) aren't offered: a browser
   extension is sandboxed and cannot launch a local process. Local **Ollama**
   (an HTTP server) is supported instead.
@@ -57,26 +61,21 @@ All notable changes to RepoLens are documented here. This project follows
 
 ### Fixed
 
-- **Light themes are now fully themed.** The verdict landing (fit cards, fact
-  tiles, jump buttons, the deeper-scan runner strip), status pills, confidence /
-  evidence tags and badges were authored in hardcoded dark hex and leaked dark
-  bubbles onto light themes. They now route through the theme tokens.
-- **The Library page honours the active theme.** It previously shipped its own
-  hardcoded-dark palette and never loaded `themes.css`, so it stayed dark on
-  every theme; it now links the theme stylesheet, initialises the saved theme,
-  and maps its colours onto the active palette.
-- **Status colours derive per-theme.** New semantic tokens
-  (`--ok/--info/--warn/--bad` + `*-ink/-bg/-edge`) compute their surface, text and
-  border variants from each theme's own `--surface`/`--text` via `color-mix`, so a
-  status colour stays legible on light and dark canvases — and every future theme
-  gets correct status styling for free.
+- **Light themes now look right everywhere.** The verdict cards, fact tiles, jump
+  buttons, status pills, and badges used to stay dark even on a light theme,
+  leaving dark patches bleeding through. They now follow the theme you pick.
+- **The Library page follows your theme too.** It used to be stuck dark on every
+  theme; it now matches whatever you've chosen.
+- **Status colours (green/blue/amber/red) stay readable** on light and dark alike —
+  derived from each theme so they never wash out, and any future theme gets them
+  for free. _(Under the hood: theme-aware colour tokens via CSS `color-mix`.)_
 
 ## [1.1.0] — 2026-06-13 · _Trust & Polish_
 
-The first release after the de-branding work. The theme is **trust**: your data
-is portable and safe to move, untrusted input can't reach the model unfiltered,
-provider hiccups recover on their own, and the surfaces are keyboard- and
-motion-accessible. Plus a sharper search and a few quality-of-life touches.
+The theme is **trust**: your data is portable and safe to move, a malicious repo
+can't reach the model unfiltered, provider hiccups recover on their own, and the
+whole app is keyboard- and motion-accessible. Plus a sharper search and a few
+quality-of-life touches.
 
 ### Added
 
@@ -99,10 +98,10 @@ motion-accessible. Plus a sharper search and a few quality-of-life touches.
 
 ### Changed
 
-- **BM25 search ranker.** Library / connection search now ranks with Lucene-style
-  BM25 — non-negative IDF (rare terms outrank common ones), per-field weighting
-  (category / capabilities / tags carry more signal than a buried `eli5` mention),
-  and length normalization. Search input is debounced (180 ms).
+- **Smarter library search.** Rarer, more specific words now pull the right repos
+  to the top, and a match in a repo's category or tags counts for more than a
+  passing mention in its summary. _(Powered by the BM25 ranking used by real
+  search engines.)_
 - **Self-healing provider calls.** Transient failures (network blips, 5xx, rate
   limits) now retry with **exponential backoff** before falling through the
   provider chain; when a scan does fail, the UI surfaces the **single most
@@ -110,13 +109,11 @@ motion-accessible. Plus a sharper search and a few quality-of-life touches.
 
 ### Security
 
-- **One canonical HTML escaper** (`safe-html.js`) with an injection-safe
-  `` html`` `` tagged template, replacing six drifting per-file `esc()` copies —
-  defense-in-depth against XSS across every render path.
-- **README → prompt sanitization.** Repo READMEs are stripped of control
-  characters and have known prompt-injection phrasing defanged, then delimited
-  inside explicit `BEGIN/END UNTRUSTED README` markers with a do-not-comply
-  instruction before reaching the model.
+- **Hardened against malicious repos.** A repo's README can no longer sneak hidden
+  instructions to the AI or inject anything into your results — untrusted text is
+  cleaned and clearly fenced off before the model ever sees it, and every screen
+  renders text safely. _(Consolidated, injection-safe HTML escaping + README→prompt
+  sanitization.)_
 
 ### Accessibility
 
@@ -126,10 +123,10 @@ motion-accessible. Plus a sharper search and a few quality-of-life touches.
 ### Developer experience
 
 - ESLint (flat config) + Prettier + v8 coverage, and a GitHub Actions CI workflow
-  that runs the full unit suite on every push and PR. **360+ tests** across the
-  pure helpers.
+  that runs the full unit suite on every push and PR. _(The suite has since grown
+  to 400+ tests — see the badge in the README for the current count.)_
 
-## [1.0.0] — baseline
+## 1.0.0 — baseline
 
 - One-click repo → verdict-first briefing (GitHub / GitLab / npm / PyPI).
 - Bring-your-own-provider with a smart fallback chain
@@ -137,7 +134,7 @@ motion-accessible. Plus a sharper search and a few quality-of-life touches.
 - Verdict · Deep Dive · Library · Connections · Synergies · Versus · Combinator.
 - In-browser IndexedDB library — no backend, no accounts.
 - Optional Rust deeper-scan runner for measured facts.
-- One-time import from a legacy VelesDB server.
+- One-time import from VelesDB (an older self-hosted version of RepoLens).
 
 [1.4.0]: https://github.com/New1Direction/repolens/releases/tag/v1.4.0
 [1.3.0]: https://github.com/New1Direction/repolens/releases/tag/v1.3.0

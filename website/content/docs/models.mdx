@@ -1,37 +1,58 @@
 ---
 title: Models
-description: Bring your own keys, and route each part of a scan to a different model.
+description: Bring your own keys. Use almost any provider, and route each part of a scan to a different model.
 ---
 
-RepoLens never ships a key. You connect the providers you want in **Options → Connected Services**, and scans run on your credentials.
+RepoLens never ships a key. You connect the providers you want in **Options**, and scans run on your credentials — stored only in your browser, never uploaded, never included in a settings export.
 
-## The fallback chain
+## Two kinds of providers
 
-By default, every AI call runs down a **smart fallback chain** — it tries one provider, and drops to the next on *any* error (rate limit, network, outage):
+**Five first-class providers** have polished sign-in (OAuth where available) and form the default fallback chain:
 
 ```text
 Nous  →  Gemini  →  OpenRouter  →  Grok  →  Anthropic
 ```
 
-Whichever provider is highest in that order *and* connected is your primary; the rest are automatic fallbacks. Each provider has a model dropdown, with **★** marking the recommended pick.
+Whichever is highest in that order *and* connected is your primary; the rest are automatic fallbacks. Each has a model dropdown, with **★** marking the recommended pick.
 
-| Provider | ★ Recommended |
-|---|---|
-| Anthropic | Claude Sonnet 4.6 (Opus 4.8 for max) |
-| Gemini | Gemini 2.5 Pro |
-| Nous | Hermes 4 405B |
-| OpenRouter | Grok 4.3 |
-| xAI | Grok 4.3 |
+> **New here?** Connect any *one* provider and accept the ★ default — it's tuned to work well out of the box. Come back to fine-tune later.
+
+| Provider | Sign-in | ★ Recommended |
+|---|---|---|
+| Anthropic | OAuth or API key | Claude Sonnet 4.6 (Opus 4.8 for max) |
+| Gemini | API key | Gemini 2.5 Pro |
+| OpenRouter | OAuth | Grok 4.3 |
+| xAI Grok | OAuth or API key | Grok 4.3 |
+| Nous | API key | Hermes 4 405B |
+
+## Bring any model
+
+Under **Options → More model providers**, RepoLens speaks **any OpenAI- or Anthropic-compatible endpoint** — so you're not limited to the five above:
+
+- **OpenAI** · **DeepSeek** · **Groq** · **NVIDIA NIM** · **Kimi (Moonshot)** · **Zhipu GLM** · **Qwen (Aliyun)** · **Xiaomi MiMo** · **Volcengine Ark** · **Ollama Cloud** · **MiniMax**
+- **Azure OpenAI** — point at your resource endpoint and deployment.
+- **Ollama (Local)** — runs on `localhost`, **no key needed**. The simplest way to scan fully offline.
+- **Custom** — any other OpenAI- or Anthropic-compatible server. Paste the URL, pick the protocol, done.
+
+Every provider keeps its **own key**, so switching between them never loses your other settings. Each card has:
+
+- a **model picker** (plus a free-form *Custom…* for any model id),
+- an optional **endpoint override** (handy for a proxy or a regional gateway),
+- and two **self-tests** — *Test connection* checks the endpoint answers, *Test function* asks the model to follow a tiny instruction so you know it actually works.
+
+**Connect just one and you're done.** Any provider you connect — first-class or compatible — joins the fallback chain automatically, so a single key (or a local Ollama) is enough to start scanning.
+
+> **Why no "Claude Code CLI / Codex CLI" option?** Those run a program on your computer. A browser extension is sandboxed and can't launch a local process — so RepoLens can't shell out to a CLI. **Local Ollama** covers the same "no cloud, no key" need over plain HTTP instead.
 
 ## Models per scan part
 
-A scan isn't one call — it's eight distinct parts (Core scan, Deep Dive, Framework Lens, SKTPG, Versus, Synergies, Combinator, Re-tag). You can point **each one** at a different provider and model:
+A scan isn't one call — it's eight distinct parts (Core scan, Deep Dive, Framework Lens, SKTPG, Versus, Synergies, Combinator, Re-tag). Not sure what these are? See [The Scan](/docs/the-scan). You can point **each one** at a different provider and model:
 
 > Core scan → **Claude Opus 4.8** for the deep judgment.
 > Re-tag → a cheap, fast model, because it's bulk work.
 > Deep Dive → whatever you like.
 
-Set it all in **Options → Models per scan part**. Each part defaults to **"Default (smart fallback)"**, so you only configure what you care about.
+Set it all in **Options → Models per scan part** — and the compatible providers above show up here too. Each part defaults to **"Default (smart fallback)"**, so you only configure what you care about.
 
 ### It can't dead-end
 

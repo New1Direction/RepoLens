@@ -9,8 +9,24 @@ Every analysis is persisted **in the browser**, using **IndexedDB**. There's no 
 
 - **Repos** — each analysis payload, keyed by a stable hash of the repo id.
 - **Graph** — the nodes and edges behind the Connections tab.
+- **Scan history** — a local cache of recent scans, so reopening a repo is instant and costs no AI call.
 
-"Similar repos" is a small **client-side ranker** over your saved repos (token overlap on language, category, tags, and the summary) — no embeddings, no vector database, no network.
+Search across your library is a fast **client-side BM25 ranker** (the algorithm behind real search engines): rarer query words count for more, and a hit in a high-signal field like the category or capabilities outranks a passing mention buried in the summary. No embeddings, no vector database, no network.
+
+## Manage your library
+
+The **Library** tab is mission control for everything you've scanned:
+
+- **Sort & filter** — by best fit, health, stars, recency, or name; filter by capability; search as you type.
+- **Bulk delete** — hit **Select**, tick any number of cards (or *Select all*), and remove them in one confirmed action. **Esc** or **Done** leaves selection mode.
+- **Stats bar** — a one-glance read on the shape of your library (how many strong/solid/care/risky, average health).
+
+## Back it up — and take it with you
+
+Because it's *your* data, you can move it between machines:
+
+- **Library → Export** writes your whole library — analyzed repos, the Connections graph, and the scan cache — to one portable JSON file. **Import** restores it (merge or replace). Backups are validated and size-bounded on import, so a bad file fails safe instead of corrupting your library.
+- **Options → Back up your settings** exports your preferences — theme, voice, model picks, per-part routing. It is **allowlist-driven by design**: your **API keys and tokens are never written to the file** (and are stripped out even if someone hand-edits one in).
 
 ## Importing an old VelesDB library
 
