@@ -118,7 +118,7 @@ function card(r) {
       <span class="lc-name">${hilite(r.name, hq)}</span>
       ${owner ? `<span class="lc-owner">${hilite(owner, hq)}</span>` : ''}
       ${platformBadge}
-      <span class="lc-chip fit-${r.fit.level}">${esc(r.fit.label)}</span>
+      <span class="lc-chip fit-${r.fit.level}"${r.fit.why ? ` title="${esc(r.fit.why)}"` : ''}>${esc(r.fit.label)}</span>
       ${deltaBadge}
       ${decBadge}
       ${isPinned ? `<span class="lc-pin-badge" title="Pinned">📌</span>` : ''}
@@ -1249,7 +1249,7 @@ function comparePanelHtml(a, b) {
   const maxHealth = Math.max(a.health, b.health, 1);
   const maxStars = Math.max(a.stars, b.stars, 1);
 
-  const fitChip = (r) => `<span class="lc-chip fit-${r.fit.level}" style="margin:0">${esc(r.fit.label)}</span>`;
+  const fitChip = (r) => `<span class="lc-chip fit-${r.fit.level}" style="margin:0"${r.fit.why ? ` title="${esc(r.fit.why)}"` : ''}>${esc(r.fit.label)}</span>`;
   const decChip = (dec) => dec
     ? `<span class="lc-decision" data-d="${esc(dec.decision)}">${esc(DECISION_META[dec.decision]?.label || dec.decision)}</span>`
     : '<span class="cmp-none">—</span>';
@@ -1801,6 +1801,13 @@ function initLibraryPalette() {
     { name: 'Show: Rejected only', action: () => { state.decision = 'reject'; renderDecisionFilter(); render(); } },
     { name: 'Show: Undecided only', action: () => { state.decision = 'undecided'; renderDecisionFilter(); render(); } },
     { name: '✦ Quick wins — strong/solid fit, no decision', description: 'Surface your easiest triage calls first', action: () => { showQuickWins(); } },
+    { name: '↕ Show: Fit changed since last scan', description: 'Repos whose fit verdict improved or regressed after a re-scan', action: () => {
+      const ids = allRows.filter((r) => r.fitDelta).map((r) => r.repoId);
+      nlFilter = ids.length
+        ? { question: 'Fit changed since last scan', ids }
+        : { question: 'Fit changed since last scan', ids: [], error: 'No fit changes yet — re-scan repos to track deltas' };
+      render();
+    } },
     { section: 'Sort', name: 'Sort: Best fit', action: () => { state.sort = 'fit'; document.getElementById('sort').value = 'fit'; chrome.storage.local.set({ librarySort: 'fit' }); render(); } },
     { name: 'Sort: Health', action: () => { state.sort = 'health'; document.getElementById('sort').value = 'health'; chrome.storage.local.set({ librarySort: 'health' }); render(); } },
     { name: 'Sort: Recently scanned', action: () => { state.sort = 'recent'; document.getElementById('sort').value = 'recent'; chrome.storage.local.set({ librarySort: 'recent' }); render(); } },
