@@ -41,6 +41,22 @@
     border-radius: 9px; padding: 10px 13px; color: var(--text); font: 400 13px var(--sans); }
   .lib-search:focus { outline: none; border-color: var(--border-2); }
   .lib-search::placeholder { color: var(--muted); }
+  .nl-filter-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 8px 14px; margin-bottom: 10px; border-radius: 9px;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+  .nlf-label { font: 600 12px var(--mono); color: var(--accent); }
+  .nlf-label em { font-style: normal; color: var(--text); }
+  .nlf-count { font: 600 12px var(--mono); color: var(--ok-ink); background: color-mix(in srgb, var(--ok) 15%, transparent);
+    padding: 2px 8px; border-radius: 99px; }
+  .nlf-none { font: 12px var(--mono); color: var(--muted); }
+  .nlf-err { font: 12px var(--mono); color: var(--bad); }
+  .nlf-spinner { font: 13px var(--mono); color: var(--accent); animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .nlf-text { font: 12px var(--sans); color: var(--sub); }
+  .nlf-clear { background: none; border: none; color: var(--muted); font: 11px var(--mono); cursor: pointer;
+    margin-left: auto; padding: 2px 6px; border-radius: 4px; }
+  .nlf-clear:hover { color: var(--text); background: var(--surface-alt); }
   .lib-sort { background: var(--panel); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px;
     color: var(--sub); font: 600 12px var(--sans); cursor: pointer; }
   /* Ask bar */
@@ -365,8 +381,10 @@
     </div>
     <input type="file" id="file-input" accept="application/json,.json" hidden>
 
+    <div class="nl-filter-banner hidden" id="nl-filter-banner"></div>
+
     <div class="lib-controls">
-      <input class="lib-search" id="search" type="text" placeholder="Search repos… or paste a URL to analyze" autocomplete="off">
+      <input class="lib-search" id="search" type="text" placeholder="Search repos… or ? ask AI to filter…" autocomplete="off">
       <select class="lib-sort" id="sort">
         <option value="fit">Sort: Best fit</option>
         <option value="health">Sort: Health</option>

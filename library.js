@@ -33,6 +33,9 @@ let cacheByRepo = new Map(); // repoId → full cached analysis (instant reopen)
 let decisionMap = new Map(); // repoId → decision payload
 const state = { query: '', sort: 'fit', capability: '', collection: '', decision: '', view: 'list' };
 
+// NL filter state: when the user types ?query, the AI returns a ranked list of IDs.
+let nlFilter = null; // null | { question, ids: string[], error?: string }
+
 // Collections ("Boards") — user-curated groups of repos. Loaded once on init,
 // kept in memory, and persisted per-change. `collection` in state holds the id of
 // the active filter ('' = All).
@@ -143,6 +146,13 @@ function render() {
   // Decision filter: same pattern — decisionMap lives here, not in library-data.
   if (state.decision) {
     rows = rows.filter((r) => decisionMap.get(r.repoId)?.decision === state.decision);
+  }
+  // NL filter: when active, restrict to the AI-ranked ID list (preserving AI order).
+  if (nlFilter?.ids?.length) {
+    const idOrder = new Map(nlFilter.ids.map((id, i) => [id, i]));
+    rows = rows.filter((r) => idOrder.has(r.repoId)).sort((a, b) => idOrder.get(a.repoId) - idOrder.get(b.repoId));
+  } else if (nlFilter && !nlFilter.ids?.length && !nlFilter.error) {
+    rows = []; // AI ran but found nothing
   }
   document.getElementById('count').textContent =
     rows.length === allRows.length ? `${allRows.length} repos` : `${rows.length} of ${allRows.length}`;
@@ -426,6 +436,7 @@ async function deleteSelected() {
   renderCaps();
   render();
   renderStats();
+  renderNlFilterBanner();
   setStatus(`Removed ${ids.length} repo${ids.length === 1 ? '' : 's'}.`);
 }
 
@@ -457,6 +468,28 @@ function renderStats() {
     ${stalePill}
   `);
   document.getElementById('refresh-stale')?.addEventListener('click', refreshStale);
+}
+
+function renderNlFilterBanner() {
+  const host = document.getElementById('nl-filter-banner');
+  if (!host) return;
+  if (!nlFilter) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  host.classList.remove('hidden');
+  if (!nlFilter.ids) {
+    host.innerHTML = `<span class="nlf-spinner">⟳</span> <span class="nlf-text">AI filtering for <em>${esc(nlFilter.question)}</em>…</span>`;
+    return;
+  }
+  const count = nlFilter.ids.length;
+  const errSpan = nlFilter.error ? `<span class="nlf-err">${esc(nlFilter.error)}</span>` : '';
+  const result = !nlFilter.error
+    ? (count ? `<span class="nlf-count">${count} match${count === 1 ? '' : 'es'}</span>` : '<span class="nlf-none">No matches found</span>')
+    : errSpan;
+  host.innerHTML = `<span class="nlf-label">✦ AI: <em>${esc(nlFilter.question)}</em></span>${result}<button class="nlf-clear" id="nlf-clear">✕ Clear</button>`;
+  host.querySelector('#nlf-clear')?.addEventListener('click', () => {
+    nlFilter = null;
+    renderNlFilterBanner();
+    render();
+  });
 }
 
 async function refreshStale() {
@@ -1397,10 +1430,11 @@ async function init() {
   let searchTimer = null;
   searchEl.addEventListener('input', (e) => {
     state.query = e.target.value;
+    if (nlFilter) { nlFilter = null; renderNlFilterBanner(); }
     clearTimeout(searchTimer);
     searchTimer = setTimeout(render, 180); // debounce: don't re-render the whole grid on every keystroke
   });
-  searchEl.addEventListener('keydown', (e) => {
+  searchEl.addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter') return;
     const val = searchEl.value.trim();
     if (!val) return;
@@ -1417,6 +1451,26 @@ async function init() {
       chrome.tabs.create({ url: platformUrls[detected.platform] || val });
       searchEl.value = '';
       state.query = '';
+      return;
+    }
+    // NL filter: "?" prefix routes to AI ranking
+    if (val.startsWith('?')) {
+      e.preventDefault();
+      const question = val.slice(1).trim();
+      if (!question) return;
+      nlFilter = { question, ids: null }; // loading state
+      renderNlFilterBanner();
+      const docs = buildAskDocs();
+      try {
+        const resp = await chrome.runtime.sendMessage({ type: 'FILTER_LIBRARY', question, docs });
+        nlFilter = { question, ids: resp?.ok ? (resp.ids || []) : [], error: resp?.error };
+      } catch (err) {
+        nlFilter = { question, ids: [], error: err?.message || 'Filter failed' };
+      }
+      state.query = '';
+      searchEl.value = '';
+      renderNlFilterBanner();
+      render();
     }
   });
 

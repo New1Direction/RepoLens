@@ -116,3 +116,62 @@ describe('parseAskAnswer', () => {
     expect(parseAskAnswer(t)).toBe(t);
   });
 });
+
+import { buildFilterPrompt, parseFilterResult } from '../ask-library.js';
+
+describe('buildFilterPrompt', () => {
+  it('includes the question', () => {
+    const p = buildFilterPrompt('fast TypeScript state managers', docs);
+    expect(p).toContain('fast TypeScript state managers');
+  });
+
+  it('includes repo IDs in the corpus', () => {
+    const p = buildFilterPrompt('UI libraries', docs);
+    expect(p).toContain('facebook/react');
+    expect(p).toContain('vuejs/vue');
+  });
+
+  it('returns empty for missing question', () => {
+    expect(buildFilterPrompt('', docs)).toBe('');
+    expect(buildFilterPrompt(null, docs)).toBe('');
+  });
+
+  it('returns empty for empty docs', () => {
+    expect(buildFilterPrompt('q?', [])).toBe('');
+  });
+
+  it('instructs AI to return only JSON', () => {
+    const p = buildFilterPrompt('frontend', docs);
+    expect(p).toMatch(/only valid JSON/i);
+  });
+});
+
+describe('parseFilterResult', () => {
+  it('parses a valid JSON array of IDs', () => {
+    const result = parseFilterResult('["facebook/react","vuejs/vue"]');
+    expect(result).toEqual(['facebook/react', 'vuejs/vue']);
+  });
+
+  it('strips markdown code fences', () => {
+    const result = parseFilterResult('```json\n["a/b"]\n```');
+    expect(result).toEqual(['a/b']);
+  });
+
+  it('returns [] for malformed JSON', () => {
+    expect(parseFilterResult('not json')).toEqual([]);
+  });
+
+  it('returns [] for empty input', () => {
+    expect(parseFilterResult('')).toEqual([]);
+    expect(parseFilterResult(null)).toEqual([]);
+  });
+
+  it('returns [] when AI returns an object instead of array', () => {
+    expect(parseFilterResult('{"ids": ["a/b"]}')).toEqual([]);
+  });
+
+  it('filters out empty strings from the array', () => {
+    const result = parseFilterResult('["a/b", "", "c/d"]');
+    expect(result).toEqual(['a/b', 'c/d']);
+  });
+});

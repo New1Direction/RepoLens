@@ -53,7 +53,7 @@ import { withTone } from './tone.js';
 import { buildSktpgPrompt, parseSktpg } from './sktpg.js';
 import { buildDocsQualityPrompt, parseDocsQuality } from './docs-quality.js';
 import { buildVersusPrompt, parseVersus } from './versus.js';
-import { buildAskPrompt, parseAskAnswer } from './ask-library.js';
+import { buildAskPrompt, parseAskAnswer, buildFilterPrompt, parseFilterResult } from './ask-library.js';
 import { buildMaintenancePrompt, parseMaintenance } from './maintenance.js';
 import { fetchMaintenanceSignals } from './fetcher.js';
 import { buildSynergiesPrompt, parseSynergies } from './synergies.js';
@@ -356,6 +356,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, result });
       } catch (e) {
         sendResponse({ ok: false, error: e?.message || 'Comparison failed' });
+      }
+    })();
+    return true;
+  }
+
+  // Natural-language library filter — ranks matching repo IDs for a query.
+  if (msg.type === 'FILTER_LIBRARY' && msg.question && Array.isArray(msg.docs)) {
+    (async () => {
+      try {
+        const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
+        const prompt = buildFilterPrompt(msg.question, msg.docs);
+        if (!prompt) { sendResponse({ ok: false, error: 'No question or context provided.' }); return; }
+        const text = await callAI(keys, prompt, 'ask');
+        const ids = parseFilterResult(text);
+        sendResponse({ ok: true, ids });
+      } catch (e) {
+        sendResponse({ ok: false, error: e?.message || String(e) });
       }
     })();
     return true;
