@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RepoLens — v2.7.0 Triage</title>
+<title>RepoLens — v2.8.0 Delta</title>
 <style>
   :root {
     --bg: #06060d;
@@ -228,7 +228,7 @@
     <div class="hero-vee"><span class="vee is-scanning" id="heroVee" aria-hidden="true"></span></div>
     <h1>Ship fast.<br><span class="grad">Decide faster.</span></h1>
     <p class="hero-sub">Full keyboard triage: <kbd style="font:600 11px/1.5 var(--mono);background:var(--surface);border:1px solid var(--border-2);border-radius:4px;padding:1px 5px">d</kbd> to decide, <kbd style="font:600 11px/1.5 var(--mono);background:var(--surface);border:1px solid var(--border-2);border-radius:4px;padding:1px 5px">o</kbd> to open source, bulk assign from select mode, sort by last decision date, search highlighting, and a live triage progress bar in the stats row — all zero-click, all instant.</p>
-    <div class="hero-meta">🔭 RepoLens · v1.1.0 → v2.7.0</div>
+    <div class="hero-meta">🔭 RepoLens · v1.1.0 → v2.8.0</div>
   </header>
 
   <!-- STATS -->
@@ -244,60 +244,60 @@
   <section class="sec">
     <div class="reveal">
       <div class="sec-eyebrow">Just shipped</div>
-      <h2 class="sec-title">v2.7.0 — Triage.</h2>
-      <p class="sec-note">The full decision workflow is now keyboard-first and zero-friction. Press <code>d</code> on any focused card to get an instant Adopt/Trial/Hold/Reject popover. Bulk assign from select mode. See your triage progress at a glance in the stats bar. Sort by when you last decided. Search terms highlight in card text. Export exactly what you can see.</p>
+      <h2 class="sec-title">v2.8.0 — Delta.</h2>
+      <p class="sec-note">Re-scan a repo and see exactly how its fit changed — green ↑ when it improved, amber ↓ when it regressed. Sort, filter, and export by fit delta. Triage progress shown as a percentage. Hover previews now surface your decision, delta, and personal note at a glance. Stale threshold unified. Three new smart palette filters.</p>
     </div>
 
     <div class="latest-card reveal">
       <div class="latest-top">
-        <span class="vtag new">v2.7.0</span>
+        <span class="vtag new">v2.8.0</span>
         <span class="vnew">● NEWEST</span>
-        <span class="vtheme">Triage.</span>
+        <span class="vtheme">Delta.</span>
         <span class="vdate">Jun 14</span>
       </div>
 
       <div class="bento">
         <div class="feat">
-          <div class="ic">⚖️</div>
-          <h3><kbd style="font:700 11px/1.5 var(--mono);background:var(--surface-2);border:1px solid var(--border-2);border-radius:5px;padding:2px 6px">d</kbd> — instant decision</h3>
-          <p>Press <code>d</code> on any j/k-focused card to open an inline Adopt / Trial / Hold / Reject popover. Sub-shortcuts inside: <code>a</code>, <code>t</code>, <code>h</code>, <code>r</code>. Saves to IDB instantly, updates the decision badge, closes on Esc or outside click.</p>
-          <div class="tagrow"><span class="tag">keyboard</span><span class="tag">triage</span><span class="tag">speed</span></div>
-        </div>
-        <div class="feat">
-          <div class="ic">☑️</div>
-          <h3>Bulk assign decision</h3>
-          <p>Enter select mode, check any number of repos, pick a decision from the "Decide…" dropdown in the selection bar — all cards get the same decision in one shot. Works for Clear too.</p>
-          <div class="tagrow"><span class="tag">bulk</span><span class="tag">triage</span><span class="tag">batch</span></div>
+          <div class="ic">↕</div>
+          <h3>Fit delta tracking</h3>
+          <p>Re-scan a repo and the card immediately shows a ↑ green or ↓ amber badge: "↑ solid → strong". Stored in IDB so the delta persists across sessions. The hover preview also shows the delta.</p>
+          <div class="tagrow"><span class="tag">delta</span><span class="tag">rescan</span><span class="tag">history</span></div>
         </div>
         <div class="feat">
           <div class="ic">📊</div>
-          <h3>Triage progress in stats bar</h3>
-          <p>The stats bar now shows clickable "12 Adopt · 5 Trial · 3 Hold · 8 Reject · 22 undecided" chips. Click any to filter. See your backlog drain in real time.</p>
-          <div class="tagrow"><span class="tag">stats</span><span class="tag">visibility</span><span class="tag">filter</span></div>
+          <h3>Triage % + enriched hover</h3>
+          <p>Stats bar now shows "68% triaged" alongside fit counts. Hover preview leads with decision badge + timestamp, then fit delta, then your personal note — before the analysis summary.</p>
+          <div class="tagrow"><span class="tag">stats</span><span class="tag">hover</span><span class="tag">progress</span></div>
         </div>
         <div class="feat">
-          <div class="ic">🔍</div>
-          <h3>Search term highlighting</h3>
-          <p>Type in the search box and matching text lights up in card names, owners, blurbs, and capability tags — instantly, with no extra render. Makes the filter feel tangible.</p>
-          <div class="tagrow"><span class="tag">search</span><span class="tag">highlight</span><span class="tag">UX</span></div>
+          <div class="ic">🔀</div>
+          <h3>Sort: Fit changed</h3>
+          <p>New sort mode surfaces all repos with a fit delta at the top — improved before regressed, then alphabetical. Available in both the sort dropdown and the palette.</p>
+          <div class="tagrow"><span class="tag">sort</span><span class="tag">delta</span><span class="tag">triage</span></div>
         </div>
         <div class="feat">
-          <div class="ic">🕐</div>
-          <h3>Decision date on badge + new sort</h3>
-          <p>Decision badges now show when you decided ("Adopt · 3 days ago"). New sort option "Recently decided" floats your most recently triaged repos to the top — great for picking up where you left off.</p>
-          <div class="tagrow"><span class="tag">sort</span><span class="tag">date</span><span class="tag">context</span></div>
+          <div class="ic">⌨</div>
+          <h3><kbd style="font:700 11px/1.5 var(--mono);background:var(--surface-2);border:1px solid var(--border-2);border-radius:5px;padding:2px 6px">r</kbd> — re-scan focused card</h3>
+          <p>Press <code>r</code> on any j/k-focused card to trigger a fresh scan — no mouse needed. Completes the keyboard triage loop: navigate → decide → re-scan → check delta.</p>
+          <div class="tagrow"><span class="tag">keyboard</span><span class="tag">rescan</span><span class="tag">speed</span></div>
         </div>
         <div class="feat">
-          <div class="ic">📤</div>
-          <h3>Export visible + Undecided filter</h3>
-          <p>Export only the currently filtered repos as Markdown (respects collection, decision, NL, and text filters). New "Undecided" chip in the decision filter bar and palette — instantly shows everything still needing a call.</p>
-          <div class="tagrow"><span class="tag">export</span><span class="tag">filter</span><span class="tag">undecided</span></div>
+          <div class="ic">💡</div>
+          <h3>Fit chip shows reasoning</h3>
+          <p>Hover the "Strong fit" or "Use with care" chip to see why — e.g. "health 82 · 2 flags". Available on every card and in the compare modal. Zero extra clicks.</p>
+          <div class="tagrow"><span class="tag">tooltip</span><span class="tag">fit</span><span class="tag">transparency</span></div>
+        </div>
+        <div class="feat">
+          <div class="ic">⚡</div>
+          <h3>Smart palette filters</h3>
+          <p>Three new palette commands: "Fit changed since last scan", "Needs attention (risky/care, undecided)", and "Stale only". Plus "Re-scan all stale" opens Batch Scan pre-filled.</p>
+          <div class="tagrow"><span class="tag">palette</span><span class="tag">filter</span><span class="tag">smart</span></div>
         </div>
       </div>
 
       <div class="changed">
-        <div class="chg"><span class="ci">⌨</span><div><b><code>o</code> key opens source.</b> <span>Press <code>o</code> on a focused card to open its source URL in a new tab — completes the keyboard-only triage loop.</span></div></div>
-        <div class="chg"><span class="ci">🧪</span><div><b>707 tests, all green.</b> <span>All suites passing across 60 test files.</span></div></div>
+        <div class="chg"><span class="ci">🔧</span><div><b>Stale threshold unified to 30 days.</b> <span>The stats pill and Batch Scan pre-fill now match the card badge — previously the pill used 7 days while the badge used 30, causing a confusing count mismatch.</span></div></div>
+        <div class="chg"><span class="ci">🧪</span><div><b>731 tests, all green.</b> <span>5 new fitDelta unit tests added to library-data suite.</span></div></div>
       </div>
     </div>
   </section>
@@ -311,6 +311,10 @@
     </div>
 
     <div class="timeline">
+      <div class="rel reveal">
+        <div class="rel-head"><span class="rel-v">v2.7.0</span><span class="rel-theme">Triage.</span><span class="rel-date">Jun 14</span></div>
+        <div class="rel-body">Keyboard-first decision workflow: <code>d</code> popover with Vee suggestion, bulk assign in select mode. Triage progress chips in stats bar. Search term highlighting in cards. Decision date on badge. "Recently decided" sort. Export visible repos. Undecided filter. Language filter. Quick wins and compact density toggle.</div>
+      </div>
       <div class="rel reveal">
         <div class="rel-head"><span class="rel-v">v2.6.0</span><span class="rel-theme">Smooth.</span><span class="rel-date">Jun 14</span></div>
         <div class="rel-body">Event-delegated library grid (O(1) wiring, zero listener leaks), hover preview flyout showing eli5 + strengths/weaknesses, clickable capability tags filter inline, keyboard hint bar below the grid, and an extended j/k suite covering n/c/p/Esc.</div>
@@ -444,7 +448,7 @@
       <span class="pill">Manifest V3</span>
     </div>
     <div>🔭 <b>RepoLens</b> — built for people who read code before they trust it.<br>
-    Full detail in the <a href="CHANGELOG.md">changelog</a>. Now at v2.7.0.</div>
+    Full detail in the <a href="CHANGELOG.md">changelog</a>. Now at v2.8.0.</div>
   </footer>
 
 </div>
