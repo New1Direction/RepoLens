@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RepoLens — v2.6.0 Smooth</title>
+<title>RepoLens — v2.7.0 Triage</title>
 <style>
   :root {
     --bg: #06060d;
@@ -226,14 +226,14 @@
   <header class="hero">
     <span class="kicker"><span class="pulse"></span> Shipped · Jun 12–14, 2026</span>
     <div class="hero-vee"><span class="vee is-scanning" id="heroVee" aria-hidden="true"></span></div>
-    <h1>Keep shipping.<br><span class="grad">Stay smooth.</span></h1>
-    <p class="hero-sub">The library feels like a real app now — hover previews, delegated events, clickable tag filters, stale scan indicators, keyboard hints, and a full j/k shortcut suite. All fast. All instant.</p>
-    <div class="hero-meta">🔭 RepoLens · v1.1.0 → v2.6.0</div>
+    <h1>Ship fast.<br><span class="grad">Decide faster.</span></h1>
+    <p class="hero-sub">Full keyboard triage: <kbd style="font:600 11px/1.5 var(--mono);background:var(--surface);border:1px solid var(--border-2);border-radius:4px;padding:1px 5px">d</kbd> to decide, <kbd style="font:600 11px/1.5 var(--mono);background:var(--surface);border:1px solid var(--border-2);border-radius:4px;padding:1px 5px">o</kbd> to open source, bulk assign from select mode, sort by last decision date, search highlighting, and a live triage progress bar in the stats row — all zero-click, all instant.</p>
+    <div class="hero-meta">🔭 RepoLens · v1.1.0 → v2.7.0</div>
   </header>
 
   <!-- STATS -->
   <section class="stats reveal">
-    <div class="stat"><div class="n">30</div><div class="l">Releases</div></div>
+    <div class="stat"><div class="n">31</div><div class="l">Releases</div></div>
     <div class="stat"><div class="n">707</div><div class="l">Tests passing</div></div>
     <div class="stat"><div class="n">13</div><div class="l">Themes</div></div>
     <div class="stat"><div class="n">20+</div><div class="l">AI providers</div></div>
@@ -244,47 +244,59 @@
   <section class="sec">
     <div class="reveal">
       <div class="sec-eyebrow">Just shipped</div>
-      <h2 class="sec-title">v2.6.0 — Smooth.</h2>
-      <p class="sec-note">The library grid is now event-delegated (O(1) wiring, zero listener leaks), cards hover-reveal their full analysis without a click, capability tags filter inline, and a keyboard hint bar makes the full j/k suite discoverable. Every interaction is faster.</p>
+      <h2 class="sec-title">v2.7.0 — Triage.</h2>
+      <p class="sec-note">The full decision workflow is now keyboard-first and zero-friction. Press <code>d</code> on any focused card to get an instant Adopt/Trial/Hold/Reject popover. Bulk assign from select mode. See your triage progress at a glance in the stats bar. Sort by when you last decided. Search terms highlight in card text. Export exactly what you can see.</p>
     </div>
 
     <div class="latest-card reveal">
       <div class="latest-top">
-        <span class="vtag new">v2.6.0</span>
+        <span class="vtag new">v2.7.0</span>
         <span class="vnew">● NEWEST</span>
-        <span class="vtheme">Smooth.</span>
+        <span class="vtheme">Triage.</span>
         <span class="vdate">Jun 14</span>
       </div>
 
-      <div class="bento bento-2x2">
+      <div class="bento">
         <div class="feat">
-          <div class="ic">👁</div>
-          <h3>Hover preview flyout</h3>
-          <p>Hold your cursor over any cached library card for 350 ms and a flyout appears — eli5 summary, top 3 strengths, and top 2 weaknesses — without clicking or switching tabs. Move onto the panel and it stays open.</p>
-          <div class="tagrow"><span class="tag">hover</span><span class="tag">preview</span><span class="tag">speed</span></div>
+          <div class="ic">⚖️</div>
+          <h3><kbd style="font:700 11px/1.5 var(--mono);background:var(--surface-2);border:1px solid var(--border-2);border-radius:5px;padding:2px 6px">d</kbd> — instant decision</h3>
+          <p>Press <code>d</code> on any j/k-focused card to open an inline Adopt / Trial / Hold / Reject popover. Sub-shortcuts inside: <code>a</code>, <code>t</code>, <code>h</code>, <code>r</code>. Saves to IDB instantly, updates the decision badge, closes on Esc or outside click.</p>
+          <div class="tagrow"><span class="tag">keyboard</span><span class="tag">triage</span><span class="tag">speed</span></div>
         </div>
         <div class="feat">
-          <div class="ic">⚡</div>
-          <h3>Event delegation (O(1) wiring)</h3>
-          <p>All card click, change, and hover handlers now route through a single delegated listener on the grid element instead of one per card. Re-renders are faster, listener counts stay flat regardless of library size, and hover timers can't leak across renders.</p>
-          <div class="tagrow"><span class="tag">perf</span><span class="tag">architecture</span></div>
+          <div class="ic">☑️</div>
+          <h3>Bulk assign decision</h3>
+          <p>Enter select mode, check any number of repos, pick a decision from the "Decide…" dropdown in the selection bar — all cards get the same decision in one shot. Works for Clear too.</p>
+          <div class="tagrow"><span class="tag">bulk</span><span class="tag">triage</span><span class="tag">batch</span></div>
         </div>
         <div class="feat">
-          <div class="ic">🏷</div>
-          <h3>Clickable capability tags</h3>
-          <p>Capability chips on every card are now interactive filter buttons. Click a tag to filter the whole grid to repos with that capability — click again to clear. Syncs with the toolbar capability bar and works with all other filters.</p>
-          <div class="tagrow"><span class="tag">filter</span><span class="tag">capabilities</span><span class="tag">UX</span></div>
+          <div class="ic">📊</div>
+          <h3>Triage progress in stats bar</h3>
+          <p>The stats bar now shows clickable "12 Adopt · 5 Trial · 3 Hold · 8 Reject · 22 undecided" chips. Click any to filter. See your backlog drain in real time.</p>
+          <div class="tagrow"><span class="tag">stats</span><span class="tag">visibility</span><span class="tag">filter</span></div>
         </div>
         <div class="feat">
-          <div class="ic">⌨</div>
-          <h3>Keyboard hint bar + extended nav</h3>
-          <p>A subtle shortcut bar sits below the grid so the full keyboard suite is discoverable at a glance. j/k now also supports n (note), c (compare), p (pin), Esc (clear focus), and / (jump to search) without touching the mouse.</p>
-          <div class="tagrow"><span class="tag">keyboard</span><span class="tag">accessibility</span><span class="tag">power users</span></div>
+          <div class="ic">🔍</div>
+          <h3>Search term highlighting</h3>
+          <p>Type in the search box and matching text lights up in card names, owners, blurbs, and capability tags — instantly, with no extra render. Makes the filter feel tangible.</p>
+          <div class="tagrow"><span class="tag">search</span><span class="tag">highlight</span><span class="tag">UX</span></div>
+        </div>
+        <div class="feat">
+          <div class="ic">🕐</div>
+          <h3>Decision date on badge + new sort</h3>
+          <p>Decision badges now show when you decided ("Adopt · 3 days ago"). New sort option "Recently decided" floats your most recently triaged repos to the top — great for picking up where you left off.</p>
+          <div class="tagrow"><span class="tag">sort</span><span class="tag">date</span><span class="tag">context</span></div>
+        </div>
+        <div class="feat">
+          <div class="ic">📤</div>
+          <h3>Export visible + Undecided filter</h3>
+          <p>Export only the currently filtered repos as Markdown (respects collection, decision, NL, and text filters). New "Undecided" chip in the decision filter bar and palette — instantly shows everything still needing a call.</p>
+          <div class="tagrow"><span class="tag">export</span><span class="tag">filter</span><span class="tag">undecided</span></div>
         </div>
       </div>
 
       <div class="changed">
-        <div class="chg"><span class="ci">⟳</span><div><b>Stale scan indicator.</b> <span>Cards with an analysis older than 30 days show a subtle "⟳ stale" badge in the meta row. Clicking it opens a fresh re-scan instantly.</span></div></div>
+        <div class="chg"><span class="ci">⌨</span><div><b><code>o</code> key opens source.</b> <span>Press <code>o</code> on a focused card to open its source URL in a new tab — completes the keyboard-only triage loop.</span></div></div>
         <div class="chg"><span class="ci">🧪</span><div><b>707 tests, all green.</b> <span>All suites passing across 60 test files.</span></div></div>
       </div>
     </div>
@@ -299,6 +311,10 @@
     </div>
 
     <div class="timeline">
+      <div class="rel reveal">
+        <div class="rel-head"><span class="rel-v">v2.6.0</span><span class="rel-theme">Smooth.</span><span class="rel-date">Jun 14</span></div>
+        <div class="rel-body">Event-delegated library grid (O(1) wiring, zero listener leaks), hover preview flyout showing eli5 + strengths/weaknesses, clickable capability tags filter inline, keyboard hint bar below the grid, and an extended j/k suite covering n/c/p/Esc.</div>
+      </div>
       <div class="rel reveal">
         <div class="rel-head"><span class="rel-v">v2.5.0</span><span class="rel-theme">Knowledge.</span><span class="rel-date">Jun 14</span></div>
         <div class="rel-body">AI head-to-head compare verdict for library cards. Personal notes per repo with inline editor and note preview on cards. Full-text search across eli5 summaries and use-cases. One-click Markdown library export. NL filter with ? prefix — type a question, AI returns a ranked list of matching repos. Inline collection creation.</div>
@@ -428,7 +444,7 @@
       <span class="pill">Manifest V3</span>
     </div>
     <div>🔭 <b>RepoLens</b> — built for people who read code before they trust it.<br>
-    Full detail in the <a href="CHANGELOG.md">changelog</a>. Now at v2.6.0.</div>
+    Full detail in the <a href="CHANGELOG.md">changelog</a>. Now at v2.7.0.</div>
   </footer>
 
 </div>
