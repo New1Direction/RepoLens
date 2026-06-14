@@ -76,6 +76,7 @@ function card(r) {
   const tags = r.capabilities.slice(0, 4).map((c) => `<span class="lc-tag" data-cap="${esc(c)}" title="Filter by ${esc(c)}">${esc(c)}</span>`).join('');
   const when = relativeTime(r.savedAt);
   const isToday = r.savedAt && (Date.now() - Date.parse(r.savedAt)) < 86_400_000;
+  const isStale = r.savedAt && (Date.now() - Date.parse(r.savedAt)) > 30 * 86_400_000;
   const sel = selected.has(r.repoId);
   const boards = repoCollections(collections, r.repoId);
   const boardDots = boards.length
@@ -106,6 +107,7 @@ function card(r) {
       ${r.category ? `<span class="lc-cat">${esc(r.category)}</span>` : ''}
       ${dots ? `<span class="lc-langs">${dots}</span>` : ''}
       ${isToday ? `<span class="lc-today" title="Scanned ${esc(when)}">Today</span>` : when ? `<span class="lc-when" title="Last scanned ${esc(r.savedAt)}">scanned ${esc(when)}</span>` : ''}
+      ${isStale ? `<span class="lc-stale" title="Analysis is over 30 days old — consider re-scanning" data-act="rescan">⟳ stale</span>` : ''}
     </div>
     ${tags || boardDots ? `<div class="lc-tags">${tags}${boardDots}</div>` : ''}
     <div class="lc-actions">
@@ -181,6 +183,14 @@ function wireGridEvents(grid) {
 
   // Single click handler for cards and action buttons
   grid.addEventListener('click', (e) => {
+    // Stale badge click → trigger rescan for that card
+    if (e.target.classList.contains('lc-stale')) {
+      e.stopPropagation();
+      const el = e.target.closest('.lib-card');
+      if (el) rescan(el.dataset.repo);
+      return;
+    }
+
     // Capability tag click → filter by that capability
     const tag = e.target.closest('.lc-tag[data-cap]');
     if (tag) {
