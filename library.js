@@ -1733,6 +1733,11 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     showQuickDecision(repoId, activeCard);
   }
+  if (e.key === 'o') {
+    e.preventDefault();
+    const row = allRows.find((r) => r.repoId === repoId);
+    if (row) window.open(sourceUrl(row), '_blank', 'noopener');
+  }
 });
 
 // ─── Library palette ─────────────────────────────────────────────────────────
