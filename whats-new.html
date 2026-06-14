@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RepoLens — 3 days, 12 releases</title>
+<title>RepoLens — 3 days, 15 releases</title>
 <style>
   :root {
     --bg: #06060d;
@@ -226,14 +226,14 @@
   <header class="hero">
     <span class="kicker"><span class="pulse"></span> Shipped · Jun 12–14, 2026</span>
     <div class="hero-vee"><span class="vee is-scanning" id="heroVee" aria-hidden="true"></span></div>
-    <h1>Three days.<br><span class="grad">Twelve releases.</span></h1>
-    <p class="hero-sub">RepoLens is now the smoothest, fastest repo analyzer available — deep-linkable tabs, click the repo name to open source, <kbd>f</kbd> to rescan from anywhere, star counts on every library card, and a cleaner first-scan experience. Here's everything that landed.</p>
-    <div class="hero-meta">🔭 RepoLens · v1.1.0 → v2.2.0</div>
+    <h1>Three days.<br><span class="grad">Fifteen releases.</span></h1>
+    <p class="hero-sub">RepoLens now helps you decide — a Tech Radar in the library, decision badges everywhere, fit verdict chip in the header, keyboard shortcuts for every surface, and a Markdown export of your tech radar for team docs.</p>
+    <div class="hero-meta">🔭 RepoLens · v1.1.0 → v2.3.0</div>
   </header>
 
   <!-- STATS -->
   <section class="stats reveal">
-    <div class="stat"><div class="n">12</div><div class="l">Releases</div></div>
+    <div class="stat"><div class="n">15</div><div class="l">Releases</div></div>
     <div class="stat"><div class="n">674</div><div class="l">Tests passing</div></div>
     <div class="stat"><div class="n">13</div><div class="l">Themes</div></div>
     <div class="stat"><div class="n">20+</div><div class="l">AI providers</div></div>
@@ -244,48 +244,49 @@
   <section class="sec">
     <div class="reveal">
       <div class="sec-eyebrow">Just shipped</div>
-      <h2 class="sec-title">v2.2.0 — Navigate.</h2>
-      <p class="sec-note">Every piece of the interface is now wired for speed. Deep-link to any tab, click the repo name to open source, press <kbd>f</kbd> to rescan from anywhere, see star counts at a glance, and get a friendly first-scan prompt instead of a dead end.</p>
+      <h2 class="sec-title">v2.3.0 — Decide.</h2>
+      <p class="sec-note">Your decisions are now first-class. Adopt/Trial/Hold/Reject badges appear in the header and at the top of the verdict. A new Tech Radar view organizes your whole library by decision ring — and exports as Markdown for team docs.</p>
     </div>
 
     <div class="latest-card reveal">
       <div class="latest-top">
-        <span class="vtag new">v2.2.0</span>
+        <span class="vtag new">v2.3.0</span>
         <span class="vnew">● NEWEST</span>
-        <span class="vtheme">Navigate.</span>
+        <span class="vtheme">Decide.</span>
         <span class="vdate">Jun 14</span>
       </div>
 
       <div class="bento bento-2x2">
         <div class="feat">
-          <div class="ic">🔗</div>
-          <h3>Deep-link any tab</h3>
-          <p>The URL now reflects the active tab — <code>#diff</code>, <code>#ask</code>, <code>#versus</code>, <code>#health</code>, and so on. Reload, share, or bookmark a specific view. The hash restores automatically when the analysis loads.</p>
-          <div class="tagrow"><span class="tag">URL hash</span><span class="tag">bookmarkable</span><span class="tag">26 tab slugs</span></div>
+          <div class="ic">🎯</div>
+          <h3>Tech Radar view</h3>
+          <p>The library now has a <strong>🎯 Radar</strong> toggle that organizes all your repos into four columns — Adopt, Trial, Hold, and Reject — based on your recorded decisions. Click any chip to reopen the analysis instantly.</p>
+          <div class="tagrow"><span class="tag">library</span><span class="tag">decisions</span><span class="tag">4-column</span></div>
+        </div>
+        <div class="feat">
+          <div class="ic">📋</div>
+          <h3>Decision badge everywhere</h3>
+          <p>Your Adopt / Trial / Hold / Reject decision now appears as a colored badge in the output-tab header (always visible) and as a banner at the top of the Verdict tab — with your note and how long ago you decided.</p>
+          <div class="tagrow"><span class="tag">header badge</span><span class="tag">verdict preview</span><span class="tag">instant context</span></div>
         </div>
         <div class="feat">
           <div class="ic">⌨️</div>
-          <h3><kbd>f</kbd> — run fresh, anytime</h3>
-          <p>Press <kbd>f</kbd> from anywhere on the output tab to bypass the cache and trigger a fresh AI scan. Works whether a cache banner is visible or not. Also available via <kbd>⌘K</kbd> → <em>Run Fresh Scan</em>.</p>
-          <div class="tagrow"><span class="tag">keyboard shortcut</span><span class="tag">cache bypass</span><span class="tag">palette</span></div>
+          <h3>Five new shortcuts</h3>
+          <p><kbd>v</kbd> Verdict · <kbd>e</kbd> ELI5 · <kbd>h</kbd> Health · <kbd>l</kbd> Library · <kbd>o</kbd> Open source repo. Every important destination now has a single key — no need to reach for the mouse.</p>
+          <div class="tagrow"><span class="tag">keyboard</span><span class="tag">speed</span><span class="tag">palette shortcuts</span></div>
         </div>
         <div class="feat">
-          <div class="ic">🌐</div>
-          <h3>Repo name links to source</h3>
-          <p>The repo name in the output header is now a link. Click it to open the GitHub, GitLab, npm, or PyPI page directly — no need to copy the URL first.</p>
-          <div class="tagrow"><span class="tag">output header</span><span class="tag">opens source</span></div>
-        </div>
-        <div class="feat">
-          <div class="ic">⭐</div>
-          <h3>Star counts on library cards + batch notify</h3>
-          <p>Every library card now shows the star count alongside health score. Batch scans fire a system notification on completion — "N repos saved" — so you can walk away and come back when it's done.</p>
-          <div class="tagrow"><span class="tag">library</span><span class="tag">stars</span><span class="tag">batch notify</span></div>
+          <div class="ic">📤</div>
+          <h3>Export Radar as Markdown</h3>
+          <p>In Radar view, one click copies your entire tech radar as a formatted Markdown table — Adopt, Trial, Hold, Reject columns with repo links and notes — ready to paste into Notion, GitHub, or a team doc.</p>
+          <div class="tagrow"><span class="tag">export</span><span class="tag">team sharing</span><span class="tag">markdown</span></div>
         </div>
       </div>
 
       <div class="changed">
-        <div class="chg"><span class="ci">📸</span><div><b>Diff tab — first-scan state.</b> <span>Instead of a dead-end message, the "Since Last Scan" tab now explains what the diff will show and offers a <em>Rescan now →</em> CTA.</span></div></div>
-        <div class="chg"><span class="ci">🧪</span><div><b>674 tests, all green.</b> <span>All prior suites passing — zero regressions across 59 test files.</span></div></div>
+        <div class="chg"><span class="ci">🏷</span><div><b>Fit chip in header.</b> <span>Strong / Solid / Use with care / Risky now appears below the health score — at a glance without switching to the Verdict tab.</span></div></div>
+        <div class="chg"><span class="ci">📋</span><div><b>Richer ⧉ Copy verdict.</b> <span>The verdict copy text now includes health score, star count, license, and top pros/cons in addition to the fit label and flags.</span></div></div>
+        <div class="chg"><span class="ci">🧪</span><div><b>674 tests, all green.</b> <span>All prior suites passing across 59 test files.</span></div></div>
       </div>
     </div>
   </section>
@@ -299,6 +300,10 @@
     </div>
 
     <div class="timeline">
+      <div class="rel reveal">
+        <div class="rel-head"><span class="rel-v">v2.2.0</span><span class="rel-theme">Navigate.</span><span class="rel-date">Jun 14</span></div>
+        <div class="rel-body">Every tab deep-linkable via URL hash, repo name is a clickable link to source, <kbd>f</kbd> for fresh scan from anywhere, star counts on library cards, batch-scan notification on completion, diff first-scan CTA, per-repo tab memory, decision filter in library.</div>
+      </div>
       <div class="rel reveal">
         <div class="rel-head"><span class="rel-v">v2.1.0</span><span class="rel-theme">Flow.</span><span class="rel-date">Jun 14</span></div>
         <div class="rel-body">Workflow frictions removed: board popover from the analysis, diff callout on the Verdict, paste-URL error screen, Copy Slack, fit emoji in the tab title, scan buttons for unanalyzed alternatives, stale-cache amber banner, refresh-stale batch shortcut from the Library.</div>
@@ -412,7 +417,7 @@
       <span class="pill">Manifest V3</span>
     </div>
     <div>🔭 <b>RepoLens</b> — built for people who read code before they trust it.<br>
-    Full detail in the <a href="CHANGELOG.md">changelog</a>. Now at v2.2.0.</div>
+    Full detail in the <a href="CHANGELOG.md">changelog</a>. Now at v2.3.0.</div>
   </footer>
 
 </div>
