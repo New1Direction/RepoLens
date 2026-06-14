@@ -218,6 +218,14 @@ function updateSelectionBar() {
     const allChosen = vis.length > 0 && vis.every((id) => selected.has(id));
     all.textContent = allChosen ? 'Select none' : 'Select all';
   }
+  const stack = document.getElementById('sel-stack');
+  if (stack) {
+    const ok = n >= 2 && n <= 6;
+    stack.disabled = !ok;
+    stack.title = ok
+      ? `Build a wiring diagram from ${n} repos`
+      : n < 2 ? 'Select 2–6 repos to build a stack' : 'Select at most 6 repos';
+  }
 }
 
 function selectAllToggle() {
@@ -452,10 +460,21 @@ function wireToolbar() {
   });
   document.getElementById('sel-all')?.addEventListener('click', selectAllToggle);
   document.getElementById('sel-del')?.addEventListener('click', (e) => deleteSelectedFlow(e.currentTarget));
+  document.getElementById('sel-stack')?.addEventListener('click', buildStack);
   document.getElementById('sel-done')?.addEventListener('click', () => setSelectionMode(false));
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && selectionMode) setSelectionMode(false);
   });
+}
+
+async function buildStack() {
+  const repoIds = [...selected];
+  if (repoIds.length < 2 || repoIds.length > 6) return;
+  const key = 'repolens_' + crypto.randomUUID();
+  await chrome.storage.session.set({ [key]: { loading: true, status: 'fetching' } });
+  chrome.runtime.sendMessage({ type: 'STACK_BUILD', sessionKey: key, repoIds });
+  chrome.tabs.create({ url: chrome.runtime.getURL(`stack-tab.html?key=${key}`) });
+  setSelectionMode(false);
 }
 
 function renderCaps() {

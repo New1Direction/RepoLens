@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RepoLens — Stack Builder</title>
+<link rel="stylesheet" href="themes.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--body-bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo { width: 32px; height: 32px; background: var(--accent-grad); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .header-title { font-size: 18px; font-weight: 800; color: var(--text-strong); letter-spacing: -0.4px; }
+  .header-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .main { max-width: 760px; margin: 0 auto; padding: 32px; }
+
+  /* Loading / error states */
+  .st-loading { display: flex; align-items: center; gap: 12px; color: var(--text-sub); padding: 64px 0; }
+  .st-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.4;transform:scale(.9)} 50%{opacity:1;transform:scale(1.1)} }
+  .st-error { padding: 64px 0; text-align: center; color: var(--text-sub); }
+  .st-error h2 { font-size: 20px; color: var(--text); margin-bottom: 10px; }
+
+  /* Stack title + summary */
+  .stack-title { font-size: 26px; font-weight: 900; color: var(--text-strong); letter-spacing: -0.5px; margin-bottom: 8px; }
+  .stack-summary { font-size: 14px; color: var(--text-sub); line-height: 1.7; margin-bottom: 32px; max-width: 620px; }
+
+  /* Roles table */
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; }
+  .roles-grid { display: grid; gap: 10px; margin-bottom: 32px; }
+  .role-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start; }
+  .role-layer { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; flex-shrink: 0; margin-top: 1px; }
+  .role-layer.frontend { background: #1e3a5f20; color: #60a5fa; border: 1px solid #60a5fa30; }
+  .role-layer.backend  { background: #1e3a0020; color: #4ade80; border: 1px solid #4ade8030; }
+  .role-layer.data     { background: #2d1b6920; color: #a78bfa; border: 1px solid #a78bfa30; }
+  .role-layer.infra    { background: #451a0320; color: #fbbf24; border: 1px solid #fbbf2430; }
+  .role-layer.testing  { background: #052e1620; color: #34d399; border: 1px solid #34d39930; }
+  .role-layer.tooling  { background: var(--surface-alt); color: var(--text-sub); border: 1px solid var(--border-2); }
+  .role-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; font-family: ui-monospace, monospace; }
+  .role-desc { font-size: 12px; color: var(--text-sub); line-height: 1.5; }
+
+  /* Integrations */
+  .integrations { margin-bottom: 32px; }
+  .integ-row { display: flex; gap: 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; flex-wrap: wrap; }
+  .integ-row:last-child { border-bottom: none; }
+  .integ-from, .integ-to { color: var(--accent); font-weight: 600; font-family: ui-monospace, monospace; font-size: 12px; }
+  .integ-arrow { color: var(--text-faint); font-size: 11px; }
+  .integ-glue { color: var(--text-sub); width: 100%; font-size: 12px; padding-left: 0; }
+
+  /* Gaps */
+  .gaps { margin-bottom: 32px; }
+  .gap-item { font-size: 13px; color: var(--text-sub); padding: 6px 0 6px 16px; position: relative; }
+  .gap-item::before { content: '—'; position: absolute; left: 0; color: var(--text-faint); }
+
+  /* Adoption order */
+  .order { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 32px; }
+  .order-step { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--text-sub); font-family: ui-monospace, monospace; display: flex; align-items: center; gap: 6px; }
+  .order-num { font-size: 9px; font-weight: 700; background: var(--accent-deep); color: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .order-arrow { color: var(--text-faint); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">⚙</div>
+  <div>
+    <div class="header-title">Tech-Stack Builder</div>
+    <div class="header-sub">AI wiring diagram for your selected repos</div>
+  </div>
+</div>
+<div class="main" id="main">
+  <div class="st-loading"><span class="st-dot"></span>Building your stack…</div>
+</div>
+<script src="stack-tab.js" type="module"></script>
+</body>
+</html>

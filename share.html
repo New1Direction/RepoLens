@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RepoLens — Verdict Card</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0c111b;
+    color: #e6edf5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 24px;
+  }
+
+  .card {
+    background: #131d2e;
+    border: 1px solid #1c2b3e;
+    border-radius: 18px;
+    padding: 32px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .brand-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #6d28d9, #2563eb);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .brand-name { font-size: 13px; font-weight: 700; color: #9fb2c9; letter-spacing: 0.5px; }
+
+  .repo-id {
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: #6d28d9;
+    margin-bottom: 6px;
+    word-break: break-all;
+  }
+
+  .description {
+    font-size: 14px;
+    color: #9fb2c9;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .fit-chip {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 5px 14px;
+    margin-bottom: 18px;
+    letter-spacing: 0.3px;
+  }
+  .fit-strong { background: #052e1620; color: #4ade80; border: 1px solid #4ade8030; }
+  .fit-solid  { background: #1e3a5f20; color: #60a5fa; border: 1px solid #60a5fa30; }
+  .fit-care   { background: #451a0320; color: #fbbf24; border: 1px solid #fbbf2430; }
+  .fit-risky  { background: #450a0a20; color: #f87171; border: 1px solid #f8717130; }
+
+  .eli5 {
+    font-size: 13px;
+    color: #c5d4e8;
+    line-height: 1.7;
+    border-left: 3px solid #1c2b3e;
+    padding-left: 14px;
+    margin-bottom: 22px;
+    font-style: italic;
+  }
+
+  .pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .pill {
+    background: #1c2b3e;
+    border: 1px solid #22334f;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: #7c93b0;
+    font-weight: 500;
+  }
+  .health-pill {
+    background: #1e3a5f20;
+    border-color: #60a5fa30;
+    color: #60a5fa;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #1c2b3e;
+  }
+  .footer-label {
+    font-size: 11px;
+    color: #4a5f7a;
+  }
+  .footer-link {
+    font-size: 11px;
+    color: #6d28d9;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .error {
+    text-align: center;
+    padding: 48px 0;
+    color: #7c93b0;
+  }
+  .error h2 { font-size: 18px; color: #e6edf5; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="error">
+    <h2>Loading…</h2>
+  </div>
+</div>
+<script type="module">
+  import { decodeShareCard } from './share-card.js';
+
+  const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmtStars = (n) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
+
+  const card = document.getElementById('card');
+  const data = decodeShareCard(location.hash);
+
+  if (!data) {
+    card.innerHTML = `<div class="error">
+      <h2>Invalid share link</h2>
+      <p>This verdict card link is missing or corrupted.</p>
+    </div>`;
+  } else {
+    const fitLabel = { strong: 'Strong fit', solid: 'Solid', care: 'Use with care', risky: 'Risky' }[data.fitLevel] || 'Solid';
+    const pills = [
+      data.language ? `<span class="pill">${esc(data.language)}</span>` : '',
+      data.stars ? `<span class="pill">${esc(fmtStars(data.stars))} ★</span>` : '',
+      data.license ? `<span class="pill">${esc(data.license)}</span>` : '',
+      data.health ? `<span class="pill health-pill">Health ${data.health}</span>` : '',
+    ].filter(Boolean).join('');
+
+    card.innerHTML = `
+      <div class="brand">
+        <div class="brand-icon">🔍</div>
+        <span class="brand-name">REPOLENS VERDICT</span>
+      </div>
+      <div class="repo-id">${esc(data.repoId)}</div>
+      ${data.description ? `<p class="description">${esc(data.description)}</p>` : ''}
+      <span class="fit-chip fit-${esc(data.fitLevel)}">${esc(fitLabel)}</span>
+      ${data.eli5 ? `<p class="eli5">${esc(data.eli5)}</p>` : ''}
+      ${pills ? `<div class="pills">${pills}</div>` : ''}
+      <div class="footer">
+        <span class="footer-label">Shared via RepoLens</span>
+      </div>
+    `;
+    document.title = `RepoLens — ${data.repoId}`;
+  }
+</script>
+</body>
+</html>

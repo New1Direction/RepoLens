@@ -56,8 +56,11 @@ import { buildAskPrompt, parseAskAnswer } from './ask-library.js';
 import { buildMaintenancePrompt, parseMaintenance } from './maintenance.js';
 import { fetchMaintenanceSignals } from './fetcher.js';
 import { buildSynergiesPrompt, parseSynergies } from './synergies.js';
-import { cacheAnalysis, getCached } from './cache.js';
+import { cacheAnalysis, getCached, listCached } from './cache.js';
 import { emptyLens, withRun, setActive } from './lens-runs.js';
+import { diffAnalyses } from './diff-analysis.js';
+import { buildFitsStackPrompt, parseFitsStack } from './fits-stack.js';
+import { buildStackPrompt, parseStack } from './stack-prompt.js';
 
 // Best-effort semantic-graph write: upsert both endpoint nodes, then a deterministic
 // (idempotent) edge. Graph write errors are swallowed — building the graph
@@ -200,6 +203,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'MAINTENANCE' && msg.sessionKey && msg.platform && msg.repoId) {
     sendResponse({ ok: true });
     runMaintenance(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId });
+    return true;
+  }
+
+  // Fits MY Stack? — library-grounded "does this slot in, conflict, or shift the paradigm?"
+  if (msg.type === 'FITS_STACK' && msg.sessionKey && msg.platform && msg.repoId) {
+    sendResponse({ ok: true });
+    runFitsStack(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId });
+    return true;
+  }
+
+  // Tech-Stack Builder — multi-repo wiring diagram from the library.
+  if (msg.type === 'STACK_BUILD' && msg.sessionKey && Array.isArray(msg.repoIds) && msg.repoIds.length >= 2) {
+    sendResponse({ ok: true });
+    runStackBuild(msg.sessionKey, msg.repoIds);
     return true;
   }
 
@@ -393,6 +410,9 @@ async function runAnalysis(sessionKey, detected) {
   const { autoSave = true, tone } = settings;
 
   try {
+    // Snapshot the previous cached analysis for diff comparison (before it's overwritten).
+    const prevCached = await getCached(detected.platform, detected.repoId).catch(() => null);
+
     // Fetch metadata + README
     const repoData = await fetchRepoData(detected.platform, detected.repoId);
 
@@ -421,8 +441,10 @@ async function runAnalysis(sessionKey, detected) {
       saved: autoSave ? 'pending' : 'skipped',
     };
 
-    await chrome.storage.session.set({ [sessionKey]: fullData });
-    cacheAnalysis(detected.platform, detected.repoId, fullData).catch(() => {}); // history/cache
+    // Attach diff against the previous scan (null on first scan — tab renders "Nothing to compare").
+    const diff = diffAnalyses(prevCached, fullData);
+    await chrome.storage.session.set({ [sessionKey]: { ...fullData, diff } });
+    cacheAnalysis(detected.platform, detected.repoId, fullData).catch(() => {}); // history/cache (no diff stored)
 
     if (autoSave) {
       let saveErr = null;
@@ -434,8 +456,8 @@ async function runAnalysis(sessionKey, detected) {
 
       await chrome.storage.session.set({
         [sessionKey]: saveErr
-          ? { ...fullData, saved: false, saveError: saveErr.message || 'Could not save to your library' }
-          : { ...fullData, saved: true, saveError: null },
+          ? { ...fullData, diff, saved: false, saveError: saveErr.message || 'Could not save to your library' }
+          : { ...fullData, diff, saved: true, saveError: null },
       });
 
       // Semantic graph: this repo + its named alternatives (only when the save worked).
@@ -650,6 +672,89 @@ async function runMaintenance(sessionKey, detected) {
     await setM({ status: 'done', result });
   } catch (err) {
     await setM({ status: 'error', error: err.message || 'Maintenance scan failed.' });
+  }
+}
+
+// ─── Fits MY Stack?: library-grounded fit analysis ────────────────────────────
+async function runFitsStack(sessionKey, detected) {
+  const setF = async (patch) => {
+    const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
+    await chrome.storage.session.set({ [sessionKey]: { ...cur, fitsStack: { ...(cur.fitsStack || {}), ...patch } } });
+  };
+  try {
+    const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
+    await setF({ status: 'fetching', error: null });
+    const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
+    const repoData = {
+      repoId: detected.repoId,
+      description: cur.description || '',
+      language: cur.language || '',
+      category: cur.category || '',
+      capabilities: cur.capabilities || [],
+    };
+    const nearestRepos = await searchLibrary({
+      query: [repoData.language, repoData.category, ...(repoData.capabilities || [])].filter(Boolean).join(' '),
+      topK: 8,
+      excludeRepoId: detected.repoId,
+    });
+
+    if (!nearestRepos.length) {
+      await setF({ status: 'done', result: {
+        verdict: 'new-paradigm',
+        summary: 'Your library is empty — scan a few repos first to get a personalised stack fit.',
+        integrations: [], risks: [],
+        recommendation: 'Scan more repos, then re-run Fits MY Stack?',
+      }});
+      return;
+    }
+
+    await setF({ status: 'running' });
+    const prompt = buildFitsStackPrompt(repoData, nearestRepos);
+    const text = await callAI(keys, withTone(keys.tone, prompt), 'fits');
+    const result = parseFitsStack(text);
+    if (!result) throw new Error('Could not parse stack fit response.');
+    await setF({ status: 'done', result });
+  } catch (err) {
+    await setF({ status: 'error', error: err.message || 'Stack fit analysis failed.' });
+  }
+}
+
+// ─── Tech-Stack Builder: multi-repo wiring diagram ────────────────────────────
+async function runStackBuild(sessionKey, repoIds) {
+  const set = async (data) => {
+    const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
+    await chrome.storage.session.set({ [sessionKey]: { ...cur, ...data } });
+  };
+  try {
+    const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
+    await set({ loading: true, status: 'fetching', error: null });
+
+    // Gather repo data from the library + cache.
+    const libRepos = await scrollLibrary({ limit: 500 });
+    const libMap = new Map(libRepos.map(r => [r.repoId, r]));
+    const cacheList = await listCached().catch(() => []);
+    const cacheMap = new Map(cacheList.map(c => [c.repoId, c]));
+
+    const repos = repoIds.map(id => {
+      const lib = libMap.get(id) || {};
+      const cached = cacheMap.get(id) || {};
+      return {
+        repoId: id,
+        eli5: cached.eli5 || lib.eli5 || '',
+        capabilities: lib.capabilities || cached.capabilities || [],
+        category: cached.category || lib.category || '',
+        language: cached.language || lib.language || '',
+      };
+    });
+
+    await set({ status: 'thinking' });
+    const prompt = buildStackPrompt(repos);
+    const text = await callAI(keys, withTone(keys.tone, prompt), 'stack');
+    const result = parseStack(text);
+    if (!result) throw new Error('Could not parse stack builder response.');
+    await set({ loading: false, error: null, repos, result });
+  } catch (err) {
+    await set({ loading: false, error: err.message || 'Stack build failed.', errorKind: 'api' });
   }
 }
 

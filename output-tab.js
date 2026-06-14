@@ -22,6 +22,8 @@ import { bucketFor, bucketLabel, checkLibraryCompat } from './license-compat.js'
 import { allLicenses } from './store.js';
 import { DECISIONS, DECISION_META } from './decision-log.js';
 import { saveDecision, getDecision, clearDecision } from './store.js';
+import { encodeShareCard } from './share-card.js';
+import { FITS_VERDICTS } from './fits-stack.js';
 
 // Apply the saved theme ASAP (before render) to minimise flash.
 initTheme();
@@ -200,6 +202,8 @@ async function init() {
   renderDocsQuality(data);
   renderMaintenance(data);
   renderLicenseCompat(data);
+  renderDiff(data);
+  renderFitsStack(data);
   renderTechStack(data);
   renderSimilar(data);
   renderVersus(data);
@@ -1093,6 +1097,155 @@ function renderLicenseCompat(d) {
   });
 }
 
+// ─── Diff Since I Last Looked — zero-token snapshot comparison ───────────────
+
+function renderDiff(d) {
+  const host = document.getElementById('t24');
+  if (!host) return;
+  const diff = d.diff;
+
+  if (!diff) {
+    host.innerHTML = `<div class="diff-first-scan">
+      <p style="font-size:22px;margin-bottom:8px">🔍</p>
+      <p>First scan — no previous snapshot to compare.</p>
+      <p style="font-size:12px;margin-top:8px;color:var(--text-muted)">Re-scan this repo later and the diff will appear here automatically.</p>
+    </div>`;
+    return;
+  }
+
+  const age = diff.days_since_prev != null
+    ? `<span class="diff-age">Compared to your scan ${diff.days_since_prev === 0 ? 'today' : diff.days_since_prev === 1 ? 'yesterday' : `${diff.days_since_prev} days ago`}</span>`
+    : '';
+
+  const badge = (dir, text) =>
+    `<span class="diff-badge ${dir}">${dir === 'up' ? '▲' : dir === 'down' ? '▼' : '='} ${esc(String(text))}</span>`;
+
+  const starRow = (() => {
+    const { before, after, delta, direction } = diff.star_delta;
+    const sign = direction === 'up' ? '+' : '';
+    return `<div class="diff-row">
+      <div class="diff-label">Stars</div>
+      <div class="diff-delta">${before.toLocaleString()} → ${after.toLocaleString()}</div>
+      ${badge(direction, sign + delta.toLocaleString())}
+    </div>`;
+  })();
+
+  const healthRow = (() => {
+    const { before, after, delta, direction } = diff.health_delta;
+    const sign = direction === 'up' ? '+' : '';
+    if (before === 0 && after === 0) return '';
+    return `<div class="diff-row">
+      <div class="diff-label">Health score</div>
+      <div class="diff-delta">${before} → ${after}</div>
+      ${badge(direction, sign + delta)}
+    </div>`;
+  })();
+
+  const fitRow = (() => {
+    const { before, after, changed, direction } = diff.fit_delta;
+    if (!before || !before) return '';
+    const label = { strong: 'Strong fit', solid: 'Solid', care: 'Use with care', risky: 'Risky' };
+    return `<div class="diff-row">
+      <div class="diff-label">Verdict</div>
+      <div class="diff-delta">${esc(label[before] || before)} → ${esc(label[after] || after)}</div>
+      ${changed ? badge(direction, direction === 'up' ? 'Improved' : 'Declined') : badge('same', 'No change')}
+    </div>`;
+  })();
+
+  const versionRow = (() => {
+    if (!diff.version_delta || !diff.version_delta.changed) return '';
+    const { before, after } = diff.version_delta;
+    return `<div class="diff-row">
+      <div class="diff-label">Version</div>
+      <div class="diff-delta">${esc(before || '—')} → ${esc(after || '—')}</div>
+      ${badge('up', 'Bumped')}
+    </div>`;
+  })();
+
+  const newFlagsHtml = diff.new_flags.length
+    ? `<div class="diff-flags">
+        <div class="section-title" style="margin-bottom:10px">New flags since last scan</div>
+        ${diff.new_flags.map(t => `<div class="diff-flag-row"><span class="diff-flag-sign">⚠</span><span style="color:var(--bad-ink);font-size:13px">${esc(t)}</span></div>`).join('')}
+      </div>` : '';
+
+  const removedFlagsHtml = diff.removed_flags.length
+    ? `<div class="diff-flags">
+        <div class="section-title" style="margin-bottom:10px">Flags resolved since last scan</div>
+        ${diff.removed_flags.map(t => `<div class="diff-flag-row"><span class="diff-flag-sign">✓</span><span style="color:var(--ok-ink);font-size:13px">${esc(t)}</span></div>`).join('')}
+      </div>` : '';
+
+  host.innerHTML = `
+    <div class="diff-header">
+      <div class="section-title" style="margin:0">Since I Last Looked</div>
+      ${age}
+    </div>
+    ${starRow}${healthRow}${fitRow}${versionRow}
+    ${newFlagsHtml}${removedFlagsHtml}
+    ${!diff.new_flags.length && !diff.removed_flags.length ? '<p style="font-size:12px;color:var(--text-muted);margin-top:16px">No flag changes between scans.</p>' : ''}
+  `;
+}
+
+// ─── Fits MY Stack? — library-grounded fit verdict ────────────────────────────
+
+function startFitsStack(d) {
+  chrome.runtime.sendMessage({ type: 'FITS_STACK', sessionKey, platform: d.platform, repoId: d.repoId });
+  renderFitsStack({ ...d, fitsStack: { status: 'fetching' } });
+}
+
+function renderFitsStack(d) {
+  const host = document.getElementById('t25');
+  if (!host) return;
+  const fs = d.fitsStack;
+
+  if (!fs) {
+    host.innerHTML = `<div class="dd-cta">
+      <h3>Fits MY Stack?</h3>
+      <p>Checks whether this repo slots in naturally, introduces a paradigm shift, or conflicts with what you already use — grounded in your library's actual tools and patterns.</p>
+      <button class="dd-run" id="fs-run">Run Fits MY Stack?</button>
+    </div>`;
+    document.getElementById('fs-run')?.addEventListener('click', () => startFitsStack(d));
+    return;
+  }
+
+  if (fs.status === 'error') {
+    host.innerHTML = `<div class="dd-cta"><h3>Analysis failed</h3><p>${esc(fs.error || 'Something went wrong.')}</p><button class="dd-run" id="fs-run">Try again</button></div>`;
+    document.getElementById('fs-run')?.addEventListener('click', () => startFitsStack(d));
+    return;
+  }
+
+  if (fs.status !== 'done') {
+    host.innerHTML = `<div class="dd-progress"><span class="dot"></span>Checking your library for context…</div>`;
+    return;
+  }
+
+  host.innerHTML = renderFitsStackResult(fs.result || {});
+}
+
+function renderFitsStackResult(r) {
+  const verdict = FITS_VERDICTS.includes(r.verdict) ? r.verdict : 'new-paradigm';
+  const verdictLabel = { 'slots-in': '✓ Slots in', 'new-paradigm': '⟳ New paradigm', 'conflict': '✗ Conflict' }[verdict] || verdict;
+
+  const integrations = (r.integrations || []).length
+    ? `<div class="fs-section">How it interacts with your stack</div><ul class="fs-list">${r.integrations.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+    : '';
+
+  const risks = (r.risks || []).length
+    ? `<div class="fs-section">Risks &amp; friction</div><ul class="fs-list">${r.risks.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+    : '';
+
+  const rec = r.recommendation
+    ? `<div class="fs-recommendation">${esc(r.recommendation)}</div>`
+    : '';
+
+  return `
+    <span class="fs-verdict-chip ${verdict}">${esc(verdictLabel)}</span>
+    <p class="fs-summary">${esc(r.summary || '')}</p>
+    ${integrations}
+    ${risks}
+    ${rec}
+  `;
+}
+
 // ─── Versus — head-to-head comparison tab ─────────────────────────────────────
 
 function startVersus(d, competitor) {
@@ -1184,6 +1337,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   renderSktpg(nv);
   renderDocsQuality(nv);
   renderMaintenance(nv);
+  renderFitsStack(nv);
   renderVersus(nv);
   renderSynergies(nv);
   renderCombinator(nv);
@@ -1243,7 +1397,7 @@ function verdictDashboard(d) {
   const jumps = `<div class="v-jumps">${jump(7, "Why it's " + (score >= 70 ? 'healthy' : 'mixed'))}${jump(8, 'What to watch')}${jump(6, 'Alternatives')}${jump(10, 'Deep Dive')}</div>`;
 
   return `
-    <div class="v-top"><button class="v-copy" id="v-copy" title="Copy a text summary of this verdict">⧉ Copy</button></div>
+    <div class="v-top"><button class="v-copy" id="v-copy" title="Copy a text summary of this verdict">⧉ Copy</button><button class="v-share" id="v-share" title="Open a shareable verdict card">⤴ Share</button></div>
     <p class="v-what">${what}</p>
     <div class="v-fit fit-${fit.level}"><span class="v-chip">${esc(fit.label)}</span><span class="v-why">${esc(fit.why)}</span></div>
     ${line}
@@ -1327,6 +1481,13 @@ function renderTabs(d) {
       btn.disabled = true;
       setTimeout(() => { btn.textContent = prev; btn.disabled = false; }, 1500);
     } catch { /* clipboard unavailable — ignore */ }
+  });
+  document.getElementById('v-share')?.addEventListener('click', (e) => {
+    const fit = deriveFit(d);
+    const encoded = encodeShareCard({ ...d, fitLevel: fit.level });
+    if (!encoded) return;
+    const shareUrl = chrome.runtime.getURL(`share.html#${encoded}`);
+    chrome.tabs.create({ url: shareUrl });
   });
   renderDecisionControl(d);
 }

@@ -366,6 +366,39 @@
   .lc-concern-note { font-size: 12px; color: var(--text-sub); line-height: 1.5; }
   .lc-all-ok { color: var(--ok-ink); font-size: 13px; padding: 12px 0; }
 
+  /* Diff Since I Last Looked (tab 24) */
+  .diff-header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+  .diff-age { font-size: 12px; color: var(--text-muted); }
+  .diff-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .diff-row:last-child { border-bottom: none; }
+  .diff-label { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-faint); min-width: 110px; }
+  .diff-delta { font-size: 13px; color: var(--text-sub); }
+  .diff-badge { display: inline-flex; align-items: center; gap: 5px; font: 700 12px var(--sans); border-radius: 6px; padding: 3px 9px; }
+  .diff-badge.up   { background: var(--ok-bg);   color: var(--ok-ink); }
+  .diff-badge.down { background: var(--bad-bg);  color: var(--bad-ink); }
+  .diff-badge.same { background: var(--surface); color: var(--text-muted); }
+  .diff-first-scan { padding: 48px 0; text-align: center; color: var(--text-sub); font-size: 14px; }
+  .diff-flags { margin-top: 18px; }
+  .diff-flag-row { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .diff-flag-row:last-child { border-bottom: none; }
+  .diff-flag-sign { font-size: 14px; flex-shrink: 0; }
+
+  /* Fits MY Stack? (tab 25) */
+  .fs-verdict-chip { font: 700 14px var(--sans); border-radius: 999px; padding: 6px 16px; display: inline-block; margin-bottom: 16px; }
+  .fs-verdict-chip.slots-in     { background: var(--ok-bg);   color: var(--ok-ink); }
+  .fs-verdict-chip.new-paradigm { background: var(--warn-bg); color: var(--warn-ink); }
+  .fs-verdict-chip.conflict     { background: var(--bad-bg);  color: var(--bad-ink); }
+  .fs-summary { font-size: 13px; color: var(--text-sub); line-height: 1.6; margin-bottom: 20px; }
+  .fs-section { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-faint); margin: 18px 0 8px; }
+  .fs-list li { font-size: 13px; color: var(--text-sub); line-height: 1.6; padding: 4px 0 4px 16px; position: relative; }
+  .fs-list li::before { content: '—'; position: absolute; left: 0; color: var(--text-faint); }
+  .fs-recommendation { background: var(--surface); border: 1px solid var(--border-2); border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px 14px; font-size: 13px; color: var(--text-body); margin-top: 14px; }
+
+  /* Share button (verdict area) */
+  .v-share { font: 600 11px/1 inherit; color: var(--text-sub, #9fb2c9); background: transparent; border: 1px solid var(--border, #1c2b3e); padding: 6px 10px; border-radius: 7px; cursor: pointer; transition: all .15s; margin-left: 6px; }
+  .v-share:hover { color: var(--text, #e6edf5); border-color: var(--border-2); background: var(--surface-alt); }
+  .v-share:disabled { color: var(--ok-ink); border-color: var(--ok-edge); cursor: default; }
+
   /* Versus */
   .vs-input-row { display: flex; gap: 8px; margin: 16px 0 8px; }
   .vs-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 13px; outline: none; font-family: ui-monospace, monospace; }
@@ -717,6 +750,8 @@
         <button class="tab-btn" data-tab="21">Docs Quality</button>
         <button class="tab-btn" data-tab="22">Maintenance</button>
         <button class="tab-btn" data-tab="23">License</button>
+        <button class="tab-btn" data-tab="24">Since Last Scan</button>
+        <button class="tab-btn" data-tab="25">Fits MY Stack?</button>
       </div>
     </div>
     <div class="tab-menu" id="menu-library">
@@ -758,6 +793,8 @@
   <div class="tab-content" id="t21"></div>
   <div class="tab-content" id="t22"></div>
   <div class="tab-content" id="t23"></div>
+  <div class="tab-content" id="t24"></div>
+  <div class="tab-content" id="t25"></div>
 
   <!-- Save status badge (hidden until JS updates it) -->
   <div class="saved-badge" style="display:none"></div>

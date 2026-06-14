@@ -15,6 +15,8 @@ export const SCAN_EXPLAINERS = {
   21: { title: 'Docs Quality', bestFor: 'Answering "can I use this without reading the source?" — scores README completeness, quickstart, code examples, API reference, changelog, and contributing guide.', skipIf: 'The docs are clearly excellent or clearly absent — most useful in the grey zone where you\'re unsure.', cost: '1 AI call · README + file tree' },
   22: { title: 'Maintenance', bestFor: 'Quickly auditing commit recency, contributor bus-factor, CI presence, and open-issue health — signals a README can\'t fake.', skipIf: 'You already know this is actively maintained or that it\'s abandonware.', cost: '1 AI call · GitHub metadata + file tree' },
   23: { title: 'License Compat', bestFor: 'Checking whether this repo\'s license conflicts with what\'s already in your library — flags GPL/AGPL friction with permissive stacks.', skipIf: 'Your library is empty or you\'re working purely open-source.', cost: 'Instant · no AI · library lookup' },
+  24: { title: 'Since Last Scan', bestFor: 'Seeing exactly what changed between this scan and the last one — star growth, health shift, new or removed red flags, version bump.', skipIf: 'This is your first scan of the repo.', cost: 'Instant · no AI · cached snapshot diff' },
+  25: { title: 'Fits MY Stack?', bestFor: 'Answering "does this slot in, introduce a paradigm shift, or conflict with what I already use?" — grounded in your actual library.', skipIf: 'Your library is empty or this is a completely isolated experiment.', cost: '1 AI call · grounded in your library' },
 };
 
 export function explainerFor(tabId) {
