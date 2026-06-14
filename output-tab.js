@@ -1446,14 +1446,17 @@ async function loadVersusChips(d) {
 
 // ─── Ask This Repo ─────────────────────────────────────────────────────────────
 
-const ASK_SUGGESTIONS = [
-  'Does it support TypeScript?',
-  'What are the main trade-offs?',
-  'How mature is the ecosystem?',
-  'Is it production-ready?',
-  'How hard is it to self-host?',
-  'What license restrictions apply?',
-];
+function getAskSuggestions(d) {
+  const sugs = ['What are the main trade-offs?'];
+  if (d.red_flags?.length) sugs.push('What are the main risks of using this?');
+  if (d.health?.score != null && d.health.score < 65) sugs.push('Is the project still actively maintained?');
+  if (d.license && d.license !== 'Unknown') sugs.push(`What restrictions does the ${d.license} license impose?`);
+  if (d.language && d.language !== 'Unknown') sugs.push(`Is the code idiomatic ${d.language}?`);
+  else sugs.push('Does it support TypeScript?');
+  sugs.push('How hard is it to integrate into an existing project?');
+  sugs.push('Is it production-ready?');
+  return sugs.slice(0, 6);
+}
 
 function renderAskRepo(d) {
   const host = document.getElementById('t26');
@@ -1477,7 +1480,7 @@ function renderAskRepo(d) {
     </div>` : '';
 
   const sugsHtml = !history.length && !pending
-    ? `<div class="ask-suggestions">${ASK_SUGGESTIONS.map(s => `<button class="ask-sug">${esc(s)}</button>`).join('')}</div>`
+    ? `<div class="ask-suggestions">${getAskSuggestions(d).map(s => `<button class="ask-sug">${esc(s)}</button>`).join('')}</div>`
     : '';
 
   const isThinking = pending?.status === 'thinking';

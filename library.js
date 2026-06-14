@@ -30,7 +30,7 @@ const langColor = (n) => LANG_COLORS[n] || '#64748b';
 let allRows = [];
 let cacheByRepo = new Map(); // repoId → full cached analysis (instant reopen)
 let decisionMap = new Map(); // repoId → decision payload
-const state = { query: '', sort: 'fit', capability: '', collection: '' };
+const state = { query: '', sort: 'fit', capability: '', collection: '', decision: '' };
 
 // Collections ("Boards") — user-curated groups of repos. Loaded once on init,
 // kept in memory, and persisted per-change. `collection` in state holds the id of
@@ -106,6 +106,10 @@ function render() {
     const active = collections.find((c) => c.id === state.collection);
     const ids = new Set(active ? active.repoIds : []);
     rows = rows.filter((r) => ids.has(r.repoId));
+  }
+  // Decision filter: same pattern — decisionMap lives here, not in library-data.
+  if (state.decision) {
+    rows = rows.filter((r) => decisionMap.get(r.repoId)?.decision === state.decision);
   }
   document.getElementById('count').textContent =
     rows.length === allRows.length ? `${allRows.length} repos` : `${rows.length} of ${allRows.length}`;
@@ -514,6 +518,36 @@ function renderCaps() {
       const cap = btn.dataset.cap;
       state.capability = state.capability === cap ? '' : cap;
       host.querySelectorAll('.lib-cap').forEach((b) => b.classList.toggle('on', b.dataset.cap === state.capability));
+      render();
+    });
+  });
+}
+
+// ─── Decision filter ─────────────────────────────────────────────────────────
+
+function renderDecisionFilter() {
+  const host = document.getElementById('decision-filter');
+  if (!host) return;
+  const counts = { adopt: 0, trial: 0, hold: 0, reject: 0 };
+  for (const dec of decisionMap.values()) {
+    if (counts[dec.decision] != null) counts[dec.decision]++;
+  }
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  if (!total) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  host.classList.remove('hidden');
+  const chip = (id, label, n) =>
+    `<button class="lib-coll${state.decision === id ? ' on' : ''}" data-dec="${esc(id || '')}">${esc(label)}<span class="coll-n">${n}</span></button>`;
+  host.innerHTML = [
+    chip('', 'All decisions', total),
+    counts.adopt ? chip('adopt', 'Adopt', counts.adopt) : '',
+    counts.trial ? chip('trial', 'Trial', counts.trial) : '',
+    counts.hold  ? chip('hold',  'Hold',  counts.hold)  : '',
+    counts.reject ? chip('reject', 'Reject', counts.reject) : '',
+  ].join('');
+  host.querySelectorAll('[data-dec]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.decision = btn.dataset.dec;
+      renderDecisionFilter();
       render();
     });
   });
@@ -939,6 +973,11 @@ document.addEventListener('keydown', (e) => {
 
 function initLibraryPalette() {
   const commands = [
+    { section: 'Filter by decision', name: 'Show: All decisions', action: () => { state.decision = ''; renderDecisionFilter(); render(); } },
+    { name: 'Show: Adopt only', action: () => { state.decision = 'adopt'; renderDecisionFilter(); render(); } },
+    { name: 'Show: Trial only', action: () => { state.decision = 'trial'; renderDecisionFilter(); render(); } },
+    { name: 'Show: Hold only', action: () => { state.decision = 'hold'; renderDecisionFilter(); render(); } },
+    { name: 'Show: Rejected only', action: () => { state.decision = 'reject'; renderDecisionFilter(); render(); } },
     { section: 'Sort', name: 'Sort: Best fit', action: () => { state.sort = 'fit'; document.getElementById('sort').value = 'fit'; chrome.storage.local.set({ librarySort: 'fit' }); render(); } },
     { name: 'Sort: Health', action: () => { state.sort = 'health'; document.getElementById('sort').value = 'health'; chrome.storage.local.set({ librarySort: 'health' }); render(); } },
     { name: 'Sort: Recently scanned', action: () => { state.sort = 'recent'; document.getElementById('sort').value = 'recent'; chrome.storage.local.set({ librarySort: 'recent' }); render(); } },
@@ -1004,6 +1043,7 @@ async function init() {
   }
   renderCaps();
   renderCollections();
+  renderDecisionFilter();
   render();
   renderStats();
   initLibraryPalette();
