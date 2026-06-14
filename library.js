@@ -1197,6 +1197,13 @@ async function init() {
   }
   renderCaps();
   renderCollections();
+  // Pre-fill search from URL hash (e.g., library.html#search=owner/repo)
+  const hashSearch = new URLSearchParams(location.hash.slice(1)).get('search');
+  if (hashSearch && document.getElementById('search')) {
+    state.query = hashSearch;
+    document.getElementById('search').value = hashSearch;
+  }
+
   renderDecisionFilter();
   render();
   renderStats();
