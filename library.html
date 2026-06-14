@@ -42,6 +42,30 @@
   .lib-search::placeholder { color: var(--muted); }
   .lib-sort { background: var(--panel); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px;
     color: var(--sub); font: 600 12px var(--sans); cursor: pointer; }
+  /* Ask bar */
+  .lib-ask { display: flex; gap: 8px; margin: 0 0 12px; }
+  .lib-ask-input { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 9px;
+    padding: 9px 13px; color: var(--text); font: 400 13px var(--sans); }
+  .lib-ask-input:focus { outline: none; border-color: var(--border-2); }
+  .lib-ask-input::placeholder { color: var(--muted); }
+  .lib-ask-btn { background: var(--accent); color: #fff; border: none; border-radius: 9px; padding: 9px 18px;
+    font: 600 13px var(--sans); cursor: pointer; white-space: nowrap;
+    transition: opacity var(--dur-fast) var(--ease-out); }
+  .lib-ask-btn:hover { opacity: 0.85; }
+  .lib-ask-btn:disabled { opacity: 0.5; cursor: default; }
+  /* Ask answer card */
+  .lib-ask-answer { position: relative; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 44px 12px 14px; margin-bottom: 12px;
+    font: 400 13px/1.65 var(--sans); animation: ask-in var(--dur-normal) var(--ease-out) both; }
+  @keyframes ask-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .ask-spinner { color: var(--muted); font-style: italic; }
+  .ask-err { color: var(--fit-care, #b45309); }
+  .ask-text { color: var(--text); white-space: pre-wrap; }
+  .ask-dismiss { position: absolute; top: 9px; right: 11px; background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 14px; line-height: 1; padding: 3px 5px; border-radius: 4px;
+    transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
+  .ask-dismiss:hover { color: var(--text); background: var(--surface); }
+
   .lib-caps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
   .lib-cap { font: 600 11px/1 var(--mono); color: var(--sub); background: var(--panel); border: 1px solid var(--border);
     padding: 6px 10px; border-radius: 999px; cursor: pointer;
@@ -268,6 +292,12 @@
         <option value="name">Sort: Name</option>
       </select>
     </div>
+    <form class="lib-ask" id="ask-bar" autocomplete="off" onsubmit="return false">
+      <input class="lib-ask-input" id="ask-input" type="text" placeholder="Ask your library… e.g. "What's my best SSR option?"" aria-label="Ask a question about your saved repos">
+      <button class="lib-ask-btn" id="ask-btn" type="button">Ask</button>
+    </form>
+    <div class="lib-ask-answer hidden" id="ask-answer" role="region" aria-label="Ask answer" aria-live="polite"></div>
+
     <div class="lib-caps" id="caps"></div>
 
     <!-- Collections ("Boards") filter bar — populated by library.js -->

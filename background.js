@@ -52,6 +52,7 @@ import { withTone } from './tone.js';
 import { buildSktpgPrompt, parseSktpg } from './sktpg.js';
 import { buildDocsQualityPrompt, parseDocsQuality } from './docs-quality.js';
 import { buildVersusPrompt, parseVersus } from './versus.js';
+import { buildAskPrompt, parseAskAnswer } from './ask-library.js';
 import { buildSynergiesPrompt, parseSynergies } from './synergies.js';
 import { cacheAnalysis, getCached } from './cache.js';
 import { emptyLens, withRun, setActive } from './lens-runs.js';
@@ -190,6 +191,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'TAG_LIBRARY' && msg.sessionKey) {
     sendResponse({ ok: true });
     runTagLibrary(msg.sessionKey);
+    return true;
+  }
+
+  // Ask Across My Library — grounded Q&A over the user's saved analyses.
+  if (msg.type === 'ASK_LIBRARY' && msg.question && Array.isArray(msg.docs)) {
+    (async () => {
+      try {
+        const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
+        const prompt = buildAskPrompt(msg.question, msg.docs);
+        if (!prompt) { sendResponse({ ok: false, error: 'No question or context provided.' }); return; }
+        const text = await callAI(keys, prompt, 'ask');
+        sendResponse({ ok: true, answer: parseAskAnswer(text) });
+      } catch (e) {
+        sendResponse({ ok: false, error: e?.message || String(e) });
+      }
+    })();
     return true;
   }
 

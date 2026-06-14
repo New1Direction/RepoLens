@@ -4,6 +4,7 @@
 // re-scan / source / remove actions.
 
 import { scrollPoints, deleteRepo, exportStores, importStores, clearLibrary, listCollections, saveCollection, deleteCollection, listDecisions } from './store.js';
+import { rankRepos } from './store/search.js';
 import { DECISION_META } from './decision-log.js';
 import { makeCollection, validateCollectionName, addRepoToCollection, toggleRepoInCollection, collectionContains, sortedCollections, repoCollections, removeRepoFromCollection, nextColor, COLLECTION_COLORS } from './collections.js';
 import { listCached, removeCached, openCachedAnalysis, importCache, clearCache } from './cache.js';
@@ -705,6 +706,75 @@ function showEmpty(staticHtml) {
   e.innerHTML = staticHtml;
 }
 
+// ─── Ask Across My Library ────────────────────────────────────────────────────
+
+function buildAskDocs() {
+  return allRows.map((r) => {
+    const full = cacheByRepo.get(r.repoId);
+    const dec = decisionMap.get(r.repoId);
+    return {
+      repoId: r.repoId,
+      category: r.category || '',
+      capabilities: r.capabilities,
+      health: r.health || 0,
+      description: r.blurb || '',
+      eli5: full?.eli5 || r.blurb || '',
+      decision: dec?.decision || null,
+    };
+  });
+}
+
+function renderAskResult({ loading = false, answer = '', error = '' } = {}) {
+  const host = document.getElementById('ask-answer');
+  if (!host) return;
+  if (!loading && !answer && !error) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  host.classList.remove('hidden');
+  if (loading) {
+    host.innerHTML = '<span class="ask-spinner">Asking your library…</span>';
+    return;
+  }
+  if (error) {
+    host.innerHTML = `<span class="ask-err">${esc(error)}</span><button class="ask-dismiss" aria-label="Dismiss">✕</button>`;
+    host.querySelector('.ask-dismiss')?.addEventListener('click', () => renderAskResult());
+    return;
+  }
+  host.innerHTML = `<div class="ask-text">${esc(answer)}</div><button class="ask-dismiss" aria-label="Dismiss answer">✕</button>`;
+  host.querySelector('.ask-dismiss')?.addEventListener('click', () => renderAskResult());
+}
+
+async function submitAsk(question) {
+  const q = (question || '').trim();
+  if (!q) return;
+
+  const allDocs = buildAskDocs();
+  if (!allDocs.length) { renderAskResult({ error: 'No repos in your library yet.' }); return; }
+
+  // BM25-rank the docs against the question; fall back to the first 6 if ranking finds nothing.
+  const ranked = rankRepos(allDocs, q, { topK: 6 });
+  const contextDocs = ranked.length >= 2 ? ranked : allDocs.slice(0, 6);
+
+  const btn = document.getElementById('ask-btn');
+  if (btn) btn.disabled = true;
+  renderAskResult({ loading: true });
+
+  let resp;
+  try {
+    resp = await chrome.runtime.sendMessage({ type: 'ASK_LIBRARY', question: q, docs: contextDocs });
+  } catch (e) {
+    renderAskResult({ error: 'Could not reach the extension. Try again.' });
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  if (btn) btn.disabled = false;
+
+  if (resp?.ok) {
+    renderAskResult({ answer: resp.answer });
+  } else {
+    renderAskResult({ error: resp?.error || 'Ask failed.' });
+  }
+}
+
 async function init() {
   document.getElementById('settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
   wireToolbar(); // before the empty-state return, so Import works on an empty library
@@ -752,6 +822,12 @@ async function init() {
   renderCollections();
   render();
   renderStats();
+  const askInput = document.getElementById('ask-input');
+  const askBtn = document.getElementById('ask-btn');
+  const doAsk = () => submitAsk(askInput?.value);
+  askBtn?.addEventListener('click', doAsk);
+  askInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAsk(); });
+
   let searchTimer = null;
   document.getElementById('search').addEventListener('input', (e) => {
     state.query = e.target.value;
