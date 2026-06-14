@@ -29,8 +29,10 @@ export function HowItWorks() {
           {STEPS.map((s) => (
             <li key={s.n} className="step">
               <span className="step-n grad-text">{s.n}</span>
-              <h3>{s.title}</h3>
-              <p>{s.body}</p>
+              <div className="step-body">
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+              </div>
             </li>
           ))}
         </ol>
