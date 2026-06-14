@@ -1646,18 +1646,50 @@ function renderHeader(d) {
   if (d.repoId) updateDecisionBadge(d.repoId);
 }
 
-function updateDecisionBadge(repoId) {
+function relativeTimestamp(ts) {
+  if (!ts) return '';
+  const days = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  const mo = Math.floor(days / 30);
+  return mo === 1 ? '1 month ago' : `${mo} months ago`;
+}
+
+function applyDecisionBadge(dec) {
   const badge = document.getElementById('decision-badge');
   if (!badge) return;
+  if (!dec) { badge.className = 'decision-badge'; return; }
+  const meta = DECISION_META[dec.decision];
+  if (!meta) { badge.className = 'decision-badge'; return; }
+  badge.textContent = meta.label;
+  badge.style.cssText = `color:${meta.color};background:${meta.bg};border-color:${meta.border}`;
+  badge.title = dec.note ? `Decision: ${meta.label} — ${dec.note}` : `Decision: ${meta.label}`;
+  badge.className = 'decision-badge visible';
+}
+
+const DECISION_ICONS = { adopt: '✅', trial: '🔬', hold: '⏸', reject: '🚫' };
+function applyDecisionPreview(dec) {
+  const el = document.getElementById('vd-decision-preview');
+  if (!el) return;
+  if (!dec) { el.innerHTML = ''; return; }
+  const meta = DECISION_META[dec.decision];
+  if (!meta) { el.innerHTML = ''; return; }
+  const icon = DECISION_ICONS[dec.decision] || '';
+  const noteStr = dec.note ? ` — <em>${esc(dec.note)}</em>` : '';
+  const timeStr = relativeTimestamp(dec.timestamp);
+  el.innerHTML = `<div class="vd-banner vd-${esc(dec.decision)}">
+    <span class="vd-bicon">${icon}</span>
+    <span class="vd-blabel">Your decision: <strong>${esc(meta.label)}</strong>${noteStr}</span>
+    ${timeStr ? `<span class="vd-btime">${esc(timeStr)}</span>` : ''}
+  </div>`;
+}
+
+function updateDecisionBadge(repoId) {
   getDecision(repoId).then(dec => {
-    if (!dec) { badge.className = 'decision-badge'; return; }
-    const meta = DECISION_META[dec.decision];
-    if (!meta) { badge.className = 'decision-badge'; return; }
-    badge.textContent = meta.label;
-    badge.style.cssText = `color:${meta.color};background:${meta.bg};border-color:${meta.border}`;
-    badge.title = dec.note ? `Decision: ${meta.label} — ${dec.note}` : `Decision: ${meta.label}`;
-    badge.className = 'decision-badge visible';
-  }).catch(() => { badge.className = 'decision-badge'; });
+    applyDecisionBadge(dec);
+    applyDecisionPreview(dec);
+  }).catch(() => { applyDecisionBadge(null); applyDecisionPreview(null); });
 }
 
 function verdictDashboard(d) {
@@ -1722,6 +1754,7 @@ function verdictDashboard(d) {
 
   return `
     <div class="v-top"><button class="v-copy" id="v-copy" title="Copy a text summary of this verdict">⧉ Copy</button><button class="v-share" id="v-share" title="Open a shareable verdict card">⤴ Share</button></div>
+    <div id="vd-decision-preview"></div>
     <p class="v-what">${what}</p>
     <div class="v-fit fit-${fit.level}"><span class="v-chip">${esc(fit.label)}</span><span class="v-why">${esc(fit.why)}</span></div>
     ${line}
@@ -1855,6 +1888,7 @@ async function renderDecisionControl(d) {
   host.querySelector('.dl-block')?.remove();
 
   const existing = await getDecision(d.repoId).catch(() => null);
+  applyDecisionPreview(existing);
   const block = document.createElement('div');
   block.className = 'dl-block';
 
@@ -1893,8 +1927,11 @@ async function renderDecisionControl(d) {
     if (!selected) return;
     const note = document.getElementById('dl-note')?.value || '';
     try {
-      await saveDecision({ repoId: d.repoId, decision: selected, note, timestamp: new Date().toISOString() });
-      updateDecisionBadge(d.repoId);
+      const ts = new Date().toISOString();
+      await saveDecision({ repoId: d.repoId, decision: selected, note, timestamp: ts });
+      const dec = { repoId: d.repoId, decision: selected, note, timestamp: ts };
+      applyDecisionBadge(dec);
+      applyDecisionPreview(dec);
       const msg = document.getElementById('dl-saved-msg');
       if (msg) { msg.textContent = '✓ Saved'; setTimeout(() => { msg.textContent = ''; }, 1800); }
       // Ensure Clear button appears after first save.
@@ -1911,7 +1948,8 @@ async function renderDecisionControl(d) {
 
   async function handleClear() {
     await clearDecision(d.repoId).catch(() => {});
-    updateDecisionBadge(d.repoId);
+    applyDecisionBadge(null);
+    applyDecisionPreview(null);
     selected = null;
     block.querySelectorAll('.dl-btn').forEach(b => DECISIONS.forEach(k => b.classList.remove(`selected-${k}`)));
     const note = document.getElementById('dl-note');

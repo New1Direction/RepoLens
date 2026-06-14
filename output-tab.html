@@ -594,6 +594,17 @@
 .df-warn { color: var(--warn-ink); }
 /* ── Verdict landing ───────────────────────────────────────────── */
 .v-what { font-size: 15px; line-height: 1.5; color: var(--text, #e6edf5); margin: 2px 0 14px; font-weight: 500; }
+  #vd-decision-preview:empty { display: none; }
+  #vd-decision-preview { margin-bottom: 14px; }
+  .vd-banner { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 10px; border: 1px solid; font-size: 12px; }
+  .vd-adopt  { color: var(--ok-ink);   background: var(--ok-bg);   border-color: var(--ok-edge); }
+  .vd-trial  { color: #60a5fa;          background: rgba(59,130,246,.1); border-color: rgba(59,130,246,.35); }
+  .vd-hold   { color: var(--warn-ink); background: var(--warn-bg); border-color: var(--warn-edge); }
+  .vd-reject { color: var(--bad-ink);  background: var(--bad-bg);  border-color: var(--bad-edge); }
+  .vd-bicon  { font-size: 16px; flex-shrink: 0; }
+  .vd-blabel { flex: 1; }
+  .vd-blabel em { font-style: italic; opacity: 0.8; }
+  .vd-btime  { font-size: 10px; opacity: 0.6; white-space: nowrap; }
 .v-fit { display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-radius: 13px; margin-bottom: 14px; border: 1px solid; }
 .v-chip { font: 800 13px/1 inherit; padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
 .v-why { font-size: 12px; color: var(--text-sub, #9fb2c9); line-height: 1.45; }
