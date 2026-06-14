@@ -24,6 +24,7 @@ import { estimateTokens } from './estimate.js';
 import { buildTagPrompt, parseTags } from './tag-prompt.js';
 import { nodeIdFor, edgeIdFor, ideaIdFor } from './graph.js';
 import { deriveCapabilities } from './taxonomy.js';
+import { deriveFit } from './verdict.js';
 import { combineCandidates } from './combinator.js';
 import { buildCombinatorPrompt, parseCombinator } from './combinator-prompt.js';
 import { refreshXaiToken, XAI_CHAT_PROXY } from './oauth-xai.js';
@@ -61,6 +62,20 @@ import { emptyLens, withRun, setActive } from './lens-runs.js';
 import { diffAnalyses } from './diff-analysis.js';
 import { buildFitsStackPrompt, parseFitsStack } from './fits-stack.js';
 import { buildStackPrompt, parseStack } from './stack-prompt.js';
+
+// Notify when a scan completes — clicking the notification focuses the result tab.
+chrome.notifications.onClicked.addListener(async (notifId) => {
+  if (!notifId.startsWith('rl_scan_')) return;
+  const tabUrl = notifId.slice('rl_scan_'.length);
+  const [existing] = await chrome.tabs.query({ url: tabUrl });
+  if (existing) {
+    await chrome.tabs.update(existing.id, { active: true });
+    await chrome.windows.update(existing.windowId, { focused: true });
+  } else {
+    chrome.tabs.create({ url: tabUrl });
+  }
+  chrome.notifications.clear(notifId);
+});
 
 // Best-effort semantic-graph write: upsert both endpoint nodes, then a deterministic
 // (idempotent) edge. Graph write errors are swallowed — building the graph
@@ -555,6 +570,22 @@ async function runAnalysis(sessionKey, detected) {
         }
       }
     }
+
+    // Scan-complete notification — fires after the tab is updated so clicking it
+    // focuses the already-loaded result rather than triggering a fresh poll.
+    try {
+      const repoName = fullData.repoId?.split('/').pop() || fullData.repoId || 'Repo';
+      const fit = deriveFit(fullData);
+      const fitMsg = { strong: 'Strong fit', solid: 'Solid fit', care: 'Use with care', risky: 'Risky' }[fit.level] || 'Analysis ready';
+      const tabUrl = chrome.runtime.getURL(`output-tab.html?key=${sessionKey}`);
+      chrome.notifications.create(`rl_scan_${tabUrl}`, {
+        type: 'basic',
+        iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+        title: `RepoLens — ${repoName}`,
+        message: fitMsg,
+        silent: true,
+      });
+    } catch { /* notifications are best-effort */ }
 
   } catch (err) {
     // AI failures already carry a humanized message + kind; other failures (fetch,

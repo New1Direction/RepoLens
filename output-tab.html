@@ -186,7 +186,16 @@
   .dd-run:hover { opacity: .88; }
   .dd-run:active { transform: scale(.97); }
   .export-btn:active { transform: scale(.95); }
-  .dd-progress { padding: 40px 0; color: var(--text-sub); font-size: 14px; display: flex; align-items: center; gap: 10px; }
+  .dd-progress { padding: 32px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .dd-step-track { display: flex; gap: 6px; }
+  .dd-step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background .3s, box-shadow .3s; }
+  .dd-step-dot.done { background: var(--accent); opacity: .5; }
+  .dd-step-dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+  .dd-step-label { color: var(--text-sub); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .dd-step-label .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; animation: pulse 1.2s ease-in-out infinite; }
+  .dd-step-bar { width: 160px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+  .dd-step-fill { height: 100%; background: var(--accent); border-radius: 1px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+  .dd-step-count { font-size: 11px; color: var(--text-muted); letter-spacing: .04em; }
   .dd-progress .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
   .dd-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-faint); margin: 28px 0 14px; }
   .dd-section-title.first { margin-top: 0; }
@@ -721,10 +730,12 @@
     <div class="health-bar">
       <div class="export-bar">
         <button class="export-btn" id="open-library" title="Browse every repo you've analyzed">📚 Library</button>
-        <button class="export-btn" id="copy-md" title="Copy this analysis as Markdown">Copy MD</button>
+        <button class="export-btn" id="copy-url" title="Copy repo URL to clipboard (U)">Copy URL</button>
+        <button class="export-btn" id="copy-md" title="Copy this analysis as Markdown (M)">Copy MD</button>
         <button class="export-btn" id="export-scaffold" title="Download a CLAUDE.md / Notion integration scaffold">Scaffold</button>
         <button class="export-btn" id="export-html" title="Download a self-contained HTML report">Export</button>
         <button class="export-btn" id="open-guide" title="What can RepoLens do? (press ?)">?<span class="guide-dot" id="guide-dot" hidden></span></button>
+        <button class="export-btn" id="whats-new-btn" title="What's new in RepoLens">New</button>
         <button class="export-btn" id="open-palette" title="Command palette (⌘K)">⌘K</button>
       </div>
       <div class="theme-switcher" id="theme-switcher"></div>

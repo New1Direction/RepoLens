@@ -218,11 +218,13 @@ function initOutputPalette(data) {
     // Actions
     { section: 'Actions', name: 'Open Library', description: 'Browse your saved repos', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }) },
     { name: 'Batch Scan', description: 'Scan multiple repos at once', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }) },
-    { name: 'Copy Markdown', description: 'Copy this analysis as MD', action: () => document.getElementById('copy-md')?.click() },
+    { name: 'Copy URL', description: 'Copy the repo source URL', shortcut: 'U', action: () => document.getElementById('copy-url')?.click() },
+    { name: 'Copy Markdown', description: 'Copy this analysis as MD', shortcut: 'M', action: () => document.getElementById('copy-md')?.click() },
     { name: 'Export Scaffold', description: 'Download CLAUDE.md scaffold', action: () => document.getElementById('export-scaffold')?.click() },
     { name: 'Export HTML', description: 'Download self-contained report', action: () => document.getElementById('export-html')?.click() },
     { name: 'Open Settings', description: 'Configure API keys and providers', action: () => chrome.runtime.openOptionsPage() },
     { name: 'Open Guide', description: 'Feature overview and keyboard shortcuts', action: () => document.getElementById('open-guide')?.click() },
+    { name: "What's New", description: 'Release notes and recent features', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('whats-new.html') }) },
   ];
 
   initPalette(commands);
@@ -645,12 +647,30 @@ function renderPage(d) {
 
 // ─── Deep Dive tab ────────────────────────────────────────────────────────────
 
+const DD_STAGES = ['fetching', 'atoms', 'lineage', 'feynman'];
 const DD_STAGE_LABELS = {
-  fetching: 'Fetching source…',
-  atoms: 'Atomic deconstruction…',
-  lineage: 'Mapping causal lineage…',
-  feynman: 'Feynman validation…',
+  fetching: 'Fetching source',
+  atoms: 'Atomic deconstruction',
+  lineage: 'Mapping causal lineage',
+  feynman: 'Feynman validation',
 };
+
+function ddProgressHtml(status) {
+  const idx = DD_STAGES.indexOf(status);
+  const step = idx + 1;
+  const total = DD_STAGES.length;
+  const label = DD_STAGE_LABELS[status] || 'Working';
+  const pct = Math.round((step / total) * 100);
+  const dots = DD_STAGES.map((s, i) =>
+    `<span class="dd-step-dot${i < step ? ' done' : i === step - 1 ? ' active' : ''}"></span>`
+  ).join('');
+  return `<div class="dd-progress">
+    <div class="dd-step-track">${dots}</div>
+    <div class="dd-step-label"><span class="dot"></span>${label}…</div>
+    <div class="dd-step-bar"><div class="dd-step-fill" style="width:${pct}%"></div></div>
+    <div class="dd-step-count">Step ${step} of ${total}</div>
+  </div>`;
+}
 
 function startDeepDive(d) {
   chrome.runtime.sendMessage({ type: 'DEEP_DIVE', sessionKey, platform: d.platform, repoId: d.repoId });
@@ -729,7 +749,7 @@ function renderDeepDive(d) {
   }
 
   if (dd.status !== 'done') {
-    host.innerHTML = `<div class="dd-progress"><span class="dot"></span>${DD_STAGE_LABELS[dd.status] || 'Working…'}</div>`;
+    host.innerHTML = ddProgressHtml(dd.status);
     return;
   }
 
@@ -1851,19 +1871,40 @@ function runAllLenses() {
 
 // ─── Export / Copy ────────────────────────────────────────────────────────────
 
+function repoSourceUrl(platform, repoId) {
+  if (platform === 'gitlab') return `https://gitlab.com/${repoId}`;
+  if (platform === 'npm') return `https://www.npmjs.com/package/${repoId}`;
+  if (platform === 'pypi') return `https://pypi.org/project/${repoId}/`;
+  return `https://github.com/${repoId}`;
+}
+
+async function copyWithFlash(btn, text, label = 'Copied ✓') {
+  try {
+    await navigator.clipboard.writeText(text);
+    const prev = btn.textContent;
+    btn.textContent = label;
+    setTimeout(() => { btn.textContent = prev; }, 1500);
+  } catch { /* clipboard blocked */ }
+}
+
+document.getElementById('copy-url')?.addEventListener('click', async () => {
+  if (!lastData) return;
+  const url = repoSourceUrl(lastData.platform, lastData.repoId);
+  await copyWithFlash(document.getElementById('copy-url'), url);
+});
+
 document.getElementById('open-library')?.addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('library.html') });
+});
+
+document.getElementById('whats-new-btn')?.addEventListener('click', () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('whats-new.html') });
 });
 
 const copyMdBtn = document.getElementById('copy-md');
 copyMdBtn?.addEventListener('click', async () => {
   if (!lastData) return;
-  try {
-    await navigator.clipboard.writeText(toMarkdown(lastData));
-    const prev = copyMdBtn.textContent;
-    copyMdBtn.textContent = 'Copied ✓';
-    setTimeout(() => { copyMdBtn.textContent = prev; }, 1500);
-  } catch { copyMdBtn.textContent = 'Copy failed'; }
+  await copyWithFlash(copyMdBtn, toMarkdown(lastData));
 });
 
 document.getElementById('export-scaffold')?.addEventListener('click', async () => {
@@ -1910,12 +1951,27 @@ retryBtn?.addEventListener('click', async () => {
   location.reload();
 });
 
-// Keyboard nav: ← → cycle tabs; 1–9 jump to the first nine. Ignored while typing.
+// Keyboard nav: ← → cycle tabs; 1–9 jump to the first nine; r rescan. Ignored while typing.
 document.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const t = e.target;
   if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return;
   const tabs = [...document.querySelectorAll('.tab-btn')].filter(b => b.style.display !== 'none');
+  if (e.key === 'r' && retryBtn && !retryBtn.disabled && retryContext) {
+    e.preventDefault();
+    retryBtn.click();
+    return;
+  }
+  if (e.key === 'u' && lastData) {
+    e.preventDefault();
+    document.getElementById('copy-url')?.click();
+    return;
+  }
+  if (e.key === 'm' && lastData) {
+    e.preventDefault();
+    copyMdBtn?.click();
+    return;
+  }
   if (!tabs.length) return;
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     const cur = tabs.findIndex(b => b.classList.contains('active'));

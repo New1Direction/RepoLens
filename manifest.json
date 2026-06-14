@@ -3,7 +3,7 @@
   "name": "RepoLens",
   "version": "2.0.0",
   "description": "One-click repo explainer. Powered by Claude.",
-  "permissions": ["storage", "activeTab", "tabs", "identity", "webNavigation"],
+  "permissions": ["storage", "activeTab", "tabs", "identity", "webNavigation", "notifications"],
   "host_permissions": [
     "https://github.com/*",
     "https://gitlab.com/*",
@@ -66,6 +66,9 @@
       "128": "icons/icon128.png"
     }
   },
+  "web_accessible_resources": [
+    { "resources": ["whats-new.html"], "matches": ["<all_urls>"] }
+  ],
   "options_page": "options.html",
   "icons": {
     "16": "icons/icon16.png",
