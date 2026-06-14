@@ -38,8 +38,9 @@ jobs:
       - name: Build static export
         working-directory: website
         env:
-          # Project Pages site is served under /<repo>/.
-          NEXT_PUBLIC_BASE_PATH: /repolens
+          # Project Pages site is served under /<repo>/ — and the path is
+          # CASE-SENSITIVE, so this must match the canonical repo name exactly.
+          NEXT_PUBLIC_BASE_PATH: /RepoLens
         run: npm run build
       - name: Disable Jekyll (serve _next/ as-is)
         run: touch website/out/.nojekyll

@@ -8,7 +8,7 @@ import './global.css';
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://new1direction.github.io/repolens/'),
+  metadataBase: new URL('https://new1direction.github.io/RepoLens/'),
   title: {
     default: 'RepoLens — read code before you trust it',
     template: '%s · RepoLens',

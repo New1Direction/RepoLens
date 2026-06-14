@@ -20,5 +20,5 @@ export const baseOptions: BaseLayoutProps = {
       url: '/changelog',
     },
   ],
-  githubUrl: 'https://github.com/New1Direction/repolens',
+  githubUrl: 'https://github.com/New1Direction/RepoLens',
 };

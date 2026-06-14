@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Vee } from './Vee';
 import { ThemeToggle } from './ThemeToggle';
 
-export const GITHUB_URL = 'https://github.com/New1Direction/repolens';
+export const GITHUB_URL = 'https://github.com/New1Direction/RepoLens';
 
 export function SiteHeader() {
   return (
