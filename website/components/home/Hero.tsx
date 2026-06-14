@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { HeroLens } from './HeroLens';
+import { HeroMascot } from './HeroMascot';
 import { GITHUB_URL } from '@/components/site/SiteHeader';
 
 export function Hero() {
@@ -10,7 +10,7 @@ export function Hero() {
           <span className="pulse" /> Chrome Extension · Manifest V3 · v3.0
         </span>
 
-        <HeroLens />
+        <HeroMascot />
 
         <h1 id="hero-heading" className="hero-title">
           Read code before
