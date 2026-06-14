@@ -37,6 +37,14 @@ function updateCount() {
 
 textarea.addEventListener('input', updateCount);
 
+// Pre-fill from library "Refresh stale" button
+chrome.storage.session.get('repolens_batch_prefill').then(({ repolens_batch_prefill }) => {
+  if (!repolens_batch_prefill?.length) return;
+  chrome.storage.session.remove('repolens_batch_prefill');
+  textarea.value = repolens_batch_prefill.join('\n');
+  updateCount();
+}).catch(() => {});
+
 clearBtn.addEventListener('click', () => {
   textarea.value = '';
   updateCount();

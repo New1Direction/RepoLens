@@ -2057,7 +2057,15 @@ document.getElementById('open-library')?.addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('library.html') });
 });
 
-document.getElementById('whats-new-btn')?.addEventListener('click', () => {
+const CURRENT_VERSION = '1.9.0';
+const whatsNewBtn = document.getElementById('whats-new-btn');
+const whatsNewDot = document.getElementById('whats-new-dot');
+chrome.storage.local.get('seenVersion', ({ seenVersion }) => {
+  if (seenVersion !== CURRENT_VERSION && whatsNewDot) whatsNewDot.hidden = false;
+});
+whatsNewBtn?.addEventListener('click', () => {
+  chrome.storage.local.set({ seenVersion: CURRENT_VERSION });
+  if (whatsNewDot) whatsNewDot.hidden = true;
   chrome.tabs.create({ url: chrome.runtime.getURL('whats-new.html') });
 });
 

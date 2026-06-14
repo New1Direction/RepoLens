@@ -319,11 +319,33 @@ function renderStats() {
   if (!s.total) { host.classList.add('hidden'); host.innerHTML = ''; return; }
   host.classList.remove('hidden');
   const pill = (level, n) => (n ? html`<span class="ls-pill ${level}">${n} ${level}</span>` : '');
+  const staleCount = allRows.filter((r) => {
+    if (!r.savedAt) return false;
+    return (Date.now() - new Date(r.savedAt).getTime()) > 7 * 86_400_000;
+  }).length;
+  const stalePill = staleCount
+    ? html`<button class="ls-stale" id="refresh-stale" title="Queue stale repos for a fresh scan">↻ ${staleCount} stale</button>`
+    : '';
   host.innerHTML = String(html`
     <span class="ls-total">${s.total} repo${s.total === 1 ? '' : 's'}</span>
     <span class="ls-pills">${['strong', 'solid', 'care', 'risky', 'unrated'].map((lvl) => pill(lvl, s.byFit[lvl]))}</span>
     ${s.avgHealth != null ? html`<span class="ls-health">avg health ${s.avgHealth}</span>` : ''}
+    ${stalePill}
   `);
+  document.getElementById('refresh-stale')?.addEventListener('click', refreshStale);
+}
+
+async function refreshStale() {
+  const stale = allRows.filter((r) => {
+    if (!r.savedAt) return false;
+    return (Date.now() - new Date(r.savedAt).getTime()) > 7 * 86_400_000;
+  });
+  if (!stale.length) return;
+  const urls = stale.map((r) => sourceUrl(r.platform || '', r.repoId));
+  try {
+    await chrome.storage.session.set({ repolens_batch_prefill: urls });
+  } catch { /* session storage unavailable — open batch anyway */ }
+  chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') });
 }
 
 // ─── backup: export / import / clear ───────────────────────────────────────────
