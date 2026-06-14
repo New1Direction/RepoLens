@@ -1654,6 +1654,30 @@ function verdictDashboard(d) {
   const jump = (id, label) => `<button class="v-jump" data-jump="${id}">${label} <span class="arr">→</span></button>`;
   const jumps = `<div class="v-jumps">${jump(7, "Why it's " + (score >= 70 ? 'healthy' : 'mixed'))}${jump(8, 'What to watch')}${jump(6, 'Alternatives')}${jump(10, 'Deep Dive')}</div>`;
 
+  const diff = d.diff;
+  const diffCallout = (() => {
+    if (!diff) return '';
+    const changes = [];
+    if (diff.fit_delta?.changed) {
+      const arrow = diff.fit_delta.direction === 'up' ? '↑' : '↓';
+      changes.push(`fit shifted ${arrow} (${diff.fit_delta.before} → ${diff.fit_delta.after})`);
+    }
+    if (diff.new_flags?.length) changes.push(`${diff.new_flags.length} new flag${diff.new_flags.length > 1 ? 's' : ''}`);
+    if (Math.abs(diff.health_delta?.delta || 0) >= 5) {
+      const arrow = diff.health_delta.direction === 'up' ? '+' : '';
+      changes.push(`health ${arrow}${diff.health_delta.delta}`);
+    }
+    if (!changes.length) return '';
+    const label = diff.days_since_prev != null
+      ? `Since your last scan (${diff.days_since_prev === 0 ? 'today' : diff.days_since_prev === 1 ? 'yesterday' : `${diff.days_since_prev}d ago`})`
+      : 'Since last scan';
+    return `<div class="v-diff-callout">
+      <span class="v-diff-label">${esc(label)}:</span>
+      <span class="v-diff-items">${changes.map(esc).join(' · ')}</span>
+      <button class="v-jump" data-jump="24" style="margin-left:auto">Full diff <span class="arr">→</span></button>
+    </div>`;
+  })();
+
   return `
     <div class="v-top"><button class="v-copy" id="v-copy" title="Copy a text summary of this verdict">⧉ Copy</button><button class="v-share" id="v-share" title="Open a shareable verdict card">⤴ Share</button></div>
     <p class="v-what">${what}</p>
@@ -1662,6 +1686,7 @@ function verdictDashboard(d) {
     <div class="v-facts">${cells}</div>
     ${flags}
     ${entries}
+    ${diffCallout}
     ${jumps}
     <div class="v-ask-cta"><span>Have a specific question?</span><button class="v-jump" data-jump="26">Ask This Repo <span class="arr">→</span></button></div>`;
 }
