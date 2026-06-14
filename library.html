@@ -155,6 +155,13 @@
   .ls-pill.risky  { background: var(--fit-risky);  color: #250a08; }
   .ls-pill.unrated{ background: color-mix(in srgb, var(--text-muted) 18%, var(--surface)); color: var(--sub); }
   .ls-health { margin-left: auto; font: 600 12px var(--mono); color: var(--sub); }
+  .ls-bar { display: flex; height: 6px; border-radius: 999px; overflow: hidden; width: 80px; flex-shrink: 0; gap: 1px; }
+  .ls-bar-seg { border-radius: 999px; }
+  .ls-bar-strong { background: var(--fit-strong); }
+  .ls-bar-solid  { background: var(--fit-solid); }
+  .ls-bar-care   { background: var(--fit-care); }
+  .ls-bar-risky  { background: var(--fit-risky); }
+  .ls-bar-unrated{ background: var(--border-2); }
   .ls-stale { font: 700 11px/1 var(--mono); padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--warn) 18%, var(--surface)); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); cursor: pointer; transition: background .15s; }
   .ls-stale:hover { background: color-mix(in srgb, var(--warn) 28%, var(--surface)); }
 

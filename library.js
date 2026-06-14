@@ -353,9 +353,14 @@ function renderStats() {
   const stalePill = staleCount
     ? html`<button class="ls-stale" id="refresh-stale" title="Queue stale repos for a fresh scan">↻ ${staleCount} stale</button>`
     : '';
+  const FIT_ORDER = ['strong', 'solid', 'care', 'risky', 'unrated'];
+  const barSegments = FIT_ORDER.filter((lvl) => s.byFit[lvl] > 0)
+    .map((lvl) => `<span class="ls-bar-seg ls-bar-${lvl}" style="flex:${s.byFit[lvl]}" title="${s.byFit[lvl]} ${lvl}"></span>`)
+    .join('');
   host.innerHTML = String(html`
     <span class="ls-total">${s.total} repo${s.total === 1 ? '' : 's'}</span>
-    <span class="ls-pills">${['strong', 'solid', 'care', 'risky', 'unrated'].map((lvl) => pill(lvl, s.byFit[lvl]))}</span>
+    ${barSegments ? `<span class="ls-bar" title="Fit distribution">${barSegments}</span>` : ''}
+    <span class="ls-pills">${FIT_ORDER.map((lvl) => pill(lvl, s.byFit[lvl]))}</span>
     ${s.avgHealth != null ? html`<span class="ls-health">avg health ${s.avgHealth}</span>` : ''}
     ${stalePill}
   `);
