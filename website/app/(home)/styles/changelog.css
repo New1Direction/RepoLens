@@ -1,0 +1,201 @@
+/* ════════════════════════════════════════════════════════════════════════
+   Changelog — featured latest card + vertical release timeline.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.changelog .cl-header {
+  max-width: 64ch;
+}
+.cl-stats {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.cl-stat {
+  text-align: center;
+  padding: 20px 10px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--surface), var(--bg-2));
+  border: 1px solid var(--border);
+}
+.cl-stat-n {
+  font: 800 clamp(1.5rem, 1rem + 1.8vw, 2.2rem) / 1 var(--sans);
+  letter-spacing: -0.02em;
+}
+.cl-stat-l {
+  margin-top: 7px;
+  font: 600 10px/1.3 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+@media (max-width: 620px) {
+  .cl-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Latest featured card ────────────────────────────────────────────── */
+.latest-card {
+  margin-top: 34px;
+  border-radius: 22px;
+  padding: 30px;
+  background: radial-gradient(560px 240px at 100% 0%, var(--accent-weak), transparent 60%),
+    linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border-2);
+  box-shadow: var(--shadow-lg);
+}
+.latest-top {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-wrap: wrap;
+}
+.vtag {
+  font: 800 13px/1 var(--mono);
+  padding: 7px 12px;
+  border-radius: 9px;
+  color: #0a0a16;
+  background: var(--grad-soft);
+}
+.vbadge {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ok);
+  border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+.vtheme {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+.vdate {
+  font: 600 12px/1 var(--mono);
+  color: var(--faint);
+}
+.latest-vee {
+  margin-left: auto;
+  color: var(--text-strong);
+  display: inline-flex;
+}
+.latest-summary {
+  margin: 16px 0 0;
+  font-size: 1.05rem;
+  color: var(--sub);
+  max-width: 62ch;
+}
+.latest-highlights {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.latest-highlights li {
+  position: relative;
+  padding: 13px 16px 13px 34px;
+  border-radius: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--sub);
+}
+.latest-highlights li::before {
+  content: '→';
+  position: absolute;
+  left: 14px;
+  top: 13px;
+  color: var(--accent);
+  font-weight: 700;
+}
+@media (max-width: 620px) {
+  .latest-highlights {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Timeline ────────────────────────────────────────────────────────── */
+.cl-subhead {
+  margin: 52px 0 4px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+.timeline {
+  margin-top: 22px;
+}
+.rel {
+  position: relative;
+  padding: 0 0 28px 30px;
+  border-left: 2px solid var(--border);
+}
+.rel:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+.rel::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px var(--bg), 0 0 12px var(--accent-glow);
+}
+.rel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.rel-v {
+  font: 800 13px/1 var(--mono);
+  color: var(--accent);
+}
+.rel-theme {
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+}
+.rel-date {
+  margin-left: auto;
+  font: 600 11px/1 var(--mono);
+  color: var(--faint);
+}
+.rel-body {
+  color: var(--sub);
+  font-size: 0.95rem;
+  max-width: 70ch;
+}
+.rel-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rel-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  color: var(--sub);
+}
+.rel-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}

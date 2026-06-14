@@ -1,0 +1,519 @@
+/* ════════════════════════════════════════════════════════════════════════
+   Marketing shell — base, header, footer, buttons, Vee, section helpers.
+   Everything is scoped under .site-root so it can never reach the docs DOM.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.site-root {
+  --site-max: 1080px;
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+/* Observatory atmosphere: a soft accent aurora + a faint starfield (dark only). */
+.site-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 78% -8%, var(--accent-weak), transparent 60%),
+    radial-gradient(820px 600px at 8% 0%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 55%),
+    radial-gradient(700px 700px at 50% 112%, color-mix(in srgb, var(--accent-3) 9%, transparent), transparent 60%);
+}
+.site-root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--starfield-opacity);
+  background-image:
+    radial-gradient(1.4px 1.4px at 20% 30%, #fff8, transparent),
+    radial-gradient(1.2px 1.2px at 70% 20%, #fff6, transparent),
+    radial-gradient(1px 1px at 40% 70%, #fff7, transparent),
+    radial-gradient(1.5px 1.5px at 85% 60%, #fff5, transparent),
+    radial-gradient(1px 1px at 60% 85%, #fff6, transparent),
+    radial-gradient(1.2px 1.2px at 12% 80%, #fff5, transparent),
+    radial-gradient(1px 1px at 92% 35%, #fff6, transparent);
+  background-repeat: no-repeat;
+}
+
+.site-root .container {
+  width: 100%;
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.site-main {
+  flex: 1 0 auto;
+}
+
+/* ── Brand mark ──────────────────────────────────────────────────────── */
+.site-root .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  color: var(--text-strong);
+}
+.site-root .brand-name {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: 1.05rem;
+}
+.site-root .brand .vee {
+  color: var(--text-strong);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 74%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.site-header-inner {
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: 13px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-left: 10px;
+}
+.site-nav a {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--sub);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.site-nav a:hover {
+  color: var(--text-strong);
+}
+.site-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .site-nav {
+    display: none;
+  }
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.site-root .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 700 0.95rem/1 var(--sans);
+  letter-spacing: -0.01em;
+  padding: 13px 20px;
+  border-radius: 11px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur) var(--ease-out),
+    background var(--dur) var(--ease-out);
+}
+.site-root .btn-sm {
+  padding: 9px 15px;
+  font-size: 0.88rem;
+  border-radius: 9px;
+}
+.site-root .btn-primary {
+  background: var(--grad-soft);
+  color: #0a0a16;
+  box-shadow: 0 14px 34px -16px var(--accent-glow);
+}
+.site-root .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 44px -16px var(--accent-glow);
+}
+.site-root .btn-ghost {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border-color: var(--border-2);
+  color: var(--text);
+}
+.site-root .btn-ghost:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  color: var(--text-strong);
+}
+
+/* ── Theme toggle ────────────────────────────────────────────────────── */
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.theme-toggle-track {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+.theme-toggle-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: var(--bg);
+  border: 1px solid var(--border-2);
+  transform: translateX(0);
+  transition: transform var(--dur) var(--ease-spring), color var(--dur-fast) var(--ease-out);
+}
+.theme-toggle-thumb.is-light {
+  transform: translateX(20px);
+  color: var(--warn);
+}
+
+/* ── Palette swatches ────────────────────────────────────────────────── */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 0.82rem/1 var(--sans);
+  color: var(--sub);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  padding: 8px 13px 8px 9px;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.swatch:hover {
+  color: var(--text-strong);
+  border-color: var(--accent);
+}
+.swatch:active {
+  transform: scale(0.96);
+}
+.swatch.is-on {
+  color: var(--text-strong);
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+.swatch-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+/* ── Section helpers ─────────────────────────────────────────────────── */
+.site-root .section {
+  padding: clamp(56px, 4vw + 36px, 104px) 0 8px;
+}
+.site-root .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.site-root .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-weak);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  padding: 8px 14px;
+}
+.site-root .kicker .pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+.site-root .section-title {
+  font-size: clamp(1.7rem, 1.1rem + 1.8vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--text-strong);
+  margin: 13px 0 8px;
+}
+.site-root .section-note {
+  color: var(--sub);
+  max-width: 60ch;
+  font-size: 1.02rem;
+}
+.site-root .grad-text {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Vee mascot (token-aware SVG; expression = class swap) ────────────── */
+.vee {
+  display: inline-flex;
+  color: var(--text);
+  line-height: 0;
+}
+.vee svg {
+  display: block;
+  overflow: visible;
+}
+.vee .vee-aperture,
+.vee .vee-pupil,
+.vee .vee-ticks,
+.vee svg {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.vee.is-strong .vee-aperture {
+  r: 12;
+  stroke: var(--ok);
+}
+.vee.is-strong .vee-pupil {
+  fill: var(--ok);
+}
+.vee.is-risky .vee-aperture {
+  r: 4.5;
+  stroke-width: 3.4;
+  stroke: var(--bad);
+}
+.vee.is-risky .vee-pupil {
+  fill: var(--bad);
+}
+.vee.is-risky svg {
+  transform: rotate(-8deg);
+}
+.vee.is-scanning .vee-aperture {
+  r: 8.5;
+}
+.vee.is-thinking .vee-aperture {
+  r: 9;
+}
+.vee.is-empty .vee-aperture {
+  r: 5;
+  opacity: 0.7;
+}
+.vee.is-empty .vee-pupil {
+  opacity: 0.7;
+}
+.vee.is-error svg {
+  transform: rotate(5deg);
+}
+.vee.is-error .vee-aperture {
+  r: 7;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+.site-footer {
+  flex-shrink: 0;
+  margin-top: clamp(60px, 6vw, 110px);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 50%, transparent);
+}
+.site-footer-inner {
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: 52px 24px 36px;
+  display: grid;
+  grid-template-columns: 1.4fr 2fr;
+  gap: 40px;
+}
+.site-footer-brand p {
+  margin: 14px 0 16px;
+  color: var(--sub);
+  font-size: 0.92rem;
+  max-width: 34ch;
+}
+.footer-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.site-root .pill {
+  font: 600 10.5px/1 var(--mono);
+  letter-spacing: 0.05em;
+  color: var(--sub);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 12px;
+}
+.site-footer-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.footer-col h3 {
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.footer-col a {
+  font-size: 0.9rem;
+  color: var(--sub);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.footer-col a:hover {
+  color: var(--accent);
+}
+.site-footer-base {
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: 18px 24px 46px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font: 600 12px/1.5 var(--mono);
+  color: var(--faint);
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+@media (max-width: 720px) {
+  .site-footer-inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* ── Section entrance ────────────────────────────────────────────────────
+   A gentle, self-completing load animation. Deliberately NOT scroll-linked:
+   scroll timelines leave sections taller than the viewport stuck at opacity 0,
+   and marketing content must always end fully visible. `both` only fills
+   backwards during the short delay; every element finishes opaque on its own.
+   ──────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .site-root .reveal {
+    animation: reveal-in 0.7s var(--ease-out) both;
+  }
+}
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Vee motion (all gated behind reduced-motion) ────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .vee .vee-aperture,
+  .vee .vee-pupil {
+    transition: r var(--dur) var(--ease-out), stroke var(--dur) var(--ease-out),
+      fill var(--dur) var(--ease-out), stroke-width var(--dur) var(--ease-out),
+      opacity var(--dur) var(--ease-out);
+  }
+  .vee svg {
+    transition: transform var(--dur) var(--ease-out);
+  }
+  .vee.is-strong .vee-aperture {
+    animation: vpop var(--dur-slow) var(--ease-spring);
+  }
+  .vee.is-scanning .vee-aperture {
+    animation: vbreathe 2.4s var(--ease-out) infinite;
+  }
+  .vee.is-scanning .vee-ticks {
+    animation: vrotate 9s linear infinite;
+  }
+  .vee.is-thinking .vee-pupil {
+    animation: vdrift 2.2s var(--ease-out) infinite;
+  }
+  .vee.is-empty .vee-aperture {
+    animation: vrest 4.5s var(--ease-out) infinite;
+  }
+  .vee.is-error svg {
+    animation: vshake 360ms var(--ease-out);
+  }
+  .site-root .pulse {
+    animation: kpulse 1.6s var(--ease-out) infinite;
+  }
+}
+@keyframes vpop {
+  0% { r: 9; }
+  60% { r: 13; }
+  100% { r: 12; }
+}
+@keyframes vbreathe {
+  0%, 100% { r: 6; }
+  50% { r: 11; }
+}
+@keyframes vrotate {
+  to { transform: rotate(360deg); }
+}
+@keyframes vdrift {
+  0%, 100% { transform: translateX(-1.6px); }
+  50% { transform: translateX(1.6px); }
+}
+@keyframes vrest {
+  0%, 100% { r: 5; }
+  50% { r: 5.8; }
+}
+@keyframes vshake {
+  0% { transform: rotate(5deg) translateX(0); }
+  25% { transform: rotate(5deg) translateX(-1.5px); }
+  75% { transform: rotate(5deg) translateX(1.5px); }
+  100% { transform: rotate(5deg) translateX(0); }
+}
+@keyframes kpulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.site-root :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}

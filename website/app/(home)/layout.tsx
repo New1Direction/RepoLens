@@ -1,7 +1,14 @@
 import type { ReactNode } from 'react';
-import { HomeLayout } from 'fumadocs-ui/layouts/home';
-import { baseOptions } from '@/app/layout.config';
+import { SiteHeader } from '@/components/site/SiteHeader';
+import { SiteFooter } from '@/components/site/SiteFooter';
+import './styles/shell.css';
 
-export default function Layout({ children }: { children: ReactNode }) {
-  return <HomeLayout {...baseOptions}>{children}</HomeLayout>;
+export default function MarketingLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="site-root">
+      <SiteHeader />
+      <main className="site-main">{children}</main>
+      <SiteFooter />
+    </div>
+  );
 }

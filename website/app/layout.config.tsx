@@ -15,6 +15,10 @@ export const baseOptions: BaseLayoutProps = {
       url: '/docs',
       active: 'nested-url',
     },
+    {
+      text: 'Changelog',
+      url: '/changelog',
+    },
   ],
   githubUrl: 'https://github.com/New1Direction/repolens',
 };

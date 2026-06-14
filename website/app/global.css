@@ -2,3 +2,144 @@
 
 /* Scan our own components/pages for any Tailwind utilities we use (Tailwind v4 syntax). */
 @source '../app';
+@source '../components';
+
+/* ────────────────────────────────────────────────────────────────────────
+   RepoLens brand tokens.
+   Two themes drive everything: latte (:root, light) and midnight (.dark).
+   next-themes (wired by fumadocs RootProvider, `class` strategy) flips .dark,
+   so both the marketing pages and the docs re-skin from a single toggle.
+   Accent palettes layer on top via [data-palette] — accent ramp only.
+   ──────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* type + motion (theme-independent) */
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  --sans: "SF Pro Display", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* accent ramp — single source, tuned to read on both paper and midnight.
+     [data-palette] overrides these; nothing else should redefine them. */
+  --accent: #7c5cff;
+  --accent-2: #3b82f6;
+  --accent-3: #22d3ee;
+  --grad: linear-gradient(120deg, #8b7cff 0%, #3b82f6 60%, #22d3ee 120%);
+  --grad-soft: linear-gradient(120deg, #8b7cff, #3b82f6);
+  --accent-glow: rgba(124, 92, 255, 0.5);
+  --accent-weak: rgba(124, 92, 255, 0.12);
+  --accent-line: rgba(124, 92, 255, 0.28);
+
+  /* latte — warm paper, light */
+  --bg: #f3f1ec;
+  --bg-2: #eae6dd;
+  --surface: #ffffff;
+  --surface-2: #faf8f3;
+  --border: #e4ded1;
+  --border-2: #d3ccba;
+  --text: #34322c;
+  --text-strong: #1a1813;
+  --sub: #5f5a4d;
+  --muted: #857f6d;
+  --faint: #aaa392;
+  --ok: #0f9d6a;
+  --info: #0284c7;
+  --warn: #b45309;
+  --bad: #dc2647;
+  --shadow-lg: 0 30px 80px -40px rgba(40, 34, 20, 0.28);
+  --shadow-md: 0 18px 40px -24px rgba(40, 34, 20, 0.22);
+  --starfield-opacity: 0;
+
+  /* fumadocs remap → latte */
+  --color-fd-background: #f3f1ec;
+  --color-fd-foreground: #34322c;
+  --color-fd-muted: #eae6dd;
+  --color-fd-muted-foreground: #6f6a5b;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #1a1813;
+  --color-fd-card: #faf8f3;
+  --color-fd-card-foreground: #1a1813;
+  --color-fd-border: #e2ddd1;
+  --color-fd-primary: #6d4aff;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #eee9df;
+  --color-fd-secondary-foreground: #34322c;
+  --color-fd-accent: #ece7dc;
+  --color-fd-accent-foreground: #1a1813;
+  --color-fd-ring: #7c5cff;
+}
+
+.dark {
+  /* midnight — near-black observatory, dark */
+  --bg: #06060d;
+  --bg-2: #0a0a16;
+  --surface: #11111f;
+  --surface-2: #161628;
+  --border: #21213a;
+  --border-2: #30304f;
+  --text: #eaeefb;
+  --text-strong: #ffffff;
+  --sub: #9aa6c2;
+  --muted: #6b7794;
+  --faint: #4b5570;
+  --ok: #34d399;
+  --info: #38bdf8;
+  --warn: #fbbf24;
+  --bad: #fb7185;
+  --shadow-lg: 0 30px 80px -40px rgba(0, 0, 0, 0.8);
+  --shadow-md: 0 20px 50px -28px rgba(0, 0, 0, 0.7);
+  --starfield-opacity: 0.5;
+
+  /* fumadocs remap → midnight */
+  --color-fd-background: #06060d;
+  --color-fd-foreground: #eaeefb;
+  --color-fd-muted: #11111f;
+  --color-fd-muted-foreground: #9aa6c2;
+  --color-fd-popover: #0a0a16;
+  --color-fd-popover-foreground: #eaeefb;
+  --color-fd-card: #0e0e1b;
+  --color-fd-card-foreground: #eaeefb;
+  --color-fd-border: #21213a;
+  --color-fd-primary: #8b7cff;
+  --color-fd-primary-foreground: #06060d;
+  --color-fd-secondary: #161628;
+  --color-fd-secondary-foreground: #eaeefb;
+  --color-fd-accent: #1a1a30;
+  --color-fd-accent-foreground: #ffffff;
+  --color-fd-ring: #8b7cff;
+}
+
+/* ── Accent palettes (showcase the theme engine) — accent ramp only ─────── */
+:root[data-palette="terminal"] {
+  --accent: #34d399;
+  --accent-2: #10b981;
+  --accent-3: #6ee7b7;
+  --grad: linear-gradient(120deg, #6ee7b7 0%, #10b981 55%, #059669 120%);
+  --grad-soft: linear-gradient(120deg, #34d399, #10b981);
+  --accent-glow: rgba(16, 185, 129, 0.5);
+  --accent-weak: rgba(16, 185, 129, 0.12);
+  --accent-line: rgba(16, 185, 129, 0.3);
+}
+:root[data-palette="nord"] {
+  --accent: #88c0d0;
+  --accent-2: #5e81ac;
+  --accent-3: #8fbcbb;
+  --grad: linear-gradient(120deg, #8fbcbb 0%, #88c0d0 50%, #5e81ac 120%);
+  --grad-soft: linear-gradient(120deg, #88c0d0, #5e81ac);
+  --accent-glow: rgba(94, 129, 172, 0.5);
+  --accent-weak: rgba(136, 192, 208, 0.14);
+  --accent-line: rgba(136, 192, 208, 0.32);
+}
+:root[data-palette="claude"] {
+  --accent: #d97757;
+  --accent-2: #cc785c;
+  --accent-3: #e8a87c;
+  --grad: linear-gradient(120deg, #e8a87c 0%, #d97757 55%, #c15f3c 120%);
+  --grad-soft: linear-gradient(120deg, #d97757, #c15f3c);
+  --accent-glow: rgba(217, 119, 87, 0.5);
+  --accent-weak: rgba(217, 119, 87, 0.13);
+  --accent-line: rgba(217, 119, 87, 0.3);
+}

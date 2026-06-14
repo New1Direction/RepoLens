@@ -4,3 +4,6 @@ node_modules/
 .vitest/
 coverage/
 .verify/
+
+# superpowers skill state
+.superpowers/
