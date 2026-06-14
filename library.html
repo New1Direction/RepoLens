@@ -346,6 +346,10 @@
   #lib-btn-radar.on { color: var(--text); background: var(--surface); border-color: var(--border-2); }
   .radar-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
   @media (max-width: 640px) { .radar-grid { grid-template-columns: repeat(2, 1fr); } }
+  /* Keyboard hint bar */
+  .lib-kbhints { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 0 16px; border-top: 1px solid var(--border); margin-top: 20px; }
+  .lib-kbhints span { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .lib-kbhints kbd { display: inline-block; padding: 1px 5px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border-2); font: 500 10px/1.6 var(--mono); color: var(--sub); }
   /* Hover preview card */
   #lc-hover-card { position: fixed; z-index: 9999; width: 260px; padding: 12px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border-2); box-shadow: 0 8px 24px rgba(0,0,0,.18); pointer-events: none; animation: lc-hover-in 150ms var(--ease-out, ease) both; }
   #lc-hover-card.interactive { pointer-events: auto; }
@@ -422,6 +426,16 @@
     <div id="radar-panel" class="hidden"></div>
     <div id="grid"></div>
     <div class="lib-empty hidden" id="empty"></div>
+    <div class="lib-kbhints" aria-label="Keyboard shortcuts" role="note">
+      <span><kbd>j</kbd><kbd>k</kbd> navigate</span>
+      <span><kbd>Enter</kbd> open</span>
+      <span><kbd>n</kbd> note</span>
+      <span><kbd>c</kbd> compare</span>
+      <span><kbd>p</kbd> pin</span>
+      <span><kbd>/</kbd> search</span>
+      <span><kbd>?query</kbd> AI filter</span>
+      <span><kbd>⌘K</kbd> palette</span>
+    </div>
   </div>
   <div id="lc-hover-card" hidden aria-hidden="true"></div>
   <script src="library.js" type="module"></script>
