@@ -43,6 +43,30 @@ describe('libraryRow', () => {
     const row = libraryRow(mk('o/r', 92, 0, [], { saved_at: '2026-06-02T00:00:00Z', cachedAt: Date.parse('2026-06-01T00:00:00Z') }));
     expect(row.savedAt).toBe('2026-06-02T00:00:00Z');
   });
+
+  describe('fitDelta', () => {
+    it('is null when no prevFitLevel', () => {
+      expect(libraryRow(mk('o/r', 92, 0)).fitDelta).toBeNull();
+    });
+    it('is null when prevFitLevel equals current', () => {
+      const row = libraryRow(mk('o/r', 92, 0, [], { prevFitLevel: 'strong' }));
+      expect(row.fitDelta).toBeNull();
+    });
+    it('detects regression: strong → care', () => {
+      const row = libraryRow(mk('o/r', 55, 2, [], { prevFitLevel: 'strong' }));
+      expect(row.fitDelta).toEqual({ from: 'strong', to: 'care' });
+    });
+    it('detects improvement: risky → solid', () => {
+      const row = libraryRow(mk('o/r', 78, 1, [], { prevFitLevel: 'risky' }));
+      expect(row.fitDelta).toEqual({ from: 'risky', to: 'solid' });
+    });
+    it('is null when either level is unrated', () => {
+      const fromUnrated = libraryRow({ repoId: 'o/r', prevFitLevel: 'unrated' });
+      expect(fromUnrated.fitDelta).toBeNull();
+      const toUnrated = libraryRow({ repoId: 'o/r', prevFitLevel: 'strong' });
+      expect(toUnrated.fitDelta).toBeNull();
+    });
+  });
 });
 
 describe('sourceUrl', () => {
