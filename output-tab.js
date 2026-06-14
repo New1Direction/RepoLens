@@ -26,6 +26,7 @@ import { encodeShareCard } from './share-card.js';
 import { FITS_VERDICTS } from './fits-stack.js';
 import { initPalette } from './palette.js';
 import { toggleRepoInCollection, collectionContains, sortedCollections, COLLECTION_COLORS } from './collections.js';
+import { detectPlatform } from './url-detector.js';
 
 // Apply the saved theme ASAP (before render) to minimise flash.
 initTheme();
@@ -276,6 +277,18 @@ async function init() {
     hintEl.textContent = hint || '';
     if (settingsBtn) settingsBtn.style.display = actions.settings ? '' : 'none';
     if (retryBtn) retryBtn.style.display = actions.retry ? '' : 'none';
+    const pasteForm = document.getElementById('paste-url-form');
+    if (pasteForm) {
+      pasteForm.style.display = 'flex';
+      // Pre-fill if clipboard has a recognized URL (silent — no browser prompt shown).
+      navigator.clipboard?.readText?.().then((txt) => {
+        const trimmed = (txt || '').trim();
+        if (detectPlatform(trimmed)) {
+          const inp = document.getElementById('paste-url-input');
+          if (inp && !inp.value) inp.value = trimmed;
+        }
+      }).catch(() => {});
+    }
     if (mascotOn) renderMascot(document.getElementById('error-vee'), 'error');
     errorState.style.display = 'flex';
     return;
@@ -2138,6 +2151,24 @@ retryBtn?.addEventListener('click', async () => {
     // so the page picks up the fresh loading state and result.
     await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey, ...retryContext });
   } catch { /* reload anyway — worst case the user sees the same error */ }
+  location.reload();
+});
+
+document.getElementById('paste-url-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('paste-url-input');
+  const rawUrl = (input?.value || '').trim();
+  const detected = detectPlatform(rawUrl);
+  if (!detected) {
+    input.style.borderColor = 'var(--bad-edge)';
+    setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    return;
+  }
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Scanning…'; }
+  try {
+    await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey, ...detected });
+  } catch { /* reload anyway */ }
   location.reload();
 });
 

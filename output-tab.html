@@ -742,6 +742,13 @@
     <button id="settings-btn" style="display:none;background:var(--accent-deep);color:var(--text-strong);border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600">Open Settings</button>
     <button id="retry-btn" style="display:none;background:var(--surface);color:var(--text);border:1px solid var(--border-2);border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600">Retry</button>
   </div>
+  <form id="paste-url-form" style="display:none;flex-direction:column;align-items:center;gap:8px;margin-top:4px">
+    <div style="font-size:12px;color:var(--text-sub)">Or paste a GitHub / GitLab / npm / PyPI URL to scan directly:</div>
+    <div style="display:flex;gap:6px">
+      <input id="paste-url-input" type="url" placeholder="https://github.com/owner/repo" autocomplete="off" style="width:300px;background:var(--surface);border:1px solid var(--border-2);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;outline:none"/>
+      <button type="submit" style="background:var(--accent-deep);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Scan</button>
+    </div>
+  </form>
 </div>
 
 <!-- Main content (hidden until data loads) -->
