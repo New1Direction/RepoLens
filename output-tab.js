@@ -1726,20 +1726,35 @@ function renderTabs(d) {
     </ul></div>
   </div>`);
 
-  // Alternatives: enrich with "in library" badge and quick-scan link.
+  // Alternatives: enrich with "in library" badge and quick-scan button.
   getLibraryIndex().then((libIdx) => {
     const alts = d.alternatives ?? [];
-    setTabContent(6, alts.map(a => {
+    const host = document.getElementById('t6');
+    host.innerHTML = alts.map((a, idx) => {
       const inLib = libIdx.has(a.name);
-      const scanUrl = repoSourceUrl('github', a.name);
+      const detected = detectPlatform(repoSourceUrl('github', a.name));
       const badge = inLib
         ? `<span class="alt-in-lib">In library</span>`
-        : `<a class="alt-scan-link" href="${scanUrl}" target="_blank" rel="noopener" title="Open to scan">↗ View</a>`;
+        : (detected ? `<button class="alt-scan-btn" data-idx="${idx}">Scan →</button>` : `<a class="alt-scan-link" href="${esc(repoSourceUrl('github', a.name))}" target="_blank" rel="noopener">↗ View</a>`);
       return `<div class="alt-row">
         <div class="alt-name">${esc(a.name)}${badge}</div>
         <div class="alt-when">${esc(a.when)}</div>
       </div>`;
-    }).join(''));
+    }).join('');
+
+    host.querySelectorAll('.alt-scan-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const a = alts[Number(btn.dataset.idx)];
+        if (!a) return;
+        const det = detectPlatform(repoSourceUrl('github', a.name));
+        if (!det) return;
+        btn.disabled = true; btn.textContent = 'Opening…';
+        const key = 'repolens_' + crypto.randomUUID();
+        try { await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey: key, ...det }); }
+        catch { /* bg may be asleep — tab will show loading state */ }
+        chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${key}`) });
+      });
+    });
   });
 
   const bars = ['commit_activity', 'issue_response', 'pr_merge_rate', 'maintainer_count'];
