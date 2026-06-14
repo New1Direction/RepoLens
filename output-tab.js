@@ -2232,7 +2232,7 @@ document.getElementById('open-library')?.addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('library.html') });
 });
 
-const CURRENT_VERSION = '2.5.0';
+const CURRENT_VERSION = '2.6.0';
 const whatsNewBtn = document.getElementById('whats-new-btn');
 const whatsNewDot = document.getElementById('whats-new-dot');
 chrome.storage.local.get('seenVersion', ({ seenVersion }) => {
