@@ -143,6 +143,14 @@ function render() {
   jkIdx = -1;
   const grid = document.getElementById('grid');
   let rows = sortRows(filterRows(allRows, state), state.sort);
+  // 'decided' sort uses decisionMap which lives here, not in library-data.
+  if (state.sort === 'decided') {
+    rows = [...rows].sort((a, b) => {
+      const ta = Date.parse(decisionMap.get(a.repoId)?.savedAt) || 0;
+      const tb = Date.parse(decisionMap.get(b.repoId)?.savedAt) || 0;
+      return tb - ta || a.name.localeCompare(b.name);
+    });
+  }
   // Collection filter is applied here (not in the pure filterRows) so library-data
   // stays unaware of collections — the membership lives only in this module.
   if (state.collection) {
@@ -1643,6 +1651,7 @@ function initLibraryPalette() {
     { name: 'Sort: Recently scanned', action: () => { state.sort = 'recent'; document.getElementById('sort').value = 'recent'; chrome.storage.local.set({ librarySort: 'recent' }); render(); } },
     { name: 'Sort: Stars', action: () => { state.sort = 'stars'; document.getElementById('sort').value = 'stars'; chrome.storage.local.set({ librarySort: 'stars' }); render(); } },
     { name: 'Sort: Name', action: () => { state.sort = 'name'; document.getElementById('sort').value = 'name'; chrome.storage.local.set({ librarySort: 'name' }); render(); } },
+    { name: 'Sort: Recently decided', action: () => { state.sort = 'decided'; document.getElementById('sort').value = 'decided'; chrome.storage.local.set({ librarySort: 'decided' }); render(); } },
     { section: 'View', name: 'Tech Radar', description: 'Organize repos by Adopt/Trial/Hold/Reject decision', action: () => { if (state.view !== 'radar') toggleRadarView(); } },
     { name: 'List view', description: 'Default card grid', action: () => { if (state.view !== 'list') toggleRadarView(); } },
     { section: 'Pins', name: 'Unpin all', description: 'Remove all pinned repos from the top section', action: async () => { pinned.clear(); await chrome.storage.local.set({ repolens_pinned: [] }); render(); } },
