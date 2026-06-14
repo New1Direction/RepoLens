@@ -223,6 +223,8 @@ function initOutputPalette(data) {
     { name: 'Open Library', description: 'Browse your saved repos', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }) },
     { name: 'Batch Scan', description: 'Scan multiple repos at once', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }) },
     { name: 'Run Fresh Scan', description: 'Bypass cache and re-analyse this repo', shortcut: 'F', action: () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true })) },
+    { name: 'Open Repo Source', description: 'Open the GitHub / npm / PyPI page', shortcut: 'O', action: () => { if (lastData) { const url = repoSourceUrl(lastData.platform, lastData.repoId); if (url) chrome.tabs.create({ url }); } } },
+    { name: 'Share Verdict Card', description: 'Generate a shareable verdict card', action: () => document.getElementById('v-share')?.click() },
     { name: 'Copy URL', description: 'Copy the repo source URL', shortcut: 'U', action: () => document.getElementById('copy-url')?.click() },
     { name: 'Copy Markdown', description: 'Copy this analysis as MD', shortcut: 'M', action: () => document.getElementById('copy-md')?.click() },
     { name: 'Copy Slack Post', description: 'Copy compact summary for Slack/Discord', action: () => copySlackBtn?.click() },
@@ -326,6 +328,10 @@ async function init() {
 
   watchSaveStatus(data);
   loadLibraryComparison(data);
+  getLibraryIndex().then(m => {
+    const btn = document.getElementById('open-library');
+    if (btn && m.size > 0) btn.title = `Browse your ${m.size} analyzed repo${m.size === 1 ? '' : 's'}`;
+  }).catch(() => {});
   renderThemeSwitcher();
   renderDeepDive(data);
   renderFrameworkLens(data, SYSTEMS_CFG);
@@ -2375,6 +2381,12 @@ document.addEventListener('keydown', async e => {
   if (e.key === 'e' && lastData) { e.preventDefault(); show(0); return; }
   if (e.key === 'h' && lastData) { e.preventDefault(); show(7); return; }
   if (e.key === 'l') { e.preventDefault(); document.getElementById('open-library')?.click(); return; }
+  if (e.key === 'o' && lastData) {
+    e.preventDefault();
+    const url = repoSourceUrl(lastData.platform, lastData.repoId);
+    if (url) chrome.tabs.create({ url });
+    return;
+  }
   if (!tabs.length) return;
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     const cur = tabs.findIndex(b => b.classList.contains('active'));
