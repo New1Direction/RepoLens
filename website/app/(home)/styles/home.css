@@ -30,6 +30,43 @@
   border: 1px solid var(--border-2);
   box-shadow: 0 24px 70px -26px var(--accent-glow);
 }
+
+/* Video mascot — framed "viewport" so the clip's neutral backdrop reads as an
+   intentional lens-port in both themes. */
+.hero-mascot {
+  margin: 24px 0 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.hero-mascot-stage {
+  position: relative;
+  width: clamp(168px, 38vw, 236px);
+  aspect-ratio: 460 / 539;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #c2c3c8;
+  border: 1px solid var(--border-2);
+  box-shadow: 0 34px 80px -32px var(--accent-glow), var(--shadow-md);
+}
+.hero-mascot-stage img,
+.hero-mascot-stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Soft inner ring + an accent wash from below so the port feels lit, not pasted. */
+.hero-mascot-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    inset 0 -56px 60px -34px var(--accent-glow);
+}
 .hero-say {
   font-size: 0.9rem;
   color: var(--muted);
