@@ -321,6 +321,15 @@
   #grid.selecting .lib-card:hover { transform: none; box-shadow: none; }
   .lib-card.is-selected { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan) inset; }
 
+  /* Compact density mode */
+  #grid.density-compact .lib-card { padding: 8px 12px; }
+  #grid.density-compact .lc-blurb { display: none; }
+  #grid.density-compact .lc-tags { display: none; }
+  #grid.density-compact .lc-note-preview { display: none; }
+  #grid.density-compact .lc-meta { gap: 7px; }
+  #density-toggle { min-width: 32px; }
+  #density-toggle.on { color: var(--accent); border-color: var(--accent); }
+
   .hidden { display: none; }
 
   /* ── Subtle motion pass ───────────────────────────────────────────────
@@ -403,6 +412,7 @@
       <h1>Library</h1><span class="count" id="count"></span>
       <div class="lib-actions">
         <button class="lib-btn" id="lib-btn-radar" title="Tech Radar — repos organized by your Adopt/Trial/Hold/Reject decisions">🎯 Radar</button>
+        <button class="lib-btn" id="density-toggle" title="Toggle compact card view" aria-label="Toggle card density">⊟</button>
         <button class="lib-btn" id="select" title="Select several repos to remove at once" aria-pressed="false">☑ Select</button>
         <button class="lib-btn hidden" id="compare-btn" title="Clear the compare selection" aria-label="Clear compare selection">⇄ 0/2 ✕</button>
         <button class="lib-btn" id="auto-organize" title="Auto-group repos by detected language and category">✦ Auto-organize</button>
@@ -449,6 +459,9 @@
         <option value="stars">Sort: Stars</option>
         <option value="name">Sort: Name</option>
         <option value="decided">Sort: Recently decided</option>
+      </select>
+      <select class="lib-sort" id="lang-filter" title="Filter by primary language">
+        <option value="">Language: All</option>
       </select>
     </div>
     <form class="lib-ask" id="ask-bar" autocomplete="off" onsubmit="return false">

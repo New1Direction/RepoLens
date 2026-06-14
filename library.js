@@ -42,7 +42,7 @@ function hilite(text, q) {
 let allRows = [];
 let cacheByRepo = new Map(); // repoId → full cached analysis (instant reopen)
 let decisionMap = new Map(); // repoId → decision payload
-const state = { query: '', sort: 'fit', capability: '', collection: '', decision: '', view: 'list' };
+const state = { query: '', sort: 'fit', capability: '', collection: '', decision: '', lang: '', view: 'list' };
 
 // NL filter state: when the user types ?query, the AI returns a ranked list of IDs.
 let nlFilter = null; // null | { question, ids: string[], error?: string }
@@ -176,6 +176,10 @@ function render() {
     rows = rows.filter((r) => !decisionMap.has(r.repoId));
   } else if (state.decision) {
     rows = rows.filter((r) => decisionMap.get(r.repoId)?.decision === state.decision);
+  }
+  if (state.lang) {
+    const lq = state.lang.toLowerCase();
+    rows = rows.filter((r) => (r.language || r.languages?.[0]?.name || '').toLowerCase() === lq);
   }
   // NL filter: when active, restrict to the AI-ranked ID list (preserving AI order).
   if (nlFilter?.ids?.length) {
@@ -852,6 +856,14 @@ function wireToolbar() {
   document.getElementById('digest-json')?.addEventListener('click', () => exportDigest('json'));
   document.getElementById('digest-csv')?.addEventListener('click', () => exportDigest('csv'));
   document.getElementById('auto-organize')?.addEventListener('click', () => autoOrganize());
+  let densityCompact = false;
+  document.getElementById('density-toggle')?.addEventListener('click', () => {
+    densityCompact = !densityCompact;
+    document.getElementById('grid')?.classList.toggle('density-compact', densityCompact);
+    const btn = document.getElementById('density-toggle');
+    if (btn) { btn.textContent = densityCompact ? '⊞' : '⊟'; btn.classList.toggle('on', densityCompact); btn.title = densityCompact ? 'Switch to comfortable view' : 'Switch to compact view'; }
+    chrome.storage.local.set({ libraryDensity: densityCompact ? 'compact' : 'comfortable' });
+  });
   document.getElementById('batch-scan-link')?.addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }));
   document.getElementById('compare-btn')?.addEventListener('click', () => {
     compareSet.clear();
@@ -1515,6 +1527,10 @@ function getVisibleRows() {
   } else if (state.decision) {
     rows = rows.filter((r) => decisionMap.get(r.repoId)?.decision === state.decision);
   }
+  if (state.lang) {
+    const lq = state.lang.toLowerCase();
+    rows = rows.filter((r) => (r.language || r.languages?.[0]?.name || '').toLowerCase() === lq);
+  }
   if (nlFilter?.ids?.length) {
     const idSet = new Set(nlFilter.ids);
     rows = rows.filter((r) => idSet.has(r.repoId));
@@ -1522,6 +1538,20 @@ function getVisibleRows() {
     rows = [];
   }
   return rows;
+}
+
+function showQuickWins() {
+  const HIGH_FIT = new Set(['strong', 'solid']);
+  const wins = allRows.filter((r) => HIGH_FIT.has(r.fit?.level) && !decisionMap.has(r.repoId));
+  if (!wins.length) { setStatus('No quick wins found — all strong/solid repos already have a decision.'); return; }
+  // Apply as an NL-style filter without a real AI call: reuse the nlFilter infra with a synthetic result.
+  nlFilter = { question: `✦ Quick wins (${wins.length} strong/solid, undecided)`, ids: wins.map((r) => r.repoId) };
+  state.query = '';
+  state.decision = '';
+  renderDecisionFilter();
+  renderNlFilterBanner();
+  render();
+  setStatus(`Showing ${wins.length} quick-win repo${wins.length === 1 ? '' : 's'} — strong or solid fit with no decision yet.`);
 }
 
 function exportVisible(format) {
@@ -1762,6 +1792,7 @@ function initLibraryPalette() {
     { name: 'Show: Hold only', action: () => { state.decision = 'hold'; renderDecisionFilter(); render(); } },
     { name: 'Show: Rejected only', action: () => { state.decision = 'reject'; renderDecisionFilter(); render(); } },
     { name: 'Show: Undecided only', action: () => { state.decision = 'undecided'; renderDecisionFilter(); render(); } },
+    { name: '✦ Quick wins — strong/solid fit, no decision', description: 'Surface your easiest triage calls first', action: () => { showQuickWins(); } },
     { section: 'Sort', name: 'Sort: Best fit', action: () => { state.sort = 'fit'; document.getElementById('sort').value = 'fit'; chrome.storage.local.set({ librarySort: 'fit' }); render(); } },
     { name: 'Sort: Health', action: () => { state.sort = 'health'; document.getElementById('sort').value = 'health'; chrome.storage.local.set({ librarySort: 'health' }); render(); } },
     { name: 'Sort: Recently scanned', action: () => { state.sort = 'recent'; document.getElementById('sort').value = 'recent'; chrome.storage.local.set({ librarySort: 'recent' }); render(); } },
@@ -1812,7 +1843,12 @@ async function init() {
       }
     }
   } catch { /* best-effort */ }
-  if (prefs?.librarySort) state.sort = prefs.librarySort; // restore the last chosen sort
+  if (prefs?.librarySort) state.sort = prefs.librarySort;
+  if (prefs?.libraryDensity === 'compact') {
+    document.getElementById('grid')?.classList.add('density-compact');
+    const btn = document.getElementById('density-toggle');
+    if (btn) { btn.textContent = '⊞'; btn.classList.add('on'); btn.title = 'Switch to comfortable view'; }
+  }
   const mascotOn = prefs?.mascotEnabled !== false; // default on
   collections = savedCollections;
   cacheByRepo = new Map(cachedList.filter((c) => c && c.repoId).map((c) => [c.repoId, c]));
@@ -1940,6 +1976,27 @@ async function init() {
     chrome.storage.local.set({ librarySort: state.sort }).catch(() => {});
     render();
   });
+
+  const langSel = document.getElementById('lang-filter');
+  if (langSel) {
+    // Populate from allRows — sorted by frequency descending.
+    const freq = new Map();
+    for (const r of allRows) {
+      const l = r.language || r.languages?.[0]?.name;
+      if (l) freq.set(l, (freq.get(l) || 0) + 1);
+    }
+    const langs = [...freq.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    langs.forEach(([lang]) => {
+      const opt = document.createElement('option');
+      opt.value = lang;
+      opt.textContent = lang;
+      langSel.appendChild(opt);
+    });
+    langSel.addEventListener('change', (e) => {
+      state.lang = e.target.value;
+      render();
+    });
+  }
 }
 
 init();
