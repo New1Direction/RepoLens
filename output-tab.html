@@ -38,6 +38,11 @@
   .health-track { width: 140px; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
   .health-fill { height: 100%; border-radius: 4px; background: var(--accent-grad); }
   .health-score { font-size: 22px; font-weight: 900; color: var(--text-strong); line-height: 1; }
+  .fit-header-chip { font: 700 9px/1 var(--mono); padding: 3px 8px; border-radius: 20px; letter-spacing: .04em; text-transform: uppercase; margin-top: 4px; align-self: flex-end; }
+  .fit-header-chip.fit-strong { background: var(--ok-bg);   color: var(--ok-ink);   border: 1px solid var(--ok-edge); }
+  .fit-header-chip.fit-solid  { background: rgba(59,130,246,.1); color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
+  .fit-header-chip.fit-care   { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn-edge); }
+  .fit-header-chip.fit-risky  { background: var(--bad-bg);  color: var(--bad-ink);  border: 1px solid var(--bad-edge); }
   .health-sub { font-size: 9px; color: var(--text-faint); letter-spacing: 1px; }
 
   .tab-nav {
@@ -810,6 +815,7 @@
       <div class="health-score"></div>
       <div class="health-sub">REPO HEALTH</div>
       <div class="health-track"><div class="health-fill" style="width:0%"></div></div>
+      <div class="fit-header-chip" id="fit-header-chip" style="display:none"></div>
     </div>
   </div>
 

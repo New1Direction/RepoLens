@@ -1631,6 +1631,13 @@ function renderHeader(d) {
   document.querySelector('.repo-desc').textContent = d.description;
   document.querySelector('.health-score').textContent = d.health?.score ?? '—';
   document.querySelector('.health-fill').style.width = `${d.health?.score ?? 0}%`;
+  const fitChip = document.getElementById('fit-header-chip');
+  if (fitChip) {
+    const fit = deriveFit(d);
+    fitChip.textContent = fit.label;
+    fitChip.className = `fit-header-chip fit-${fit.level}`;
+    fitChip.style.display = '';
+  }
 
   const pillContainer = document.querySelector('.meta-pills');
   const starLabel = formatStars(d.stars);
