@@ -6,6 +6,7 @@
 <title>RepoLens</title>
 <link rel="stylesheet" href="themes.css">
 <link rel="stylesheet" href="mascot.css">
+<link rel="stylesheet" href="palette.css">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--body-bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
@@ -680,6 +681,8 @@
   <div id="loading-vee" style="margin-bottom:6px"><div style="width:36px;height:36px;background:var(--accent-grad);border-radius:10px;animation:pulse 1.5s ease-in-out infinite"></div></div>
   <div id="loading-name" style="font-size:16px;font-weight:800;color:var(--text);letter-spacing:-0.3px;min-height:22px"></div>
   <div id="loading-msg" style="font-size:13px;color:var(--text-faint);transition:opacity .3s">Starting…</div>
+  <!-- Quick verdict: GitHub API data rendered while AI thinks -->
+  <div id="quick-verdict" style="display:none;margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;min-width:320px;max-width:500px;text-align:left"></div>
   <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
 </div>
 
@@ -715,6 +718,7 @@
         <button class="export-btn" id="export-scaffold" title="Download a CLAUDE.md / Notion integration scaffold">Scaffold</button>
         <button class="export-btn" id="export-html" title="Download a self-contained HTML report">Export</button>
         <button class="export-btn" id="open-guide" title="What can RepoLens do? (press ?)">?<span class="guide-dot" id="guide-dot" hidden></span></button>
+        <button class="export-btn" id="open-palette" title="Command palette (⌘K)">⌘K</button>
       </div>
       <div class="theme-switcher" id="theme-switcher"></div>
       <div class="health-score"></div>

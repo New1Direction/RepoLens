@@ -213,6 +213,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  // Batch Scan — queue multiple repo URLs for sequential analysis.
+  if (msg.type === 'BATCH_SCAN' && msg.sessionKey && Array.isArray(msg.urls) && msg.urls.length) {
+    sendResponse({ ok: true });
+    runBatchScan(msg.sessionKey, msg.urls);
+    return true;
+  }
+
   // Tech-Stack Builder — multi-repo wiring diagram from the library.
   if (msg.type === 'STACK_BUILD' && msg.sessionKey && Array.isArray(msg.repoIds) && msg.repoIds.length >= 2) {
     sendResponse({ ok: true });
@@ -401,6 +408,65 @@ const PROVIDER_KEYS = [
   'partRouting', // per-part model routing map (loaded alongside provider keys)
 ];
 
+// ─── Batch Scan ──────────────────────────────────────────────────────────────
+// Processes a list of URLs sequentially, writing progress to batchKey.
+async function runBatchScan(batchKey, urls) {
+  const items = urls.map((url) => {
+    const parsed = detectPlatform(url);
+    return parsed
+      ? { url, platform: parsed.platform, repoId: parsed.repoId, status: 'queued', fit: null, error: null }
+      : { url, platform: null, repoId: null, status: 'error', fit: null, error: 'Unrecognised URL' };
+  });
+
+  const writeBatch = (done = false) =>
+    chrome.storage.session.set({ [batchKey]: { type: 'batch', total: items.length, items: items.map((i) => ({ ...i })), done } });
+
+  await writeBatch(false);
+
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].status === 'error') continue; // skip unrecognised URLs immediately
+
+    items[i].status = 'scanning';
+    await writeBatch(false);
+
+    const subKey = SESSION_KEY_PREFIX + crypto.randomUUID();
+    try {
+      await chrome.storage.session.set({ [subKey]: { loading: true, status: 'fetching', platform: items[i].platform, repoId: items[i].repoId } });
+      runAnalysis(subKey, { platform: items[i].platform, repoId: items[i].repoId });
+
+      // Poll until the sub-analysis finishes (max 90 s per repo)
+      const deadline = Date.now() + 90_000;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 600));
+        const stored = await chrome.storage.session.get(subKey).catch(() => ({}));
+        const result = stored[subKey];
+        if (result && !result.loading) {
+          items[i].status = result.error ? 'error' : 'done';
+          items[i].fit = result.fit?.level ?? null;
+          items[i].error = result.error ?? null;
+          items[i].repoId = result.repoId || items[i].repoId;
+          await chrome.storage.session.remove(subKey).catch(() => {});
+          break;
+        }
+      }
+      if (items[i].status === 'scanning') {
+        items[i].status = 'error';
+        items[i].error = 'Timed out';
+      }
+    } catch (e) {
+      items[i].status = 'error';
+      items[i].error = e?.message || 'Scan failed';
+    }
+
+    await writeBatch(false);
+
+    // Polite pause between scans to respect API rate limits
+    if (i < items.length - 1) await new Promise((r) => setTimeout(r, 1200));
+  }
+
+  await writeBatch(true);
+}
+
 // Fetch → AI → parse → store. Used by the initial click and by RERUN (retry).
 async function runAnalysis(sessionKey, detected) {
   // Load every provider credential + model + routing in one read; pass the whole
@@ -414,17 +480,32 @@ async function runAnalysis(sessionKey, detected) {
     const prevCached = await getCached(detected.platform, detected.repoId).catch(() => null);
 
     // Fetch metadata + README
+    await chrome.storage.session.set({ [sessionKey]: { loading: true, status: 'fetching', statusMsg: 'Fetching repo metadata…', ...detected } });
     const repoData = await fetchRepoData(detected.platform, detected.repoId);
 
-    // Signal AI is thinking (tab shows cycling copy). Name the provider we'll try
-    // first so the loading copy is accurate — it used to hardcode "Claude" no matter
-    // which provider was actually routed.
+    // Write quick snapshot so the output tab can render something while AI thinks.
+    const quickData = {
+      repoId: repoData.repoId,
+      description: repoData.description,
+      language: repoData.language,
+      license: repoData.license,
+      stars: repoData.stars,
+      languages: repoData.languages,
+    };
+
+    // Name the provider we'll try first so the loading copy is accurate.
     let primaryProvider = '';
     try {
       const plan = buildAttemptPlan({ routing: settings.partRouting || {}, part: 'core', keys: settings });
       if (plan[0]) primaryProvider = providerLabel(plan[0].provider);
     } catch { /* leave blank — the tab falls back to a generic phrase */ }
-    await chrome.storage.session.set({ [sessionKey]: { loading: true, status: 'thinking', ...detected, provider: primaryProvider } });
+    await chrome.storage.session.set({
+      [sessionKey]: {
+        loading: true, status: 'thinking',
+        statusMsg: primaryProvider ? `Asking ${primaryProvider}…` : 'Analysing with AI…',
+        quickData, ...detected, provider: primaryProvider,
+      },
+    });
 
     // Call AI provider — tried in order: Nous > Gemini > OpenRouter > Grok > Anthropic,
     // then any connected compatible provider.

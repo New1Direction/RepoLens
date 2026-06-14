@@ -5,6 +5,7 @@
 <title>RepoLens — Library</title>
 <link rel="stylesheet" href="themes.css">
 <link rel="stylesheet" href="mascot.css">
+<link rel="stylesheet" href="palette.css">
 <style>
   /* The Library maps its local colour vocabulary onto the active theme's tokens
      (themes.css), so it honours the chosen theme like every other surface.
@@ -254,6 +255,7 @@
     .lib-card:nth-child(9)  { animation-delay: 240ms; }
     .lib-card:nth-child(n+10) { animation-delay: 270ms; }
   }
+  .lib-card.jk-active { outline: 2px solid var(--cyan); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -263,9 +265,14 @@
       <div class="lib-actions">
         <button class="lib-btn" id="select" title="Select several repos to remove at once" aria-pressed="false">☑ Select</button>
         <button class="lib-btn hidden" id="compare-btn" title="Clear the compare selection" aria-label="Clear compare selection">⇄ 0/2 ✕</button>
-        <button class="lib-btn" id="export" title="Download your whole library as a JSON backup" aria-label="Export library as a backup file">⬇ Export</button>
+        <button class="lib-btn" id="auto-organize" title="Auto-group repos by detected language and category">✦ Auto-organize</button>
+        <button class="lib-btn" id="batch-scan-link" title="Scan multiple repos at once">📦 Batch</button>
+        <button class="lib-btn" id="digest-csv" title="Export your whole library as a CSV digest">CSV</button>
+        <button class="lib-btn" id="digest-json" title="Export your whole library as a JSON digest">JSON</button>
+        <button class="lib-btn" id="export" title="Download your whole library as a JSON backup" aria-label="Export library as a backup file">⬇ Backup</button>
         <button class="lib-btn" id="import" title="Restore a library from a backup file" aria-label="Import a library backup file">⬆ Import</button>
         <button class="lib-btn lib-btn-danger" id="clear" title="Remove every repo from this library" aria-label="Clear the whole library">🗑 Clear</button>
+        <button class="lib-btn" id="open-palette" title="Command palette (⌘K)">⌘K</button>
         <button class="lib-settings" id="settings" title="RepoLens settings" aria-label="Open RepoLens settings">⚙ Settings</button>
       </div>
     </div>

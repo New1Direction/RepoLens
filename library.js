@@ -13,6 +13,7 @@ import { buildBackup, validateBackup, summarizeBackup, backupFilename } from './
 import { html, escapeHtml as esc } from './safe-html.js';
 import { initTheme } from './theme.js';
 import { veeSvg } from './mascot.js';
+import { initPalette } from './palette.js';
 
 // Honour the user's chosen theme on this standalone page (sets <html data-theme>).
 initTheme();
@@ -95,6 +96,7 @@ function card(r) {
 }
 
 function render() {
+  jkIdx = -1;
   const grid = document.getElementById('grid');
   let rows = sortRows(filterRows(allRows, state), state.sort);
   // Collection filter is applied here (not in the pure filterRows) so library-data
@@ -452,6 +454,10 @@ function wireToolbar() {
   document.getElementById('file-input')?.addEventListener('change', onFileChosen);
   document.getElementById('clear')?.addEventListener('click', (e) => clearLibraryFlow(e.currentTarget));
   document.getElementById('select')?.addEventListener('click', () => setSelectionMode(!selectionMode));
+  document.getElementById('digest-json')?.addEventListener('click', () => exportDigest('json'));
+  document.getElementById('digest-csv')?.addEventListener('click', () => exportDigest('csv'));
+  document.getElementById('auto-organize')?.addEventListener('click', () => autoOrganize());
+  document.getElementById('batch-scan-link')?.addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }));
   document.getElementById('compare-btn')?.addEventListener('click', () => {
     compareSet.clear();
     updateCompareToolbar();
@@ -794,6 +800,142 @@ async function submitAsk(question) {
   }
 }
 
+// ─── Digest export ───────────────────────────────────────────────────────────
+
+function exportDigest(format) {
+  if (!allRows.length) return;
+  const rows = sortRows(filterRows(allRows, state), state.sort);
+  if (format === 'json') {
+    const data = rows.map((r) => ({
+      repoId: r.repoId,
+      fit: r.fit?.level,
+      fitLabel: r.fit?.label,
+      stars: r.stars ?? null,
+      language: r.language ?? null,
+      license: r.license ?? null,
+      blurb: r.blurb ?? '',
+      capabilities: r.capabilities ?? [],
+      savedAt: r.savedAt ?? null,
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `repolens-digest-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } else {
+    const header = 'repoId,fit,stars,language,license,blurb,savedAt';
+    const csvRow = (r) => [
+      r.repoId, r.fit?.level ?? '', r.stars ?? '', r.language ?? '', r.license ?? '',
+      `"${(r.blurb ?? '').replace(/"/g, '""').slice(0, 200)}"`,
+      r.savedAt ? new Date(r.savedAt).toISOString() : '',
+    ].join(',');
+    const blob = new Blob([[header, ...rows.map(csvRow)].join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `repolens-digest-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+}
+
+// ─── Auto-organize into language collections ──────────────────────────────────
+
+async function autoOrganize() {
+  if (!allRows.length) return;
+  setStatus('Organizing by language…');
+
+  const byLang = new Map();
+  for (const r of allRows) {
+    const lang = r.language || (r.languages?.[0]?.name);
+    if (!lang) continue;
+    if (!byLang.has(lang)) byLang.set(lang, []);
+    byLang.get(lang).push(r.repoId);
+  }
+
+  let created = 0;
+  let updated = 0;
+  for (const [lang, repoIds] of byLang) {
+    if (repoIds.length < 2) continue; // skip singletons
+    let col = collections.find((c) => c.name.toLowerCase() === lang.toLowerCase());
+    if (!col) {
+      col = makeCollection(lang, nextColor(collections));
+      await saveCollection(col);
+      collections.push(col);
+      created++;
+    }
+    for (const repoId of repoIds) {
+      if (!collectionContains(col, repoId)) {
+        col = addRepoToCollection(col, repoId);
+        updated++;
+      }
+    }
+    await saveCollection(col);
+    const idx = collections.findIndex((c) => c.id === col.id);
+    if (idx >= 0) collections[idx] = col;
+  }
+
+  renderCollections();
+  render();
+  setStatus(`Auto-organized: ${created} new group${created !== 1 ? 's' : ''}, ${updated} repo${updated !== 1 ? 's' : ''} assigned.`);
+}
+
+// ─── j/k keyboard card navigation ────────────────────────────────────────────
+
+let jkIdx = -1;
+
+function getVisibleCards() {
+  return [...document.querySelectorAll('#grid .lib-card')];
+}
+
+function setJkFocus(idx) {
+  const cards = getVisibleCards();
+  if (!cards.length) return;
+  jkIdx = Math.max(0, Math.min(idx, cards.length - 1));
+  cards.forEach((c, i) => c.classList.toggle('jk-active', i === jkIdx));
+  cards[jkIdx]?.scrollIntoView({ block: 'nearest' });
+}
+
+document.addEventListener('keydown', (e) => {
+  const t = e.target;
+  if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) return;
+  if (e.key === 'j' || e.key === 'k') {
+    e.preventDefault();
+    const cards = getVisibleCards();
+    if (!cards.length) return;
+    if (jkIdx === -1) { setJkFocus(0); return; }
+    setJkFocus(jkIdx + (e.key === 'j' ? 1 : -1));
+  }
+  if (e.key === 'Enter' && jkIdx >= 0) {
+    const cards = getVisibleCards();
+    cards[jkIdx]?.click();
+  }
+});
+
+// ─── Library palette ─────────────────────────────────────────────────────────
+
+function initLibraryPalette() {
+  const commands = [
+    { section: 'Sort', name: 'Sort: Best fit', action: () => { state.sort = 'fit'; document.getElementById('sort').value = 'fit'; chrome.storage.local.set({ librarySort: 'fit' }); render(); } },
+    { name: 'Sort: Health', action: () => { state.sort = 'health'; document.getElementById('sort').value = 'health'; chrome.storage.local.set({ librarySort: 'health' }); render(); } },
+    { name: 'Sort: Recently scanned', action: () => { state.sort = 'recent'; document.getElementById('sort').value = 'recent'; chrome.storage.local.set({ librarySort: 'recent' }); render(); } },
+    { name: 'Sort: Stars', action: () => { state.sort = 'stars'; document.getElementById('sort').value = 'stars'; chrome.storage.local.set({ librarySort: 'stars' }); render(); } },
+    { name: 'Sort: Name', action: () => { state.sort = 'name'; document.getElementById('sort').value = 'name'; chrome.storage.local.set({ librarySort: 'name' }); render(); } },
+    { section: 'Actions', name: 'Auto-organize by language', description: 'Group repos into language collections', action: () => autoOrganize() },
+    { name: 'Batch Scan', description: 'Scan multiple repos at once', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }) },
+    { name: 'Export Digest (JSON)', description: 'Download library as JSON', action: () => exportDigest('json') },
+    { name: 'Export Digest (CSV)', description: 'Download library as CSV', action: () => exportDigest('csv') },
+    { name: 'Export Backup', description: 'Full library backup', action: () => exportLibrary() },
+    { name: 'Import Backup', description: 'Restore from a backup file', action: () => pickImportFile() },
+    { name: 'Select mode', description: 'Select repos for bulk actions', action: () => setSelectionMode(!selectionMode) },
+    { name: 'Open Settings', action: () => chrome.runtime.openOptionsPage() },
+  ];
+  initPalette(commands);
+  document.getElementById('open-palette')?.addEventListener('click', () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
+  });
+}
+
 async function init() {
   document.getElementById('settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
   wireToolbar(); // before the empty-state return, so Import works on an empty library
@@ -841,6 +983,7 @@ async function init() {
   renderCollections();
   render();
   renderStats();
+  initLibraryPalette();
   const askInput = document.getElementById('ask-input');
   const askBtn = document.getElementById('ask-btn');
   const doAsk = () => submitAsk(askInput?.value);

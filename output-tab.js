@@ -24,6 +24,7 @@ import { DECISIONS, DECISION_META } from './decision-log.js';
 import { saveDecision, getDecision, clearDecision } from './store.js';
 import { encodeShareCard } from './share-card.js';
 import { FITS_VERDICTS } from './fits-stack.js';
+import { initPalette } from './palette.js';
 
 // Apply the saved theme ASAP (before render) to minimise flash.
 initTheme();
@@ -128,11 +129,18 @@ async function waitForData() {
 
       if (data.loading) {
         if (data.repoId) setLoadingName(data.repoId);
-        if (data.status !== lastStatus) {
+        // Show a specific status message from background when available
+        if (data.statusMsg) {
+          if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null; }
+          setLoadingMsg(data.statusMsg);
+          lastStatus = data.status;
+        } else if (data.status !== lastStatus) {
           lastStatus = data.status;
           if (data.status === 'thinking') startCycling(thinkPhrases(data.provider));
           else startCycling(FETCH_PHRASES);
         }
+        // Render quick verdict as soon as GitHub API data arrives
+        if (data.quickData) renderQuickVerdict(data.quickData);
         await sleep(400);
         continue;
       }
@@ -145,6 +153,67 @@ async function waitForData() {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function renderQuickVerdict(qd) {
+  const host = document.getElementById('quick-verdict');
+  if (!host || !qd?.repoId) return;
+  const fmtStars = (n) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n || 0);
+  const pills = [
+    qd.language ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${esc(qd.language)}</span>` : '',
+    qd.stars ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${fmtStars(qd.stars)} ★</span>` : '',
+    qd.license && qd.license !== 'Unknown' ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${esc(qd.license)}</span>` : '',
+  ].filter(Boolean).join('');
+  host.innerHTML = `
+    <div style="font:700 10px/1 ui-monospace,monospace;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px">Quick Info</div>
+    <div style="font:700 13px var(--font);color:var(--text);margin-bottom:4px">${esc(qd.repoId)}</div>
+    ${qd.description ? `<div style="font:400 12px var(--font);color:var(--text-sub);line-height:1.5;margin-bottom:10px">${esc(qd.description)}</div>` : ''}
+    ${pills ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${pills}</div>` : ''}
+    <div style="margin-top:10px;font:400 11px var(--font);color:var(--text-faint)">Full analysis is running…</div>`;
+  host.style.display = 'block';
+}
+
+function initOutputPalette(data) {
+  const commands = [
+    // Navigation
+    { section: 'Navigation', name: 'Verdict', description: 'Overall fit + score', shortcut: '9', action: () => show(9) },
+    { name: 'ELI5', description: 'Plain-English summary', action: () => show(0) },
+    { name: 'Technical', description: 'Architecture & internals', action: () => show(1) },
+    { name: 'Use Cases', description: "Who it's for", action: () => show(2) },
+    { name: 'Skip If', description: 'When to avoid it', action: () => show(3) },
+    { name: 'Enables', description: 'What it unlocks', action: () => show(4) },
+    { name: 'Pros / Cons', description: 'Trade-off breakdown', action: () => show(5) },
+    { name: 'Alternatives', description: 'Comparable tools', action: () => show(6) },
+    { name: 'Health', description: 'Repo vitality signals', action: () => show(7) },
+    { name: 'Red Flags', description: 'Risks and warnings', action: () => show(8) },
+    { name: 'Tech Stack', description: 'Dependencies & languages', action: () => show(15) },
+    { name: 'Similar', description: 'From your library', action: () => show(16) },
+    { name: 'Synergies', description: 'Works-well-with analysis', action: () => show(18) },
+    { name: 'Versus', description: 'Side-by-side comparison', action: () => show(17) },
+    { name: 'Connections', description: 'Dependency graph', action: () => show(19) },
+    { name: 'Combine', description: 'What you can build together', action: () => show(20) },
+    // On-demand lenses
+    { section: 'Lenses', name: 'Run Deep Dive', description: 'Full strategic analysis', action: () => { show(10); startDeepDive(data); } },
+    { name: 'Run Docs Quality', description: 'Documentation score', action: () => { show(21); startDocsQuality(data); } },
+    { name: 'Run Maintenance', description: 'Long-term upkeep signal', action: () => { show(22); startMaintenance(data); } },
+    { name: 'Run License Check', description: 'License compatibility', action: () => show(23) },
+    { name: 'Run Since Last Scan', description: 'What changed since you last looked', action: () => show(24) },
+    { name: 'Run Fits MY Stack?', description: 'Match against your tech stack', action: () => { show(25); startFitsStack(data); } },
+    { name: 'Run All Lenses', description: 'Fire every on-demand lens', action: () => runAllLenses() },
+    // Actions
+    { section: 'Actions', name: 'Open Library', description: 'Browse your saved repos', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }) },
+    { name: 'Batch Scan', description: 'Scan multiple repos at once', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }) },
+    { name: 'Copy Markdown', description: 'Copy this analysis as MD', action: () => document.getElementById('copy-md')?.click() },
+    { name: 'Export Scaffold', description: 'Download CLAUDE.md scaffold', action: () => document.getElementById('export-scaffold')?.click() },
+    { name: 'Export HTML', description: 'Download self-contained report', action: () => document.getElementById('export-html')?.click() },
+    { name: 'Open Settings', description: 'Configure API keys and providers', action: () => chrome.runtime.openOptionsPage() },
+    { name: 'Open Guide', description: 'Feature overview and keyboard shortcuts', action: () => document.getElementById('open-guide')?.click() },
+  ];
+
+  initPalette(commands);
+  document.getElementById('open-palette')?.addEventListener('click', () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
+  });
+}
 
 async function init() {
   mascotOn = await isMascotEnabled();
@@ -180,6 +249,7 @@ async function init() {
   renderPage(data);
   main.style.display = 'block';
   document.title = `RepoLens — ${data.repoId}`;
+  initOutputPalette(data);
 
   // Header logo becomes Vee, reacting to the verdict (one-shot pop/squint on mount).
   if (mascotOn) {
