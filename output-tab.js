@@ -303,6 +303,10 @@ async function init() {
   document.title = `${fitEmoji} ${data.repoId} — RepoLens`;
   initOutputPalette(data);
 
+  // Restore tab from URL hash if present (e.g. #diff, #ask, #versus)
+  const hashTab = SLUG_TO_TAB[location.hash.slice(1)];
+  if (hashTab != null) show(hashTab, { updateHash: false });
+
   // Header logo becomes Vee, reacting to the verdict (one-shot pop/squint on mount).
   if (mascotOn) {
     const logoSlot = document.getElementById('logo-vee');
@@ -1902,7 +1906,17 @@ function setTabContent(index, html) {
   if (panel) panel.innerHTML = html;
 }
 
-function show(n) {
+const TAB_SLUGS = {
+  9: 'verdict', 0: 'eli5', 1: 'technical', 2: 'use-cases', 3: 'skip-if',
+  4: 'enables', 5: 'pros-cons', 6: 'alternatives', 7: 'health', 8: 'red-flags',
+  15: 'tech-stack', 10: 'deep-dive', 11: 'systems', 12: 'ideate', 13: 'prioritize',
+  14: 'sktpg', 21: 'docs', 22: 'maintenance', 23: 'license', 24: 'diff',
+  25: 'stack-fit', 26: 'ask', 16: 'similar', 17: 'versus', 18: 'synergies',
+  19: 'connections', 20: 'combine',
+};
+const SLUG_TO_TAB = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, Number(k)]));
+
+function show(n, { updateHash = true } = {}) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.tab) === n));
   document.querySelectorAll('.tab-content').forEach((c, idx) => c.classList.toggle('active', idx === n));
   // Reflect the active tab on its parent menu button + close any open menus.
@@ -1911,6 +1925,9 @@ function show(n) {
     m.querySelector('.tab-menu-btn')?.classList.toggle('active', owns);
     m.classList.remove('open');
   });
+  if (updateHash && TAB_SLUGS[n]) {
+    history.replaceState(null, '', `#${TAB_SLUGS[n]}`);
+  }
 }
 
 // Nav clicks: open/close a grouped menu, run-all, or switch tab.
@@ -2082,7 +2099,7 @@ document.getElementById('open-library')?.addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('library.html') });
 });
 
-const CURRENT_VERSION = '1.9.0';
+const CURRENT_VERSION = '2.2.0';
 const whatsNewBtn = document.getElementById('whats-new-btn');
 const whatsNewDot = document.getElementById('whats-new-dot');
 chrome.storage.local.get('seenVersion', ({ seenVersion }) => {
