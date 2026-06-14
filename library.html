@@ -309,6 +309,9 @@
   .lc-decision[data-d="hold"]   { color: var(--warn-ink); background: var(--warn-bg); border-color: var(--warn-edge); }
   .lc-decision[data-d="reject"] { color: var(--bad-ink);  background: var(--bad-bg);  border-color: var(--bad-edge); }
   .lc-dec-when { font-weight: 400; opacity: .65; margin-left: 3px; }
+  .lc-fit-delta { font: 700 10px/1 var(--mono); padding: 2px 5px; border-radius: 4px; white-space: nowrap; }
+  .lc-fit-delta.up { color: oklch(52% 0.16 145); background: oklch(52% 0.16 145 / 0.12); border: 1px solid oklch(52% 0.16 145 / 0.3); }
+  .lc-fit-delta.down { color: oklch(58% 0.18 30); background: oklch(58% 0.18 30 / 0.12); border: 1px solid oklch(58% 0.18 30 / 0.3); }
 
   .lc-check { display: none; appearance: none; -webkit-appearance: none; width: 17px; height: 17px;
     flex-shrink: 0; border: 1.5px solid var(--border-2); border-radius: 5px; cursor: pointer;

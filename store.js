@@ -4,6 +4,7 @@
 // callers can surface errors (matching the old behavior).
 
 import { deriveCapabilities } from './taxonomy.js';
+import { deriveFit } from './verdict.js';
 import { idbPut, idbGet, idbGetAll, idbDelete, idbClear } from './store/idb.js';
 import { rankRepos } from './store/search.js';
 import { buildEgoGraph } from './store/egograph.js';
@@ -22,6 +23,8 @@ export function hashRepoId(repoId) {
 
 /** Persist a repo's analysis payload, keyed by hashRepoId. Throws on failure. */
 export async function saveRepo(analysis) {
+  const existing = await idbGet('repos', hashRepoId(analysis.repoId)).catch(() => null);
+  const prevFitLevel = existing?.payload ? (deriveFit(existing.payload)?.level ?? null) : null;
   const payload = {
     repoId: analysis.repoId,
     platform: analysis.platform ?? '',
@@ -41,6 +44,8 @@ export async function saveRepo(analysis) {
     pros: analysis.pros ?? [],
     cons: analysis.cons ?? [],
     languages: analysis.languages ?? [],
+    // Fit delta: snapshot the previous fit so the library can show ↑/↓ after re-scan.
+    prevFitLevel,
   };
   await idbPut('repos', { id: hashRepoId(analysis.repoId), payload });
 }

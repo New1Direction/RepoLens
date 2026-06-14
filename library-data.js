@@ -16,11 +16,18 @@ export function libraryRow(payload) {
     (p.pros && p.pros.length) ||
     (p.cons && p.cons.length)
   );
+  const fit = hasTriage ? deriveFit(p) : { level: 'unrated', label: 'Unrated', why: 'Re-scan for a fit verdict' };
+  const prevFitLevel = p.prevFitLevel ?? null;
+  const fitDelta =
+    fit.level && prevFitLevel && fit.level !== prevFitLevel && fit.level !== 'unrated' && prevFitLevel !== 'unrated'
+      ? { from: prevFitLevel, to: fit.level }
+      : null;
   return {
     repoId,
     name: repoId.split('/').pop() || repoId,
     platform: p.platform || '',
-    fit: hasTriage ? deriveFit(p) : { level: 'unrated', label: 'Unrated', why: 'Re-scan for a fit verdict' },
+    fit,
+    fitDelta,
     health: p.health?.score ?? 0,
     stars: p.stars ?? 0,
     category: p.category || '',

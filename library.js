@@ -101,6 +101,13 @@ function card(r) {
   const decBadge = dec
     ? `<span class="lc-decision" data-d="${esc(dec.decision)}" title="Decided ${dec.savedAt ? relativeTime(dec.savedAt) : 'some time ago'}">${esc(DECISION_META[dec.decision]?.label || dec.decision)}${dec.savedAt ? `<span class="lc-dec-when"> · ${esc(relativeTime(dec.savedAt))}</span>` : ''}</span>`
     : '';
+  const FIT_ORDER = ['strong', 'solid', 'care', 'risky'];
+  const deltaBadge = r.fitDelta
+    ? (() => {
+        const improved = FIT_ORDER.indexOf(r.fitDelta.to) < FIT_ORDER.indexOf(r.fitDelta.from);
+        return `<span class="lc-fit-delta ${improved ? 'up' : 'down'}" title="Fit changed since last scan: ${r.fitDelta.from} → ${r.fitDelta.to}">${improved ? '↑' : '↓'} ${esc(r.fitDelta.from)} → ${esc(r.fitDelta.to)}</span>`;
+      })()
+    : '';
   const isPinned = pinned.has(r.repoId);
   const platformBadge = r.platform && r.platform !== 'github'
     ? `<span class="lc-platform" title="${esc(r.platform)}">${r.platform === 'npm' ? 'npm' : r.platform === 'pypi' ? 'PyPI' : r.platform === 'gitlab' ? 'GL' : esc(r.platform)}</span>`
@@ -112,6 +119,7 @@ function card(r) {
       ${owner ? `<span class="lc-owner">${hilite(owner, hq)}</span>` : ''}
       ${platformBadge}
       <span class="lc-chip fit-${r.fit.level}">${esc(r.fit.label)}</span>
+      ${deltaBadge}
       ${decBadge}
       ${isPinned ? `<span class="lc-pin-badge" title="Pinned">📌</span>` : ''}
     </div>
