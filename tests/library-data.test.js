@@ -156,3 +156,21 @@ describe('allCapabilities', () => {
     expect(allCapabilities(rows)).toEqual(['agent', 'storage', 'ui']);
   });
 });
+
+describe('filterRows — searchText', () => {
+  it('matches against searchText when blurb does not contain the term', () => {
+    const row = { ...libraryRow(mk('owner/thing', 80, 0, [])), blurb: 'A generic tool', searchText: 'reduces Redux boilerplate dramatically' };
+    const result = filterRows([row], { query: 'boilerplate' });
+    expect(result).toHaveLength(1);
+  });
+  it('does not include a row when neither blurb nor searchText matches', () => {
+    const row = { ...libraryRow(mk('owner/thing', 80, 0, [])), blurb: 'A generic tool', searchText: 'fast streaming' };
+    const result = filterRows([row], { query: 'boilerplate' });
+    expect(result).toHaveLength(0);
+  });
+  it('multi-word query matches across blurb and searchText', () => {
+    const row = { ...libraryRow(mk('owner/thing', 80, 0, [])), blurb: 'React state', searchText: 'handles async effects cleanly' };
+    const result = filterRows([row], { query: 'state async' });
+    expect(result).toHaveLength(1);
+  });
+});

@@ -1312,7 +1312,13 @@ async function init() {
   const cacheRows = cachedList.filter((c) => c && c.repoId).map((c) => libraryRow(c));
   allRows = mergeRows(savedRows, cacheRows).map((r) => {
     const cached = cacheByRepo.get(r.repoId);
-    return { ...r, hasCache: !!cached, blurb: r.blurb || cached?.description || '' };
+    const searchParts = [cached?.eli5, cached?.technical, (cached?.use_cases || []).join(' ')].filter(Boolean);
+    return {
+      ...r,
+      hasCache: !!cached,
+      blurb: r.blurb || cached?.description || '',
+      searchText: searchParts.join(' '),
+    };
   });
 
   const note = document.getElementById('note');

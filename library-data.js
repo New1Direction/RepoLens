@@ -84,6 +84,8 @@ function scoreRow(row, q) {
   const caps = row.capabilities.map((c) => c.toLowerCase()).join(' ');
   const lang = (row.languages[0]?.name || '').toLowerCase();
   const cat = (row.category || '').toLowerCase();
+  // searchText is optionally augmented from full cached analysis (eli5, use_cases, technical)
+  const ext = (row.searchText || '').toLowerCase();
   let score = 0;
   if (id === q || name === q) return 100;
   if (id.startsWith(q) || name.startsWith(q)) score += 60;
@@ -93,10 +95,11 @@ function scoreRow(row, q) {
   if (caps.includes(q)) score += 15;
   if (lang.includes(q)) score += 10;
   if (cat.includes(q)) score += 8;
+  if (ext && ext.includes(q)) score += 5;
   // Multi-term: each word in q must match somewhere
   const terms = q.split(/\s+/).filter(Boolean);
   if (terms.length > 1) {
-    const allText = `${id} ${blurb} ${caps} ${lang} ${cat}`;
+    const allText = `${id} ${blurb} ${caps} ${lang} ${cat} ${ext}`;
     const hits = terms.filter((t) => allText.includes(t)).length;
     if (hits < terms.length) return 0; // all terms must match
     score += hits * 5;
