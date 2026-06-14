@@ -63,6 +63,7 @@ import { diffAnalyses } from './diff-analysis.js';
 import { buildFitsStackPrompt, parseFitsStack } from './fits-stack.js';
 import { buildStackPrompt, parseStack } from './stack-prompt.js';
 import { buildAskRepoPrompt, parseAskRepoAnswer } from './ask-repo.js';
+import { buildComparePrompt, parseCompareResult } from './compare-repos.js';
 
 // Notify when a scan completes — clicking the notification focuses the result tab.
 chrome.notifications.onClicked.addListener(async (notifId) => {
@@ -337,6 +338,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, answer: parseAskRepoAnswer(text) });
       } catch (e) {
         sendResponse({ ok: false, error: e?.message || 'Ask failed' });
+      }
+    })();
+    return true;
+  }
+
+  // AI-powered head-to-head comparison of two cached repos.
+  if (msg.type === 'COMPARE_REPOS' && msg.a?.repoId && msg.b?.repoId) {
+    (async () => {
+      try {
+        const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
+        const prompt = buildComparePrompt(msg.a, msg.b);
+        if (!prompt) { sendResponse({ ok: false, error: 'Not enough context to compare.' }); return; }
+        const text = await callAI(keys, prompt, 'ask');
+        const result = parseCompareResult(text);
+        if (!result) { sendResponse({ ok: false, error: 'Could not parse comparison result.' }); return; }
+        sendResponse({ ok: true, result });
+      } catch (e) {
+        sendResponse({ ok: false, error: e?.message || 'Comparison failed' });
       }
     })();
     return true;

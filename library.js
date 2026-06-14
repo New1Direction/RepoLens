@@ -931,9 +931,33 @@ function comparePanelHtml(a, b) {
         <div class="cmp-col-head"><span class="cmp-repo-name">${esc(a.name)}</span><span class="cmp-repo-id">${esc(a.repoId)}</span></div>
         <div class="cmp-col-head"><span class="cmp-repo-name">${esc(b.name)}</span><span class="cmp-repo-id">${esc(b.repoId)}</span></div>
       </div>
+      <button class="lib-btn cmp-ai-btn" id="cmp-ai" title="Ask AI which repo to pick">✦ Ask AI</button>
       <button class="lib-btn" id="cmp-close" title="Close compare panel">✕</button>
     </div>
+    <div id="cmp-verdict"></div>
     <div class="cmp-body">${metaRows}${capRows}</div>`;
+}
+
+function renderVerdictHtml(result, nameA, nameB) {
+  const winnerName = result.winner === 'a' ? nameA : result.winner === 'b' ? nameB : null;
+  const winnerBadge = winnerName
+    ? `<span class="cmp-winner-badge">✓ ${esc(winnerName)}</span>`
+    : `<span class="cmp-winner-badge cmp-tie">⇄ Tie</span>`;
+  const picks = (result.pickA || result.pickB) ? `
+    <div class="cmp-pick-row">
+      ${result.pickA ? `<div class="cmp-pick"><span class="cmp-pick-label">${esc(nameA)}</span>${esc(result.pickA)}</div>` : ''}
+      ${result.pickB ? `<div class="cmp-pick"><span class="cmp-pick-label">${esc(nameB)}</span>${esc(result.pickB)}</div>` : ''}
+    </div>` : '';
+  const tradeoffs = result.tradeoffs?.length
+    ? `<ul class="cmp-tradeoffs">${result.tradeoffs.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`
+    : '';
+  return `
+    <div class="cmp-verdict">
+      <div class="cmp-verdict-top">${winnerBadge}<span class="cmp-verdict-reason">${esc(result.reason)}</span></div>
+      ${result.verdict ? `<p class="cmp-verdict-text">${esc(result.verdict)}</p>` : ''}
+      ${picks}
+      ${tradeoffs}
+    </div>`;
 }
 
 function renderComparePanel() {
@@ -946,11 +970,35 @@ function renderComparePanel() {
   if (!a || !b) { host.classList.add('hidden'); return; }
   host.classList.remove('hidden');
   host.innerHTML = comparePanelHtml(a, b);
+
   host.querySelector('#cmp-close')?.addEventListener('click', () => {
     compareSet.clear();
     updateCompareToolbar();
     renderComparePanel();
     render();
+  });
+
+  host.querySelector('#cmp-ai')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = '…';
+    const verdictEl = host.querySelector('#cmp-verdict');
+    if (verdictEl) verdictEl.innerHTML = '<div class="cmp-ai-loading">Comparing with AI…</div>';
+
+    const fullA = { ...(cacheByRepo.get(idA) || a), repoId: idA };
+    const fullB = { ...(cacheByRepo.get(idB) || b), repoId: idB };
+    try {
+      const resp = await chrome.runtime.sendMessage({ type: 'COMPARE_REPOS', a: fullA, b: fullB });
+      if (resp?.ok && resp.result) {
+        if (verdictEl) verdictEl.innerHTML = renderVerdictHtml(resp.result, a.name || idA, b.name || idB);
+      } else {
+        if (verdictEl) verdictEl.innerHTML = `<div class="cmp-ai-error">${esc(resp?.error || 'Comparison failed')}</div>`;
+      }
+    } catch (err) {
+      if (verdictEl) verdictEl.innerHTML = `<div class="cmp-ai-error">${esc(err?.message || 'Comparison failed')}</div>`;
+    }
+    btn.disabled = false;
+    btn.textContent = '✦ Ask AI';
   });
 }
 

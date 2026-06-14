@@ -234,6 +234,23 @@
   .cmp-cap-row .cmp-label { font-weight: 500; }
   .cmp-yes { color: var(--ok-ink); font: 700 12px var(--mono); }
   .cmp-no  { color: var(--muted); font: 700 12px var(--mono); }
+  .cmp-ai-btn { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); margin-left: auto; }
+  .cmp-ai-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .cmp-ai-btn:disabled { opacity: .5; cursor: wait; }
+  .cmp-ai-loading { padding: 12px 18px; font-size: 12px; color: var(--muted); }
+  .cmp-ai-error { padding: 10px 18px; font-size: 12px; color: var(--bad); }
+  .cmp-verdict { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .cmp-verdict-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cmp-winner-badge { font: 700 11px/1 var(--mono); letter-spacing: .04em; padding: 4px 10px; border-radius: 999px;
+    background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok-ink); border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); }
+  .cmp-winner-badge.cmp-tie { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+  .cmp-verdict-reason { font-size: 12.5px; color: var(--sub); font-style: italic; }
+  .cmp-verdict-text { margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.6; }
+  .cmp-pick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cmp-pick { background: var(--surface-alt); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--sub); display: flex; flex-direction: column; gap: 2px; }
+  .cmp-pick-label { font: 700 10px/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+  .cmp-tradeoffs { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+  .cmp-tradeoffs li { font-size: 12px; color: var(--sub); }
   @media (max-width: 600px) {
     .cmp-row { grid-template-columns: 100px 1fr 1fr; padding: 8px 12px; }
     .cmp-col-head { padding: 0 4px; }
