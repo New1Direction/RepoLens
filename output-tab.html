@@ -182,7 +182,10 @@
   .dd-cta h3 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
   .dd-cta p { font-size: 13px; color: var(--text-sub); line-height: 1.6; max-width: 540px; margin: 0 auto 8px; }
   .dd-phase { font-size: 12px; color: var(--text-muted); }
-  .dd-run { margin-top: 22px; background: var(--accent-deep); color: var(--text-strong); border: none; border-radius: 8px; padding: 10px 22px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .dd-run { margin-top: 22px; background: var(--accent-deep); color: var(--text-strong); border: none; border-radius: 8px; padding: 10px 22px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s, transform .1s; }
+  .dd-run:hover { opacity: .88; }
+  .dd-run:active { transform: scale(.97); }
+  .export-btn:active { transform: scale(.95); }
   .dd-progress { padding: 40px 0; color: var(--text-sub); font-size: 14px; display: flex; align-items: center; gap: 10px; }
   .dd-progress .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
   .dd-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-faint); margin: 28px 0 14px; }
@@ -681,6 +684,10 @@
   <div id="loading-vee" style="margin-bottom:6px"><div style="width:36px;height:36px;background:var(--accent-grad);border-radius:10px;animation:pulse 1.5s ease-in-out infinite"></div></div>
   <div id="loading-name" style="font-size:16px;font-weight:800;color:var(--text);letter-spacing:-0.3px;min-height:22px"></div>
   <div id="loading-msg" style="font-size:13px;color:var(--text-faint);transition:opacity .3s">Starting…</div>
+  <!-- Slim progress track -->
+  <div style="width:220px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:4px">
+    <div id="loading-bar" style="height:100%;width:5%;background:var(--accent);border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
+  </div>
   <!-- Quick verdict: GitHub API data rendered while AI thinks -->
   <div id="quick-verdict" style="display:none;margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;min-width:320px;max-width:500px;text-align:left"></div>
   <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
@@ -745,7 +752,7 @@
     <div class="tab-menu" id="menu-lenses">
       <button class="tab-menu-btn">Lenses ▾</button>
       <div class="tab-menu-list">
-        <button class="tab-menu-run" id="run-all-lenses">▸ Run all lenses</button>
+        <button class="tab-menu-run" id="run-all-lenses">▸ Run all lenses <span id="lens-progress" style="font:500 10px/1 ui-monospace,monospace;opacity:.7;margin-left:4px"></span></button>
         <button class="tab-btn" data-tab="10">Deep Dive</button>
         <button class="tab-btn" data-tab="11">Systems</button>
         <button class="tab-btn" data-tab="12">Ideate</button>

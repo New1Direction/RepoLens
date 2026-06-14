@@ -104,10 +104,11 @@ function setLoadingName(name) {
 }
 
 async function waitForData() {
-  const deadline = Date.now() + 60_000;
+  const deadline = Date.now() + 90_000;
   let phraseIndex = 0;
   let lastStatus = null;
   let cycleTimer = null;
+  let pollMs = 150; // adaptive: start fast, back off when idle
 
   const startCycling = (phrases) => {
     if (cycleTimer) clearInterval(cycleTimer);
@@ -125,23 +126,38 @@ async function waitForData() {
       const stored = await chrome.storage.session.get(sessionKey);
       const data = stored[sessionKey];
 
-      if (!data) { await sleep(300); continue; }
+      if (!data) { await sleep(150); continue; }
 
       if (data.loading) {
+        let changed = false;
         if (data.repoId) setLoadingName(data.repoId);
-        // Show a specific status message from background when available
         if (data.statusMsg) {
           if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null; }
           setLoadingMsg(data.statusMsg);
-          lastStatus = data.status;
+          if (data.status !== lastStatus) { lastStatus = data.status; changed = true; }
         } else if (data.status !== lastStatus) {
           lastStatus = data.status;
+          changed = true;
           if (data.status === 'thinking') startCycling(thinkPhrases(data.provider));
           else startCycling(FETCH_PHRASES);
         }
-        // Render quick verdict as soon as GitHub API data arrives
+        // Progress bar: fetching=15%, quickData ready=40%, thinking=55-90% (animated)
+        const bar = document.getElementById('loading-bar');
+        if (bar) {
+          const pct = data.status === 'thinking'
+            ? (data.quickData ? 55 : 40)
+            : 15;
+          bar.style.width = pct + '%';
+          if (data.status === 'thinking') {
+            bar.style.transition = 'width 25s cubic-bezier(.1,0,.4,1)';
+            if (changed) bar.style.width = '92%'; // crawl toward 92 over 25s
+          }
+        }
         if (data.quickData) renderQuickVerdict(data.quickData);
-        await sleep(400);
+        // Back off when idle; snap back to fast when something changes.
+        if (changed) pollMs = 150;
+        else pollMs = Math.min(pollMs * 1.4, 600);
+        await sleep(pollMs);
         continue;
       }
 
@@ -231,13 +247,28 @@ async function init() {
 
   if (data.error) {
     errorMsg.textContent = data.error;
-    // Retry can only re-run when we know which repo to analyse.
+    // Show a specific recovery hint below the error message.
     const canRetry = Boolean(data.platform && data.repoId);
     if (canRetry) retryContext = { platform: data.platform, repoId: data.repoId };
-    // Route the CTA by what the user can actually do: fixable errors (bad key,
-    // wrong model, nothing connected) get "Open Settings"; the rest get "Retry".
     const kind = data.errorKind || categorizeError(data.error).kind;
     const actions = errorActions(kind, canRetry);
+    const HINTS = {
+      none: 'Add an API key in Settings → it only takes 30 seconds.',
+      auth: 'Your API key was rejected. Regenerate it from the provider\'s console, then paste it in Settings.',
+      rate_limit: 'You\'ve hit the rate limit. Wait a minute and retry — or switch to a different provider in Settings.',
+      not_found: 'The model name is unrecognised. Open Settings and pick a valid model from the dropdown.',
+      network: 'Can\'t reach the provider. Check your internet connection, then retry.',
+      server: 'The provider is temporarily down. Retry in a few seconds.',
+    };
+    const hint = HINTS[kind];
+    let hintEl = document.getElementById('error-hint');
+    if (!hintEl) {
+      hintEl = document.createElement('div');
+      hintEl.id = 'error-hint';
+      hintEl.style.cssText = 'font-size:12px;color:var(--text-muted);text-align:center;max-width:360px;line-height:1.6;margin-top:-4px';
+      errorMsg.insertAdjacentElement('afterend', hintEl);
+    }
+    hintEl.textContent = hint || '';
     if (settingsBtn) settingsBtn.style.display = actions.settings ? '' : 'none';
     if (retryBtn) retryBtn.style.display = actions.retry ? '' : 'none';
     if (mascotOn) renderMascot(document.getElementById('error-vee'), 'error');
@@ -1399,6 +1430,7 @@ function renderVersusResult(vs, d) {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'session' || !changes[sessionKey]?.newValue) return;
   const nv = changes[sessionKey].newValue;
+  const ov = changes[sessionKey].oldValue || {};
   lastData = nv;
   renderDeepDive(nv);
   renderFrameworkLens(nv, SYSTEMS_CFG);
@@ -1411,6 +1443,22 @@ chrome.storage.onChanged.addListener((changes, area) => {
   renderVersus(nv);
   renderSynergies(nv);
   renderCombinator(nv);
+
+  // Tick the Run All Lenses counter when a lens transitions to done.
+  if (runAllTotal > 0) {
+    const wasDone = (x) => x?.status === 'done';
+    const isDone  = (x) => x?.status === 'done';
+    const ticked = [
+      [nv.deepDive,   ov.deepDive],
+      [nv.synergies,  ov.synergies],
+      [nv.sktpg,      ov.sktpg],
+    ].filter(([n, o]) => isDone(n) && !wasDone(o)).length;
+    if (ticked > 0) {
+      runAllDone = Math.min(runAllDone + ticked, runAllTotal);
+      const el = document.getElementById('lens-progress');
+      if (el) el.textContent = runAllDone >= runAllTotal ? '✓' : `${runAllDone}/${runAllTotal}`;
+    }
+  }
 });
 
 function renderHeader(d) {
@@ -1777,15 +1825,28 @@ function initGuide() {
 initGuide();
 
 // Run-all: fire every on-demand lens at once (uses each lens's current framework).
+let runAllTotal = 0;
+let runAllDone = 0;
+
+function updateRunAllProgress(done) {
+  runAllDone = Math.min(runAllDone + (done ? 1 : 0), runAllTotal);
+  const el = document.getElementById('lens-progress');
+  if (el && runAllTotal > 0) el.textContent = `${runAllDone}/${runAllTotal}`;
+}
+
 function runAllLenses() {
   document.querySelectorAll('.tab-menu').forEach(m => m.classList.remove('open'));
   if (!lastData) return;
-  startDeepDive(lastData);
+  runAllDone = 0;
+  runAllTotal = sktpgEnabled ? 5 : 4; // deepdive + synergies + systems + ideate + (sktpg?)
+  const el = document.getElementById('lens-progress');
+  if (el) el.textContent = `0/${runAllTotal}`;
+  startDeepDive(lastData, () => updateRunAllProgress(true));
+  startSynergies(lastData, () => updateRunAllProgress(true));
   chrome.runtime.sendMessage({ type: 'SYSTEMS', sessionKey, platform: lastData.platform, repoId: lastData.repoId, frameworks: SYSTEMS_FRAMEWORKS.map(f => f.key) });
   chrome.runtime.sendMessage({ type: 'IDEATE', sessionKey, platform: lastData.platform, repoId: lastData.repoId, frameworks: IDEATE_FRAMEWORKS.map(f => f.key) });
   chrome.runtime.sendMessage({ type: 'PRIORITIZE', sessionKey, platform: lastData.platform, repoId: lastData.repoId, frameworks: HEURISTICS_FRAMEWORKS.map(f => f.key) });
-  if (sktpgEnabled) startSktpg(lastData);
-  startSynergies(lastData);
+  if (sktpgEnabled) startSktpg(lastData, () => updateRunAllProgress(true));
 }
 
 // ─── Export / Copy ────────────────────────────────────────────────────────────

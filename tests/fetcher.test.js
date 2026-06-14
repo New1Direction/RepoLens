@@ -7,7 +7,8 @@ describe('fetchRepoData — github', () => {
   it('returns structured data from GitHub API', async () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ full_name: 'facebook/react', description: 'The library for web and native UIs', stargazers_count: 230000, language: 'JavaScript', license: { spdx_id: 'MIT' } }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: btoa('# React\nA UI library.'), encoding: 'base64' }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: btoa('# React\nA UI library.'), encoding: 'base64' }) })
+      .mockResolvedValueOnce({ ok: false });
     const result = await fetchRepoData('github', 'facebook/react');
     expect(result.repoId).toBe('facebook/react');
     expect(result.platform).toBe('github');
@@ -20,6 +21,7 @@ describe('fetchRepoData — github', () => {
   it('returns empty readme when README fetch fails', async () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ full_name: 'x/y', description: '', stargazers_count: 0, language: null, license: null }) })
+      .mockResolvedValueOnce({ ok: false })
       .mockResolvedValueOnce({ ok: false });
     const result = await fetchRepoData('github', 'x/y');
     expect(result.readme).toBe('');

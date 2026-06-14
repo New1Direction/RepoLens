@@ -23,9 +23,10 @@ function bytesToComposition(langs) {
 }
 
 async function fetchGitHub(repoId) {
-  const [meta, readmeRes] = await Promise.all([
+  const [meta, readmeRes, langRes] = await Promise.all([
     fetchJson(`https://api.github.com/repos/${repoId}`),
-    fetch(`https://api.github.com/repos/${repoId}/readme`).catch(() => ({ ok: false }))
+    fetch(`https://api.github.com/repos/${repoId}/readme`).catch(() => ({ ok: false })),
+    fetch(`https://api.github.com/repos/${repoId}/languages`).catch(() => ({ ok: false })),
   ]);
   let readme = '';
   if (readmeRes.ok) {
@@ -34,12 +35,10 @@ async function fetchGitHub(repoId) {
       readme = atob(readmeData.content.replace(/\n/g, ''));
     }
   }
-  // Language composition for the Tech Stack bar — best effort, never fatal.
   let languages = [];
   try {
-    const langRes = await fetch(`https://api.github.com/repos/${repoId}/languages`);
-    if (langRes && langRes.ok) languages = bytesToComposition(await langRes.json());
-  } catch { /* leave empty; the bar falls back to the single language */ }
+    if (langRes?.ok) languages = bytesToComposition(await langRes.json());
+  } catch { /* leave empty; bar falls back to single language */ }
   if (!languages.length && meta.language) languages = [{ name: meta.language, pct: 100 }];
 
   return {
@@ -51,15 +50,16 @@ async function fetchGitHub(repoId) {
 
 async function fetchGitLab(repoId) {
   const encoded = encodeURIComponent(repoId);
-  const meta = await fetchJson(`https://gitlab.com/api/v4/projects/${encoded}`);
+  const [meta, readmeRes, langRes] = await Promise.all([
+    fetchJson(`https://gitlab.com/api/v4/projects/${encoded}`),
+    fetch(`https://gitlab.com/api/v4/projects/${encoded}/repository/files/README.md/raw?ref=HEAD`).catch(() => null),
+    fetch(`https://gitlab.com/api/v4/projects/${encoded}/languages`).catch(() => ({ ok: false })),
+  ]);
   let readme = '';
-  const readmeRes = await fetch(`https://gitlab.com/api/v4/projects/${encoded}/repository/files/README.md/raw?ref=HEAD`).catch(() => null);
   if (readmeRes?.ok) readme = await readmeRes.text();
-  // GitLab's languages endpoint already returns percentages.
   let languages = [];
   try {
-    const langRes = await fetch(`https://gitlab.com/api/v4/projects/${encoded}/languages`);
-    if (langRes && langRes.ok) {
+    if (langRes?.ok) {
       const langs = await langRes.json();
       languages = Object.entries(langs).sort((a, b) => b[1] - a[1]).slice(0, 5)
         .map(([name, pct]) => ({ name, pct: Math.round(pct) }));

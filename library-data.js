@@ -76,13 +76,47 @@ export function sortRows(rows, by) {
   );
 }
 
+function scoreRow(row, q) {
+  // Returns a relevance score ≥ 0; higher = better match.
+  const id = row.repoId.toLowerCase();
+  const name = row.name.toLowerCase();
+  const blurb = (row.blurb || '').toLowerCase();
+  const caps = row.capabilities.map((c) => c.toLowerCase()).join(' ');
+  const lang = (row.languages[0]?.name || '').toLowerCase();
+  const cat = (row.category || '').toLowerCase();
+  let score = 0;
+  if (id === q || name === q) return 100;
+  if (id.startsWith(q) || name.startsWith(q)) score += 60;
+  if (id.includes(q)) score += 40;
+  if (name.includes(q)) score += 35;
+  if (blurb.includes(q)) score += 20;
+  if (caps.includes(q)) score += 15;
+  if (lang.includes(q)) score += 10;
+  if (cat.includes(q)) score += 8;
+  // Multi-term: each word in q must match somewhere
+  const terms = q.split(/\s+/).filter(Boolean);
+  if (terms.length > 1) {
+    const allText = `${id} ${blurb} ${caps} ${lang} ${cat}`;
+    const hits = terms.filter((t) => allText.includes(t)).length;
+    if (hits < terms.length) return 0; // all terms must match
+    score += hits * 5;
+  }
+  return score;
+}
+
 export function filterRows(rows, { query = '', capability = '' } = {}) {
   const q = query.trim().toLowerCase();
-  return rows.filter((row) => {
-    if (q && !row.repoId.toLowerCase().includes(q)) return false;
+  let filtered = rows.filter((row) => {
     if (capability && !row.capabilities.includes(capability)) return false;
-    return true;
+    if (!q) return true;
+    return scoreRow(row, q) > 0;
   });
+  // When there's a query, sort by relevance score (ties preserve existing order).
+  if (q) {
+    const scores = new Map(filtered.map((r) => [r.repoId, scoreRow(r, q)]));
+    filtered = [...filtered].sort((a, b) => (scores.get(b.repoId) || 0) - (scores.get(a.repoId) || 0));
+  }
+  return filtered;
 }
 
 /** Aggregate counts for the Library stats bar. Pure — tallies rows by fit level

@@ -990,11 +990,30 @@ async function init() {
   askBtn?.addEventListener('click', doAsk);
   askInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAsk(); });
 
+  const searchEl = document.getElementById('search');
   let searchTimer = null;
-  document.getElementById('search').addEventListener('input', (e) => {
+  searchEl.addEventListener('input', (e) => {
     state.query = e.target.value;
     clearTimeout(searchTimer);
     searchTimer = setTimeout(render, 180); // debounce: don't re-render the whole grid on every keystroke
+  });
+
+  // '/' focuses search; Escape clears it when search is focused.
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    const inInput = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
+    if (e.key === '/' && !inInput) {
+      e.preventDefault();
+      searchEl.focus();
+      searchEl.select();
+    }
+    if (e.key === 'Escape' && document.activeElement === searchEl && searchEl.value) {
+      e.preventDefault();
+      searchEl.value = '';
+      state.query = '';
+      render();
+      searchEl.blur();
+    }
   });
   const sortSel = document.getElementById('sort');
   sortSel.value = state.sort; // reflect the restored preference in the dropdown
