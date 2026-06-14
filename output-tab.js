@@ -193,15 +193,15 @@ function renderQuickVerdict(qd) {
 function initOutputPalette(data) {
   const commands = [
     // Navigation
-    { section: 'Navigation', name: 'Verdict', description: 'Overall fit + score', shortcut: '9', action: () => show(9) },
-    { name: 'ELI5', description: 'Plain-English summary', action: () => show(0) },
+    { section: 'Navigation', name: 'Verdict', description: 'Overall fit + score', shortcut: 'V', action: () => show(9) },
+    { name: 'ELI5', description: 'Plain-English summary', shortcut: 'E', action: () => show(0) },
     { name: 'Technical', description: 'Architecture & internals', action: () => show(1) },
     { name: 'Use Cases', description: "Who it's for", action: () => show(2) },
     { name: 'Skip If', description: 'When to avoid it', action: () => show(3) },
     { name: 'Enables', description: 'What it unlocks', action: () => show(4) },
     { name: 'Pros / Cons', description: 'Trade-off breakdown', action: () => show(5) },
     { name: 'Alternatives', description: 'Comparable tools', action: () => show(6) },
-    { name: 'Health', description: 'Repo vitality signals', action: () => show(7) },
+    { name: 'Health', description: 'Repo vitality signals', shortcut: 'H', action: () => show(7) },
     { name: 'Red Flags', description: 'Risks and warnings', action: () => show(8) },
     { name: 'Tech Stack', description: 'Dependencies & languages', action: () => show(15) },
     { name: 'Similar', description: 'From your library', action: () => show(16) },
@@ -2371,6 +2371,10 @@ document.addEventListener('keydown', async e => {
     document.getElementById('add-to-board')?.click();
     return;
   }
+  if (e.key === 'v' && lastData) { e.preventDefault(); show(9); return; }
+  if (e.key === 'e' && lastData) { e.preventDefault(); show(0); return; }
+  if (e.key === 'h' && lastData) { e.preventDefault(); show(7); return; }
+  if (e.key === 'l') { e.preventDefault(); document.getElementById('open-library')?.click(); return; }
   if (!tabs.length) return;
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     const cur = tabs.findIndex(b => b.classList.contains('active'));
