@@ -28,6 +28,17 @@ const LANG_COLORS = {
 };
 const langColor = (n) => LANG_COLORS[n] || '#64748b';
 
+// Highlight search terms in card text. Returns HTML with <mark> around matches.
+// Only used for plain text queries (not NL/AI filter). Safe: escapes all content.
+function hilite(text, q) {
+  const safe = esc(text);
+  if (!q || q.length < 2) return safe;
+  try {
+    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return safe.replace(re, '<mark class="lc-hl">$1</mark>');
+  } catch { return safe; }
+}
+
 let allRows = [];
 let cacheByRepo = new Map(); // repoId → full cached analysis (instant reopen)
 let decisionMap = new Map(); // repoId → decision payload
@@ -69,11 +80,12 @@ async function togglePin(repoId) {
 }
 
 function card(r) {
+  const hq = !nlFilter && state.query.length >= 2 ? state.query.toLowerCase() : '';
   const owner = r.repoId.includes('/') ? r.repoId.slice(0, r.repoId.indexOf('/')) : '';
   const dots = r.languages
     .map((l) => `<span class="lc-dot" style="background:${langColor(l.name)}" title="${esc(l.name)}"></span>`)
     .join('');
-  const tags = r.capabilities.slice(0, 4).map((c) => `<span class="lc-tag" data-cap="${esc(c)}" title="Filter by ${esc(c)}">${esc(c)}</span>`).join('');
+  const tags = r.capabilities.slice(0, 4).map((c) => `<span class="lc-tag" data-cap="${esc(c)}" title="Filter by ${esc(c)}">${hilite(c, hq)}</span>`).join('');
   const when = relativeTime(r.savedAt);
   const isToday = r.savedAt && (Date.now() - Date.parse(r.savedAt)) < 86_400_000;
   const isStale = r.savedAt && (Date.now() - Date.parse(r.savedAt)) > 30 * 86_400_000;
@@ -96,14 +108,14 @@ function card(r) {
   return `<div class="lib-card${sel ? ' is-selected' : ''}${isPinned ? ' is-pinned' : ''}" data-repo="${esc(r.repoId)}" title="${r.hasCache ? 'Open the saved analysis (instant, no AI call)' : 'Open the project page'}">
     <div class="lc-top">
       <input type="checkbox" class="lc-check"${sel ? ' checked' : ''} aria-label="Select ${esc(r.name)} for removal" title="Select for bulk removal">
-      <span class="lc-name">${esc(r.name)}</span>
-      ${owner ? `<span class="lc-owner">${esc(owner)}</span>` : ''}
+      <span class="lc-name">${hilite(r.name, hq)}</span>
+      ${owner ? `<span class="lc-owner">${hilite(owner, hq)}</span>` : ''}
       ${platformBadge}
       <span class="lc-chip fit-${r.fit.level}">${esc(r.fit.label)}</span>
       ${decBadge}
       ${isPinned ? `<span class="lc-pin-badge" title="Pinned">📌</span>` : ''}
     </div>
-    ${r.blurb ? `<div class="lc-blurb">${esc(r.blurb)}</div>` : ''}
+    ${r.blurb ? `<div class="lc-blurb">${hilite(r.blurb, hq)}</div>` : ''}
     ${notesMap.has(r.repoId) ? `<div class="lc-note-preview" data-act="note">${esc(notesMap.get(r.repoId).slice(0, 80))}${notesMap.get(r.repoId).length > 80 ? '…' : ''}</div>` : ''}
     <div class="lc-meta">
       ${r.health ? `<span class="lc-health">♥ ${r.health}</span>` : ''}
