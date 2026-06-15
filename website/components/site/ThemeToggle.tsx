@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
-import { scanToTheme } from '@/lib/themeScan';
+import { snapToTheme } from '@/lib/themeSnap';
 
 /**
  * Sun⇄moon toggle that *morphs*: in dark mode a cutout circle carves the orb
@@ -21,11 +21,9 @@ export function ThemeToggle() {
   const isLight = mounted && resolvedTheme !== 'dark';
   const label = mounted ? `Switch to ${isLight ? 'dark' : 'light'} mode` : 'Toggle theme';
 
-  // A scanline "develops" the page into the new theme top→bottom via the View
-  // Transitions API (see ::view-transition-new(root) in global.css). flushSync
-  // makes next-themes apply the class synchronously so the snapshot captures the
-  // new theme. Instant flip where the API is missing or motion is reduced.
-  const runToggle = () => scanToTheme(setTheme, isLight ? 'dark' : 'light');
+  // A camera-style flash "snaps" the page into the new theme (see .theme-flash
+  // in global.css). Instant flip under reduced-motion.
+  const runToggle = () => snapToTheme(setTheme, isLight ? 'dark' : 'light');
 
   return (
     <button

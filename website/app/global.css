@@ -153,31 +153,31 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   Theme scan — the View Transitions API "develops" the new theme down the page
-   top→bottom, with a glowing cyan scan edge leading the front. Triggered only
-   by the theme toggle (ThemeToggle.tsx); falls back to an instant flip where
-   the API or motion preference says no.
+   Theme snap — toggling the theme fires a quick white "screenshot" flash that
+   masks an instant swap, like snapping a photo of the repo (see snapToTheme in
+   lib/themeSnap.ts). One fading overlay, GPU-cheap — no full-page snapshot, so
+   no lag. Reduced-motion skips the flash (snapToTheme does a plain instant flip).
    ──────────────────────────────────────────────────────────────────────── */
-@media (prefers-reduced-motion: no-preference) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    /* drop the default cross-fade — we own the reveal */
-    animation: none;
-    mix-blend-mode: normal;
-  }
-  /* old theme stays put underneath; the new theme is clipped in from the top */
-  ::view-transition-new(root) {
-    /* Steady, near-even travel so you watch the line sweep down. No drop-shadow
-       glow here on purpose — a blurred shadow of a full-page snapshot animating
-       every frame is the main source of jank. The clip wipe alone is GPU-cheap. */
-    animation: theme-scan 720ms cubic-bezier(0.45, 0.05, 0.55, 0.95);
-  }
+.theme-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: #ffffff;
+  opacity: 0;
+  will-change: opacity;
 }
-@keyframes theme-scan {
-  from {
-    clip-path: inset(0 0 100% 0);
+.theme-flash.is-on {
+  animation: theme-snap 440ms ease-out forwards;
+}
+@keyframes theme-snap {
+  0% {
+    opacity: 0;
   }
-  to {
-    clip-path: inset(0 0 0 0);
+  16% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
   }
 }
