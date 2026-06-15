@@ -1,5 +1,6 @@
 // Batch Scan page — paste URLs, watch them scan one by one.
 import { initTheme } from './theme.js';
+import { esc } from './format.js';
 
 initTheme();
 
@@ -69,11 +70,11 @@ function rowHtml(item, idx) {
     : `<span class="row-icon">${icon}</span>`;
   const label = STATUS_LABEL[item.status] ?? item.status;
   const fitHtml = item.fit ? `<span class="row-fit fit-${item.fit}">${FIT_LABELS[item.fit] ?? item.fit}</span>` : '';
-  const errHtml = item.error ? `<span class="row-status" style="color:var(--bad-ink)">${item.error.slice(0, 60)}</span>` : '';
+  const errHtml = item.error ? `<span class="row-status" style="color:var(--bad-ink)">${esc(item.error.slice(0, 60))}</span>` : '';
   const displayId = item.repoId || item.url?.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') || `#${idx + 1}`;
   return `<div class="batch-row ${item.status}" data-idx="${idx}">
     ${iconHtml}
-    <span class="row-id" title="${displayId}">${displayId}</span>
+    <span class="row-id" title="${esc(displayId)}">${esc(displayId)}</span>
     ${fitHtml || errHtml || `<span class="row-status">${label}</span>`}
   </div>`;
 }

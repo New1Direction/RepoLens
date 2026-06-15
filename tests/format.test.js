@@ -5,6 +5,9 @@ describe('esc', () => {
   it('escapes HTML-significant characters', () => {
     expect(esc('<script>"&"</script>')).toBe('&lt;script&gt;&quot;&amp;&quot;&lt;/script&gt;');
   });
+  it('escapes single quotes too (attribute-safe, matches safe-html escapeHtml)', () => {
+    expect(esc("O'Brien")).toBe('O&#39;Brien');
+  });
   it('handles null/undefined', () => {
     expect(esc(null)).toBe('');
     expect(esc(undefined)).toBe('');
