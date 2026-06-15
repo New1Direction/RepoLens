@@ -56,6 +56,27 @@ export function SiteMotion() {
             }),
         });
 
+        // 2b) Section titles wipe in left→right — a bolder editorial reveal
+        // layered over the section fade. Bento is excluded (own choreography).
+        const titles = gsap.utils.toArray<HTMLElement>(
+          '.reveal:not(.feature-section) .section-title',
+        );
+        ScrollTrigger.batch(titles, {
+          start: 'top 88%',
+          onEnter: (batch) =>
+            gsap.fromTo(
+              batch,
+              { clipPath: 'inset(0 100% 0 0)' },
+              {
+                clipPath: 'inset(0 0% 0 0)',
+                duration: 0.7,
+                ease: 'power3.inOut',
+                stagger: 0.12,
+                overwrite: 'auto',
+              },
+            ),
+        });
+
         // 3) Feature bento — header in, then tiles stagger.
         const bento = document.querySelector('.feature-section');
         if (bento) {

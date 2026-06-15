@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
+import { snapToTheme } from '@/lib/themeSnap';
 
 /**
  * Sun⇄moon toggle that *morphs*: in dark mode a cutout circle carves the orb
@@ -18,15 +19,17 @@ export function ThemeToggle() {
   useEffect(() => setMounted(true), []);
 
   const isLight = mounted && resolvedTheme !== 'dark';
-  const label = mounted
-    ? `Switch to ${isLight ? 'midnight (dark)' : 'latte (light)'}`
-    : 'Toggle theme';
+  const label = mounted ? `Switch to ${isLight ? 'dark' : 'light'} mode` : 'Toggle theme';
+
+  // A camera-style flash "snaps" the page into the new theme (see .theme-flash
+  // in global.css). Instant flip under reduced-motion.
+  const runToggle = () => snapToTheme(setTheme, isLight ? 'dark' : 'light');
 
   return (
     <button
       type="button"
       className={`theme-toggle${isLight ? ' is-light' : ''}`}
-      onClick={() => setTheme(isLight ? 'dark' : 'light')}
+      onClick={runToggle}
       aria-label={label}
       title={label}
     >
