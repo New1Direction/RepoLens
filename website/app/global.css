@@ -5,10 +5,11 @@
 @source '../components';
 
 /* ════════════════════════════════════════════════════════════════════════
-   "The Case File" — a detective/inspector identity for RepoLens.
-   Leads LIGHT (warm manila + ink), with an amber/brass lens-glint accent and a
-   detective red for risk. Dark survives as a warm "night stakeout" (.dark), not
-   a cold terminal. next-themes flips .dark; tokens drive marketing + docs.
+   RepoLens — "Inspector" identity, bright & alive.
+   Leads LIGHT on a clean cool near-white (no warmth — brown reads cheap), with
+   near-black ink, a VIVID blue lead, a cyan scanner glint, and a hot-coral pop
+   for life. Green = FIT, red = RISK. Dark is a cool slate complement, not a
+   warm noir and not an AI terminal. next-themes flips .dark; tokens drive all.
    ──────────────────────────────────────────────────────────────────────── */
 
 :root {
@@ -25,120 +26,158 @@
   /* the stamp's heavy "slam" */
   --ease-stamp: cubic-bezier(0.5, 1.8, 0.4, 0.95);
 
-  /* Amber/brass lens-glint accent + detective red. One ramp tuned for paper;
-     .dark brightens it for the night-stakeout surfaces. */
-  --accent: #9e530e;
-  --accent-2: #934a0c;
-  --accent-3: #d9822b;
-  --grad: linear-gradient(120deg, #d9822b 0%, #9e530e 60%, #934a0c 120%);
-  --grad-soft: linear-gradient(120deg, #d9822b, #9e530e);
-  --accent-glow: rgba(179, 94, 16, 0.35);
-  --accent-weak: rgba(179, 94, 16, 0.1);
-  --accent-line: rgba(179, 94, 16, 0.28);
+  /* Vivid blue lead + cyan scanner glint + hot-coral pop. Green=FIT, red=RISK.
+     .dark recasts these brighter on cool slate. */
+  --accent: #2563ff;
+  --accent-2: #1d4ed8;
+  --accent-3: #06b6d4;
+  --glint: #06b6d4;
+  --grad: linear-gradient(120deg, #06b6d4 0%, #2563ff 58%, #1d4ed8 120%);
+  --grad-soft: linear-gradient(120deg, #3b82f6, #2563ff);
+  --accent-glow: rgba(37, 99, 255, 0.3);
+  --accent-weak: rgba(37, 99, 255, 0.08);
+  --accent-line: rgba(37, 99, 255, 0.22);
 
-  /* warm = the amber CTA; red = the RISKY stamp / red flags */
-  --warm: #c2691c;
-  --warm-2: #d9822b;
-  --warm-ink: #2a1605;
-  --warm-glow: rgba(194, 105, 28, 0.4);
-  --warm-weak: rgba(194, 105, 28, 0.12);
-  --warm-line: rgba(194, 105, 28, 0.34);
-  --red: #c0392b;
-  --red-weak: rgba(192, 57, 43, 0.12);
+  /* warm = the primary CTA (vivid→deep blue, white text); pop = hot-coral life */
+  --warm: #2563ff;
+  --warm-2: #1d4ed8;
+  --warm-ink: #ffffff;
+  --warm-glow: rgba(37, 99, 255, 0.38);
+  --warm-weak: rgba(37, 99, 255, 0.1);
+  --warm-line: rgba(37, 99, 255, 0.26);
+  --pop: #ff5a5f;
+  --pop-weak: rgba(255, 90, 95, 0.12);
+  --pop-line: rgba(255, 90, 95, 0.34);
+  --red: #e5484d;
+  --red-weak: rgba(229, 72, 77, 0.12);
 
-  /* Case File — warm manila paper, sepia ink */
-  --bg: #f4ead4;
-  --bg-2: #ecdfc2;
-  --surface: #fbf5e7;
-  --surface-2: #f5ecd6;
-  --border: #ddccab;
-  --border-2: #c8b285;
-  --text: #2a2114;
-  --text-strong: #17110a;
-  --sub: #5d5034;
-  --muted: #756544;
-  --faint: #a89571;
-  --ok: #2c7631;
-  --info: #1d6fa3;
-  --warn: #b4690a;
-  --bad: #c0392b;
-  --shadow-lg: 0 26px 70px -34px rgba(60, 42, 16, 0.38);
-  --shadow-md: 0 16px 38px -22px rgba(60, 42, 16, 0.3);
-  --paper-grain: 0.5;
+  /* Clean paper — cool near-white, ink near-black */
+  --bg: #f7f9fd;
+  --bg-2: #eef2f9;
+  --surface: #ffffff;
+  --surface-2: #f9fbfe;
+  --border: #e3e8f2;
+  --border-2: #ccd6e6;
+  --text: #1b2230;
+  --text-strong: #0b0e14;
+  --sub: #495264;
+  --muted: #6b7384;
+  --faint: #97a0b2;
+  --ok: #16a34a;
+  --info: #2563ff;
+  --warn: #06b6d4;
+  --bad: #e5484d;
+  --shadow-lg: 0 28px 64px -30px rgba(15, 30, 70, 0.3);
+  --shadow-md: 0 16px 38px -22px rgba(15, 30, 70, 0.22);
+  --paper-grain: 0;
 
-  /* fumadocs remap → Case File light */
-  --color-fd-background: #f4ead4;
-  --color-fd-foreground: #2a2114;
-  --color-fd-muted: #ecdfc2;
-  --color-fd-muted-foreground: #6a5c3d;
-  --color-fd-popover: #fbf5e7;
-  --color-fd-popover-foreground: #17110a;
-  --color-fd-card: #fbf5e7;
-  --color-fd-card-foreground: #17110a;
-  --color-fd-border: #ddccab;
-  --color-fd-primary: #9e530e;
-  --color-fd-primary-foreground: #fbf5e7;
-  --color-fd-secondary: #efe3ca;
-  --color-fd-secondary-foreground: #2a2114;
-  --color-fd-accent: #ecdfc2;
-  --color-fd-accent-foreground: #17110a;
-  --color-fd-ring: #9e530e;
+  /* fumadocs remap → bright light */
+  --color-fd-background: #f7f9fd;
+  --color-fd-foreground: #1b2230;
+  --color-fd-muted: #eef2f9;
+  --color-fd-muted-foreground: #6b7384;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #0b0e14;
+  --color-fd-card: #ffffff;
+  --color-fd-card-foreground: #0b0e14;
+  --color-fd-border: #e3e8f2;
+  --color-fd-primary: #2563ff;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #eef2f9;
+  --color-fd-secondary-foreground: #1b2230;
+  --color-fd-accent: #e8eeff;
+  --color-fd-accent-foreground: #0b0e14;
+  --color-fd-ring: #2563ff;
 }
 
 .dark {
-  /* Night Stakeout — warm noir, not a cold terminal */
-  --bg: #1b1610;
-  --bg-2: #221b12;
-  --surface: #2a2116;
-  --surface-2: #32281a;
-  --border: #43361f;
-  --border-2: #5e4b2c;
-  --text: #ece1cd;
-  --text-strong: #fff8ec;
-  --sub: #c3b094;
-  --muted: #9c8a6a;
-  --faint: #6f6045;
+  /* Cool slate complement — clean dark, not a warm noir, not an AI terminal */
+  --bg: #0b0f17;
+  --bg-2: #121826;
+  --surface: #151c2b;
+  --surface-2: #1b2336;
+  --border: #283146;
+  --border-2: #3a4358;
+  --text: #e6ebf3;
+  --text-strong: #ffffff;
+  --sub: #aeb6c4;
+  --muted: #7f8799;
+  --faint: #596173;
 
-  /* brighter amber + red read better on the warm-dark surfaces */
-  --accent: #e0934a;
-  --accent-2: #cf7a2a;
-  --accent-3: #f0aa63;
-  --grad: linear-gradient(120deg, #f0aa63 0%, #e0934a 60%, #cf7a2a 120%);
-  --grad-soft: linear-gradient(120deg, #f0aa63, #e0934a);
-  --accent-glow: rgba(224, 147, 74, 0.45);
-  --accent-weak: rgba(224, 147, 74, 0.14);
-  --accent-line: rgba(224, 147, 74, 0.32);
-  --warm: #e0934a;
-  --warm-2: #f0aa63;
-  --warm-ink: #2a1605;
-  --warm-glow: rgba(224, 147, 74, 0.45);
-  --warm-weak: rgba(224, 147, 74, 0.16);
-  --warm-line: rgba(224, 147, 74, 0.36);
-  --red: #e06a5c;
-  --red-weak: rgba(224, 106, 92, 0.16);
-  --ok: #5cc05f;
-  --info: #56b6e8;
-  --warn: #e0a341;
-  --bad: #e06a5c;
-  --shadow-lg: 0 26px 70px -34px rgba(0, 0, 0, 0.72);
-  --shadow-md: 0 16px 44px -26px rgba(0, 0, 0, 0.66);
-  --paper-grain: 0.7;
+  /* brighter blue + cyan + coral on the slate surfaces */
+  --accent: #5a8cff;
+  --accent-2: #3b6ef0;
+  --accent-3: #34d6e8;
+  --glint: #34d6e8;
+  --grad: linear-gradient(120deg, #34d6e8 0%, #5a8cff 58%, #3b6ef0 120%);
+  --grad-soft: linear-gradient(120deg, #6f9bff, #5a8cff);
+  --accent-glow: rgba(90, 140, 255, 0.45);
+  --accent-weak: rgba(90, 140, 255, 0.16);
+  --accent-line: rgba(90, 140, 255, 0.32);
+  --warm: #5a8cff;
+  --warm-2: #4f86ff;
+  --warm-ink: #06122a;
+  --warm-glow: rgba(90, 140, 255, 0.5);
+  --warm-weak: rgba(90, 140, 255, 0.18);
+  --warm-line: rgba(90, 140, 255, 0.36);
+  --pop: #ff6b70;
+  --pop-weak: rgba(255, 107, 112, 0.16);
+  --pop-line: rgba(255, 107, 112, 0.4);
+  --red: #ff6b6b;
+  --red-weak: rgba(255, 107, 107, 0.16);
+  --ok: #3ecf7e;
+  --info: #5a8cff;
+  --warn: #34d6e8;
+  --bad: #ff6b6b;
+  --shadow-lg: 0 28px 64px -30px rgba(0, 0, 0, 0.72);
+  --shadow-md: 0 16px 44px -26px rgba(0, 0, 0, 0.62);
+  --paper-grain: 0;
 
-  /* fumadocs remap → night stakeout */
-  --color-fd-background: #1b1610;
-  --color-fd-foreground: #ece1cd;
-  --color-fd-muted: #2a2116;
-  --color-fd-muted-foreground: #c3b094;
-  --color-fd-popover: #221b12;
-  --color-fd-popover-foreground: #ece1cd;
-  --color-fd-card: #2a2116;
-  --color-fd-card-foreground: #ece1cd;
-  --color-fd-border: #43361f;
-  --color-fd-primary: #e0934a;
-  --color-fd-primary-foreground: #1b1610;
-  --color-fd-secondary: #32281a;
-  --color-fd-secondary-foreground: #ece1cd;
-  --color-fd-accent: #322619;
-  --color-fd-accent-foreground: #fff8ec;
-  --color-fd-ring: #e0934a;
+  /* fumadocs remap → cool dark */
+  --color-fd-background: #0b0f17;
+  --color-fd-foreground: #e6ebf3;
+  --color-fd-muted: #151c2b;
+  --color-fd-muted-foreground: #aeb6c4;
+  --color-fd-popover: #121826;
+  --color-fd-popover-foreground: #e6ebf3;
+  --color-fd-card: #151c2b;
+  --color-fd-card-foreground: #e6ebf3;
+  --color-fd-border: #283146;
+  --color-fd-primary: #5a8cff;
+  --color-fd-primary-foreground: #06122a;
+  --color-fd-secondary: #1b2336;
+  --color-fd-secondary-foreground: #e6ebf3;
+  --color-fd-accent: #1c2740;
+  --color-fd-accent-foreground: #ffffff;
+  --color-fd-ring: #5a8cff;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Theme scan — the View Transitions API "develops" the new theme down the page
+   top→bottom, with a glowing cyan scan edge leading the front. Triggered only
+   by the theme toggle (ThemeToggle.tsx); falls back to an instant flip where
+   the API or motion preference says no.
+   ──────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    /* drop the default cross-fade — we own the reveal */
+    animation: none;
+    mix-blend-mode: normal;
+  }
+  /* old theme stays put underneath; the new theme is clipped in from the top */
+  ::view-transition-new(root) {
+    /* steady, near-even travel so you actually watch the line sweep down */
+    animation: theme-scan 1000ms cubic-bezier(0.45, 0.05, 0.55, 0.95);
+    filter: drop-shadow(0 8px 16px rgba(45, 212, 230, 0.7))
+      drop-shadow(0 2px 4px rgba(45, 212, 230, 0.6));
+  }
+}
+@keyframes theme-scan {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }

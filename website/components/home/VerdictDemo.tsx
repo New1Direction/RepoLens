@@ -1,10 +1,214 @@
-const TABS = ['Verdict', 'ELI5', 'Technical', 'Use Cases', 'Health', 'Red Flags', 'Tech Stack'];
+'use client';
+
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 /**
- * A faithful, fully themeable recreation of the real scan output — so it
- * re-skins with the toggle instead of being a screenshot that breaks in latte.
+ * A faithful, fully themeable recreation of the real scan output — now a LIVE
+ * demo: the tabs are a real tablist (click + arrow-key) that crossfades the
+ * card body, and the "Strong fit" verdict stamp slams in the first time the
+ * card scrolls into view. Everything re-skins with the theme toggle instead of
+ * being a screenshot that breaks in another palette. Motion is CSS-only and
+ * gated behind `prefers-reduced-motion` in home.css.
  */
+
+type Tab = { id: string; label: string; panel: ReactNode };
+
+const HealthBars = () => {
+  const rows: Array<[string, number]> = [
+    ['Maintenance', 82],
+    ['Activity', 71],
+    ['Documentation', 95],
+    ['Adoption', 99],
+  ];
+  return (
+    <div className="vd-bars">
+      {rows.map(([label, v]) => (
+        <div className="vd-bar" key={label}>
+          <span className="vd-bar-k">{label}</span>
+          <span className="vd-bar-track">
+            <span className="vd-bar-fill" style={{ width: `${v}%` }} />
+          </span>
+          <span className="vd-bar-v">{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const TABS: Tab[] = [
+  {
+    id: 'verdict',
+    label: 'Verdict',
+    panel: (
+      <>
+        <div className="vd-verdict">
+          <span className="vd-fit vd-stamp">Strong fit</span>
+          <span className="vd-verdict-meta">Health 88 · 0 flags · 3 pros / 1 cons</span>
+        </div>
+        <div className="vd-bottom">
+          <div className="vd-bottom-label">AI bottom line</div>
+          <p>The default choice for Node HTTP services; boring in the best way.</p>
+        </div>
+        <div className="vd-lang">
+          <span className="vd-lang-chip">JavaScript 99%</span>
+          <span className="vd-lang-rest">TypeScript · Shell</span>
+        </div>
+      </>
+    ),
+  },
+  {
+    id: 'eli5',
+    label: 'ELI5',
+    panel: (
+      <div className="vd-prose">
+        <p>
+          Express is the “hello world” of Node web servers. You hand it routes — “when someone
+          visits <code>/users</code>, run this function” — and it handles the plumbing in between.
+        </p>
+        <p>
+          Minimal on purpose: no database, no folder structure, no opinions. Just the
+          request-in / response-out basics, and a way to stack little functions in the middle.
+        </p>
+      </div>
+    ),
+  },
+  {
+    id: 'technical',
+    label: 'Technical',
+    panel: (
+      <ul className="vd-list">
+        <li>
+          <strong>Middleware pipeline</strong> — every request flows through a stack of
+          <code> (req, res, next)</code> functions you compose yourself.
+        </li>
+        <li>
+          <strong>Thin routing layer</strong> over Node’s native <code>http</code> module; ~16k LOC,
+          no framework runtime underneath.
+        </li>
+        <li>
+          <strong>Unbundled</strong> — no build step, composes directly with the npm ecosystem
+          rather than replacing it.
+        </li>
+      </ul>
+    ),
+  },
+  {
+    id: 'usecases',
+    label: 'Use Cases',
+    panel: (
+      <div className="vd-cases">
+        <span className="vd-case">REST / JSON APIs</span>
+        <span className="vd-case">Server-rendered apps</span>
+        <span className="vd-case">Microservices</span>
+        <span className="vd-case">A base other frameworks build on</span>
+        <span className="vd-case">Quick prototypes</span>
+      </div>
+    ),
+  },
+  {
+    id: 'health',
+    label: 'Health',
+    panel: <HealthBars />,
+  },
+  {
+    id: 'redflags',
+    label: 'Red Flags',
+    panel: (
+      <div className="vd-clean">
+        <span className="vd-clean-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M5 12.5l4.2 4.2L19 7"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+        <div>
+          <div className="vd-clean-k">No red flags</div>
+          <p>Permissive MIT license, active maintenance, no critical advisories in the manifest.</p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'techstack',
+    label: 'Tech Stack',
+    panel: (
+      <dl className="vd-stack">
+        <div>
+          <dt>Runtime</dt>
+          <dd>Node.js</dd>
+        </div>
+        <div>
+          <dt>Language</dt>
+          <dd>JavaScript · TypeScript types shipped separately</dd>
+        </div>
+        <div>
+          <dt>Notable deps</dt>
+          <dd>finalhandler · qs · send · serve-static</dd>
+        </div>
+      </dl>
+    ),
+  },
+];
+
 export function VerdictDemo() {
+  const [active, setActive] = useState(0);
+  const [inView, setInView] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // Slam the stamp in the first time the card meets the viewport.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const selectTab = (next: number) => {
+    const idx = (next + TABS.length) % TABS.length;
+    setActive(idx);
+    tabRefs.current[idx]?.focus();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        selectTab(active + 1);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        selectTab(active - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        selectTab(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        selectTab(TABS.length - 1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const current = TABS[active];
+
   return (
     <section className="section verdict-demo reveal" aria-labelledby="verdict-heading">
       <div className="container vd-grid">
@@ -34,7 +238,7 @@ export function VerdictDemo() {
           </ul>
         </div>
 
-        <div className="vd-card" role="img" aria-label="A RepoLens verdict for expressjs/express: strong fit, health 88.">
+        <div className="vd-card" ref={cardRef}>
           <div className="vd-card-bar" aria-hidden="true">
             <span className="vd-dot" />
             <span className="vd-dot" />
@@ -58,27 +262,36 @@ export function VerdictDemo() {
             </div>
           </div>
 
-          <div className="vd-tabs" aria-hidden="true">
+          <div className="vd-tabs" role="tablist" aria-label="Scan sections" onKeyDown={onKeyDown}>
             {TABS.map((t, idx) => (
-              <span key={t} className={`vd-tab${idx === 0 ? ' is-active' : ''}`}>
-                {t}
-              </span>
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                id={`vd-tab-${t.id}`}
+                aria-selected={idx === active}
+                aria-controls={`vd-panel-${t.id}`}
+                tabIndex={idx === active ? 0 : -1}
+                ref={(el) => {
+                  tabRefs.current[idx] = el;
+                }}
+                className={`vd-tab${idx === active ? ' is-active' : ''}`}
+                onClick={() => setActive(idx)}
+              >
+                {t.label}
+              </button>
             ))}
           </div>
 
-          <div className="vd-verdict">
-            <span className="vd-fit">Strong fit</span>
-            <span className="vd-verdict-meta">Health 88 · 0 flags · 3 pros / 1 cons</span>
-          </div>
-
-          <div className="vd-bottom">
-            <div className="vd-bottom-label">AI bottom line</div>
-            <p>The default choice for Node HTTP services; boring in the best way.</p>
-          </div>
-
-          <div className="vd-lang">
-            <span className="vd-lang-chip">JavaScript 99%</span>
-            <span className="vd-lang-rest">TypeScript · Shell</span>
+          <div
+            key={current.id}
+            className={`vd-panel${inView ? ' is-in' : ''}`}
+            role="tabpanel"
+            id={`vd-panel-${current.id}`}
+            aria-labelledby={`vd-tab-${current.id}`}
+            tabIndex={0}
+          >
+            {current.panel}
           </div>
         </div>
       </div>

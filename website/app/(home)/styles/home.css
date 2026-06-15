@@ -57,6 +57,49 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35),
     inset 0 -56px 60px -34px var(--accent-glow);
 }
+/* Lens sheen — a soft specular glint drifts across the glass, like light
+   catching a lens. No hard scan-line. Slow, with a long calm pause between
+   passes. Reduced-motion: nothing moves. */
+.hero-mascot-stage::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 41%,
+    rgba(226, 246, 255, 0.1) 47%,
+    rgba(240, 251, 255, 0.34) 50%,
+    rgba(226, 246, 255, 0.1) 53%,
+    transparent 59%
+  );
+  mix-blend-mode: screen;
+  transform: translateX(-58%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-mascot-stage::before {
+    animation: lensSheen 7s var(--ease-out) infinite;
+  }
+}
+@keyframes lensSheen {
+  0% {
+    transform: translateX(-58%);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  19% {
+    opacity: 1;
+  }
+  27%,
+  100% {
+    transform: translateX(58%);
+    opacity: 0;
+  }
+}
 .hero-say {
   font-size: 0.9rem;
   color: var(--muted);
@@ -66,13 +109,20 @@
   text-align: center;
 }
 .hero-title {
-  font-size: clamp(2.5rem, 1rem + 5vw, 4.6rem);
+  font-size: clamp(2.6rem, 0.9rem + 5.4vw, 5rem);
   font-weight: 800;
-  letter-spacing: -0.042em;
-  line-height: 0.98;
+  letter-spacing: -0.044em;
+  line-height: 0.94;
   color: var(--text-strong);
   margin: 18px 0 0;
   text-align: left;
+}
+
+/* The verdict keyword — vivid blue, the one word the headline turns on. */
+.hero-mark {
+  display: inline-block;
+  color: var(--warm);
+  white-space: nowrap;
 }
 .hero-sub {
   max-width: 52ch;
@@ -158,6 +208,7 @@
 }
 
 .vd-card {
+  position: relative;
   border-radius: 18px;
   background: linear-gradient(180deg, var(--surface-2), var(--surface));
   border: 1px solid var(--border-2);
@@ -229,28 +280,58 @@
   color: var(--muted);
   margin-top: 5px;
 }
+/* Tabs are a real tablist now — horizontally scrollable, with a fade mask on
+   the overflow edge so it reads as "more to the right". */
 .vd-tabs {
   display: flex;
   gap: 16px;
   padding: 0 20px;
   border-bottom: 1px solid var(--border);
-  overflow: hidden;
-  mask-image: linear-gradient(90deg, #000 86%, transparent);
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  mask-image: linear-gradient(90deg, #000 92%, transparent);
+}
+.vd-tabs::-webkit-scrollbar {
+  display: none;
 }
 .vd-tab {
-  font-size: 0.82rem;
-  font-weight: 600;
+  font: 600 0.82rem/1 var(--sans);
   color: var(--muted);
-  padding: 11px 0;
+  padding: 11px 1px 10px;
   white-space: nowrap;
+  scroll-snap-align: start;
+  background: none;
+  border: none;
   border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+.vd-tab:hover {
+  color: var(--text-strong);
 }
 .vd-tab.is-active {
   color: var(--text-strong);
   border-bottom-color: var(--warm);
 }
+.vd-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* The swappable card body. A fixed min-height keeps the card from jumping as
+   panels of different lengths cross-fade. */
+.vd-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 20px;
+  min-height: 178px;
+}
+
 .vd-verdict {
-  margin: 18px 20px 0;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -278,7 +359,6 @@
   color: var(--sub);
 }
 .vd-bottom {
-  margin: 12px 20px 0;
   padding: 14px 16px;
   border-radius: 12px;
   background: var(--bg-2);
@@ -299,19 +379,202 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 20px 20px;
+  margin-top: auto;
 }
 .vd-lang-chip {
   font: 700 11px/1 var(--mono);
-  color: var(--warn);
-  background: color-mix(in srgb, var(--warn) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--warn) 36%, transparent);
+  color: var(--accent);
+  background: var(--accent-weak);
+  border: 1px solid var(--accent-line);
   border-radius: 6px;
   padding: 6px 9px;
 }
 .vd-lang-rest {
   font: 600 11px/1 var(--mono);
   color: var(--faint);
+}
+
+/* ── Verdict panel content (ELI5 / Technical / Use Cases / Health / etc.) ── */
+.vd-prose p {
+  font-size: 0.92rem;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+.vd-prose p:last-child {
+  margin-bottom: 0;
+}
+.vd-prose code,
+.vd-list code {
+  font: 600 0.84em/1 var(--mono);
+  color: var(--accent);
+  background: var(--accent-weak);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.vd-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.vd-list li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 0.9rem;
+  color: var(--sub);
+}
+.vd-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--warm);
+  transform: rotate(45deg);
+}
+.vd-list strong {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+.vd-cases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vd-case {
+  font: 600 0.84rem/1 var(--sans);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  padding: 9px 14px;
+}
+.vd-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.vd-bar {
+  display: grid;
+  grid-template-columns: 9.5ch 1fr 2.5ch;
+  align-items: center;
+  gap: 12px;
+}
+.vd-bar-k {
+  font: 600 0.8rem/1 var(--sans);
+  color: var(--sub);
+}
+.vd-bar-track {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.vd-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--warm-2), var(--warm));
+}
+.vd-bar-v {
+  font: 700 0.82rem/1 var(--mono);
+  color: var(--text-strong);
+  text-align: right;
+}
+.vd-clean {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ok) 9%, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--ok) 32%, transparent);
+}
+.vd-clean-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+}
+.vd-clean-k {
+  font: 700 0.95rem/1.2 var(--sans);
+  color: var(--text-strong);
+  margin-bottom: 4px;
+}
+.vd-clean p {
+  font-size: 0.88rem;
+  color: var(--sub);
+}
+.vd-stack {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.vd-stack > div {
+  display: grid;
+  grid-template-columns: 11ch 1fr;
+  gap: 14px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border);
+}
+.vd-stack > div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.vd-stack dt {
+  font: 700 10px/1.5 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.vd-stack dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+/* Panel crossfade on tab switch + the verdict stamp's heavy slam on scroll-in.
+   Both gated — reduced-motion visitors get an instant swap and a static stamp. */
+@media (prefers-reduced-motion: no-preference) {
+  .vd-panel {
+    animation: vdPanelIn 260ms var(--ease-out);
+  }
+  .vd-panel.is-in .vd-stamp {
+    animation: vdStampSlam 460ms var(--ease-stamp) both;
+  }
+}
+@keyframes vdPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes vdStampSlam {
+  0% {
+    opacity: 0;
+    transform: rotate(11deg) scale(2.3);
+  }
+  68% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.9;
+    transform: rotate(-7deg) scale(1);
+  }
 }
 
 /* ── Feature bento ───────────────────────────────────────────────────── */
@@ -322,6 +585,8 @@
   gap: 14px;
 }
 .feat {
+  position: relative;
+  overflow: hidden;
   grid-column: span 1;
   border-radius: 16px;
   padding: 22px 20px;
@@ -330,10 +595,24 @@
   transition: transform var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out),
     box-shadow var(--dur) var(--ease-out);
 }
+/* Accent edge-light — a brass hairline that draws across the top on hover. */
+.feat::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--grad-soft);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
 .feat:hover {
-  transform: translateY(-4px);
-  border-color: var(--border-2);
+  transform: translateY(-5px);
+  border-color: var(--accent-line);
   box-shadow: var(--shadow-md);
+}
+.feat:hover::after {
+  transform: scaleX(1);
 }
 .feat-wide {
   grid-column: span 2;
@@ -349,15 +628,26 @@
   color: var(--accent);
   background: var(--accent-weak);
   border: 1px solid var(--accent-line);
+  transition: transform var(--dur) var(--ease-spring), background var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out);
+}
+/* The lens tilts and lifts as the card is inspected. */
+.feat:hover .feat-ic {
+  transform: translateY(-2px) scale(1.07) rotate(-4deg);
+  background: var(--accent-weak);
+  border-color: var(--accent);
+}
+.feat-wide:hover .feat-ic {
+  border-color: var(--pop);
 }
 .feat-ic .icon {
   display: block;
 }
-/* The wide "hero" feature tiles take the warm accent — the complementary pop. */
+/* The wide "hero" feature tiles take the hot-coral pop — the complementary jolt. */
 .feat-wide .feat-ic {
-  color: var(--warm);
-  background: var(--warm-weak);
-  border-color: var(--warm-line);
+  color: var(--pop);
+  background: var(--pop-weak);
+  border-color: var(--pop-line);
 }
 /* Line icons are drawn in by GSAP on scroll (pathLength=1); fully drawn by
    default so they're visible without JS / under reduced-motion. */

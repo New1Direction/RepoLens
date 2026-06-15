@@ -8,13 +8,13 @@ export function Hero() {
       <div className="container hero-grid">
         <div className="hero-copy">
           <span className="kicker">
-            <span className="pulse" /> Chrome Extension · Manifest V3 · v3.0
+            <span className="pulse" /> Case No. RL-3.0 · Chrome · Manifest V3
           </span>
 
           <h1 id="hero-heading" className="hero-title">
             Read code before
             <br />
-            you <span className="grad-text">trust it.</span>
+            you <span className="hero-mark">trust it.</span>
           </h1>
 
           <p className="hero-sub">

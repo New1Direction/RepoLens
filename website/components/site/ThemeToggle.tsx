@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useTheme } from 'next-themes';
+
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (callback: () => void) => unknown;
+};
 
 /**
  * Sun⇄moon toggle that *morphs*: in dark mode a cutout circle carves the orb
@@ -18,15 +23,28 @@ export function ThemeToggle() {
   useEffect(() => setMounted(true), []);
 
   const isLight = mounted && resolvedTheme !== 'dark';
-  const label = mounted
-    ? `Switch to ${isLight ? 'midnight (dark)' : 'latte (light)'}`
-    : 'Toggle theme';
+  const label = mounted ? `Switch to ${isLight ? 'dark' : 'light'} mode` : 'Toggle theme';
+
+  // A scanline "develops" the page into the new theme top→bottom via the View
+  // Transitions API (see ::view-transition-new(root) in global.css). flushSync
+  // makes next-themes apply the class synchronously so the snapshot captures the
+  // new theme. Instant flip where the API is missing or motion is reduced.
+  const runToggle = () => {
+    const next = isLight ? 'dark' : 'light';
+    const doc = document as ViewTransitionDocument;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || typeof doc.startViewTransition !== 'function') {
+      setTheme(next);
+      return;
+    }
+    doc.startViewTransition(() => flushSync(() => setTheme(next)));
+  };
 
   return (
     <button
       type="button"
       className={`theme-toggle${isLight ? ' is-light' : ''}`}
-      onClick={() => setTheme(isLight ? 'dark' : 'light')}
+      onClick={runToggle}
       aria-label={label}
       title={label}
     >
