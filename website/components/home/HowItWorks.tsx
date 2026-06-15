@@ -20,7 +20,7 @@ export function HowItWorks() {
   return (
     <section className="section how-section reveal" aria-labelledby="how-heading">
       <div className="container">
-        <span className="eyebrow">How it works</span>
+        <span className="eyebrow">The procedure</span>
         <h2 id="how-heading" className="section-title">
           Three seconds from page to verdict.
         </h2>

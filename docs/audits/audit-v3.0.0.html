@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RepoLens v3.0.0 — Engineering Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg-2: #0c1220;
+    --surface: #111a2e;
+    --surface-2: #16203a;
+    --border: #223149;
+    --border-2: #32486e;
+    --text: #eaeefb;
+    --text-strong: #ffffff;
+    --sub: #9aa6c2;
+    --muted: #6b7794;
+    --accent: #3b82f6;
+    --accent-3: #38bdf8;
+    --warm: #f59e0b;
+    --ok: #34d399;
+    --bad: #fb7185;
+    --grad: linear-gradient(120deg, #60a5fa 0%, #3b82f6 55%, #22d3ee 120%);
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(900px 520px at 82% -10%, rgba(59,130,246,.16), transparent 60%),
+      radial-gradient(760px 500px at 4% 0%, rgba(34,211,238,.08), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3, .display { font-family: var(--sans); letter-spacing: -0.02em; color: var(--text-strong); }
+
+  /* Header */
+  header.top { padding: 64px 0 28px; border-bottom: 1px solid var(--border); }
+  .eyebrow { font: 700 11px/1 var(--mono); letter-spacing: .22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(2rem, 1rem + 3.4vw, 3.2rem); font-weight: 700; line-height: 1.02; margin: 16px 0 10px; }
+  h1 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { color: var(--sub); font-size: 1.08rem; max-width: 68ch; }
+  .meta-row { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; font: 600 12px/1 var(--mono); color: var(--muted); }
+  .meta-row span { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 7px 12px; }
+
+  /* Verdict box */
+  .verdict { margin: 30px 0 8px; padding: 24px 26px; border-radius: 16px;
+    background: radial-gradient(500px 200px at 100% 0%, rgba(52,211,153,.12), transparent 60%), var(--surface);
+    border: 1px solid var(--border-2); border-left: 4px solid var(--ok); }
+  .verdict h2 { font-size: 1.15rem; margin-bottom: 8px; }
+  .verdict p { color: var(--sub); }
+  .verdict strong { color: var(--text-strong); }
+
+  /* Scorecard */
+  .scorecard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 26px 0; }
+  .sc { padding: 16px 12px; border-radius: 13px; background: var(--bg-2); border: 1px solid var(--border); text-align: center; }
+  .sc .area { font: 700 10px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); min-height: 2.4em; display: flex; align-items: center; justify-content: center; }
+  .sc .counts { margin-top: 10px; display: flex; justify-content: center; gap: 6px; font: 700 12px/1 var(--mono); }
+  .sc .c-h { color: var(--warm); }
+  .sc .c-m { color: var(--accent-3); }
+  .sc .c-l { color: var(--muted); }
+  @media (max-width: 720px) { .scorecard { grid-template-columns: repeat(2, 1fr); } }
+
+  /* Sections */
+  section { padding: 40px 0 8px; border-top: 1px solid var(--border); margin-top: 28px; }
+  section > .sec-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  section h2 { font-size: 1.6rem; }
+  .sec-sub { color: var(--sub); margin-bottom: 22px; max-width: 70ch; }
+  .sec-num { font: 700 13px/1 var(--mono); color: var(--accent); }
+
+  /* Finding cards */
+  .finding { border-radius: 13px; background: var(--surface); border: 1px solid var(--border); padding: 18px 20px; margin-bottom: 12px; border-left: 3px solid var(--border-2); }
+  .finding.sev-critical { border-left-color: var(--bad); }
+  .finding.sev-high { border-left-color: var(--warm); }
+  .finding.sev-medium { border-left-color: var(--accent-3); }
+  .finding.sev-low { border-left-color: var(--muted); }
+  .finding-head { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; margin-bottom: 9px; }
+  .finding-head h3 { font-size: 1.04rem; font-weight: 600; flex: 1 1 auto; }
+  .pill { font: 700 10px/1 var(--mono); letter-spacing: .06em; padding: 5px 9px; border-radius: 6px; flex-shrink: 0; }
+  .pill-critical { color: #0a0e1a; background: var(--bad); }
+  .pill-high { color: #2a1605; background: var(--warm); }
+  .pill-medium { color: #04202f; background: var(--accent-3); }
+  .pill-low { color: var(--text); background: var(--border-2); }
+  .loc { display: inline-block; font: 600 11.5px/1 var(--mono); color: var(--accent-3); background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; }
+  .finding p { color: var(--sub); font-size: .95rem; margin-top: 6px; }
+  .finding .fix { color: var(--text); }
+  .finding .fix strong { color: var(--ok); }
+  .finding code, .inline-code { font-family: var(--mono); font-size: .88em; color: var(--accent-3); background: var(--bg-2); padding: 1px 5px; border-radius: 4px; }
+
+  .more { margin-top: 12px; padding: 14px 18px; border-radius: 12px; background: var(--bg-2); border: 1px dashed var(--border-2); }
+  .more h4 { font: 700 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+  .more ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .more li { font-size: .9rem; color: var(--sub); padding-left: 18px; position: relative; }
+  .more li::before { content: "›"; position: absolute; left: 2px; color: var(--accent); font-weight: 700; }
+  .more li b { color: var(--text); font-weight: 600; }
+
+  /* Clean / strengths */
+  .clean { background: radial-gradient(600px 240px at 0% 0%, rgba(52,211,153,.1), transparent 60%), var(--surface); border-color: var(--border-2); }
+  .clean-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; margin-top: 8px; }
+  .clean-grid li { list-style: none; font-size: .92rem; color: var(--sub); padding-left: 24px; position: relative; }
+  .clean-grid li::before { content: "✓"; position: absolute; left: 2px; color: var(--ok); font-weight: 700; }
+  .clean-grid li b { color: var(--text); }
+  @media (max-width: 640px) { .clean-grid { grid-template-columns: 1fr; } }
+
+  /* Action plan */
+  .plan { counter-reset: step; list-style: none; margin-top: 14px; }
+  .plan li { position: relative; padding: 16px 0 16px 56px; border-top: 1px solid var(--border); }
+  .plan li:first-child { border-top: none; }
+  .plan li::before { counter-increment: step; content: counter(step, decimal-leading-zero); position: absolute; left: 0; top: 14px;
+    font: 700 1.3rem/1 var(--sans); background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .plan h3 { font-size: 1.04rem; font-weight: 600; margin-bottom: 3px; }
+  .plan h3 .pill { vertical-align: middle; margin-left: 8px; }
+  .plan p { color: var(--sub); font-size: .92rem; }
+
+  footer { margin: 48px 0 60px; padding-top: 22px; border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem; }
+  footer b { color: var(--sub); }
+  .lens { width: 40px; height: 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <svg class="lens" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <circle cx="24" cy="24" r="16" stroke="#3b82f6" stroke-width="2" opacity="0.4"/>
+        <circle cx="24" cy="24" r="9" stroke="#3b82f6" stroke-width="3.2"/>
+        <circle cx="24" cy="24" r="2.4" fill="#f59e0b"/>
+      </svg>
+      <span class="eyebrow">Engineering Audit · v3.0.0</span>
+    </div>
+    <h1>RepoLens is in <span class="grad">strong shape.</span></h1>
+    <p class="lede">A full audit of the v3.0.0 extension and the redesigned website across security, code &amp; architecture, tests, and accessibility. The short version: <strong>zero critical issues</strong>, the security fundamentals that matter most are verified clean, and the work to do is concentrated and mostly known — starting with a one-line fix that turns CI green.</p>
+    <div class="meta-row">
+      <span>2026-06-15</span>
+      <span>4 parallel specialist passes</span>
+      <span>~18.8k LoC extension · Next.js site</span>
+      <span>adversarially verified</span>
+    </div>
+  </header>
+
+  <div class="verdict">
+    <h2>Bottom line</h2>
+    <p><strong>0 CRITICAL</strong> across all four dimensions. Security is genuinely sound for a key-handling extension — keys are never logged, the settings export is provably allowlist-driven, PKCE + OAuth state are correct, there's no <span class="inline-code">eval</span>, and the content script is minimal. Test coverage is high on pure logic (57 of ~75 modules), accessibility intent is above average, and the website's motion/perf hygiene is exemplary. The issues cluster in five places: <strong>a red CI from a known flaky test</strong> (trivial fix), <strong>maintainability debt</strong> in three oversized files, <strong>accessibility polish</strong> (focus lifecycle + a few low-contrast tokens), <strong>attack-surface hardening</strong> (endpoint validation), and <strong>basic SEO</strong> (sitemap / OG image).</p>
+  </div>
+
+  <div class="scorecard">
+    <div class="sc"><div class="area">Security</div><div class="counts"><span class="c-h">2H</span><span class="c-m">5M</span><span class="c-l">4L</span></div></div>
+    <div class="sc"><div class="area">Code &amp; Architecture</div><div class="counts"><span class="c-h">5H</span><span class="c-m">5M</span><span class="c-l">3L</span></div></div>
+    <div class="sc"><div class="area">Tests &amp; Coverage</div><div class="counts"><span class="c-h">3H</span><span class="c-m">3M</span><span class="c-l">1L</span></div></div>
+    <div class="sc"><div class="area">Accessibility</div><div class="counts"><span class="c-h">5H</span><span class="c-m">6M</span><span class="c-l">3L</span></div></div>
+    <div class="sc"><div class="area">Website</div><div class="counts"><span class="c-h">3H</span><span class="c-m">3M</span><span class="c-l">6L</span></div></div>
+  </div>
+
+  <!-- TOP PRIORITY -->
+  <section>
+    <div class="sec-head"><span class="sec-num">00</span><h2>The one to fix first</h2></div>
+    <p class="sec-sub">A single thread connects three of the four passes — and it's a one-line fix.</p>
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>CI is red on <code>main</code> — caused by a time-flaky test, not a missing script</h3><code class="loc">tests/maintenance.test.js · maintenance.js:15,25</code></div>
+      <p>CI run <b>#19 failed</b> while #18 (24 min earlier) passed — exactly when <span class="inline-code">daysSincePush(daysAgo(30))</span> tipped from 31→32 as the UTC date rolled to the 15th. The website pass flagged this as "no <span class="inline-code">npm test</span> script," but that was verified wrong: <span class="inline-code">ci.yml</span> runs at the repo root where <span class="inline-code">npm test</span> = <span class="inline-code">vitest run</span> exists. The real cause: <span class="inline-code">bandFromSignals</span> and <span class="inline-code">daysSincePush</span> call real <span class="inline-code">Date.now()</span> with no injection point, while the test pins <span class="inline-code">NOW=2026-06-13</span> to build inputs — so measured age drifts +1 day/day. A latent sibling exists in <span class="inline-code">diff-analysis.test.js</span> (loose assertions hide it for now), and the band-boundary tests will break later (≈Aug 12 and Jan 13).</p>
+      <p class="fix"><strong>Fix:</strong> give <span class="inline-code">bandFromSignals</span>/<span class="inline-code">daysSincePush</span> an injectable <span class="inline-code">today = Date.now()</span> param (mirroring <span class="inline-code">buildMaintenancePrompt</span>, which already does this) and pass <span class="inline-code">NOW</span> in the test — or <span class="inline-code">vi.useFakeTimers()</span> + <span class="inline-code">vi.setSystemTime('2026-06-13')</span>. <span class="inline-code">vi.useFakeTimers</span> is currently used in zero test files; adopt it for any time-based test. This turns CI green.</p>
+    </div>
+  </section>
+
+  <!-- SECURITY -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>Security</h2></div>
+    <p class="sec-sub">An extension that holds 20+ provider keys + OAuth tokens and feeds untrusted README content to an LLM. The core handling is sound; the gaps are attack-surface and log hygiene.</p>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>Custom-endpoint save can grant <code>&lt;all_urls&gt;</code> to any origin</h3><code class="loc">manifest.json:41 · options-providers.js:51</code></div>
+      <p>Saving a custom endpoint calls <span class="inline-code">chrome.permissions.request({ origins: [origin + '/*'] })</span> against the optional <span class="inline-code">https://*/*</span> grant. A social-engineered URL (e.g. <span class="inline-code">https://company-intranet.corp/</span>) could hand the extension persistent cross-origin fetch to an internal network.</p>
+      <p class="fix"><strong>Fix:</strong> validate the endpoint is a public host before requesting — block RFC-1918 ranges, <span class="inline-code">localhost</span>, and <span class="inline-code">.internal</span>/<span class="inline-code">.local</span> TLDs (Ollama already has static localhost perms).</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>Unsanitized stored endpoint → localhost SSRF</h3><code class="loc">manifest.json:38 · background.js (callCompat)</code></div>
+      <p>Static <span class="inline-code">http://localhost/*</span> + <span class="inline-code">127.0.0.1/*</span> permissions plus a user/import-writable endpoint string mean a tampered endpoint (<span class="inline-code">http://localhost:8080/internal-admin</span>) is fetched with no further consent.</p>
+      <p class="fix"><strong>Fix:</strong> validate stored endpoints against the provider's registered host pattern before fetch; pin Ollama to port 11434.</p>
+    </div>
+
+    <div class="more">
+      <h4>Medium &amp; low</h4>
+      <ul>
+        <li><b>[MED] Prompt-injection homoglyph gap</b> — <code>prompt.js:7</code> ASCII keyword filter is bypassable by small-caps/Cyrillic lookalikes; the structural delimiters are the real (probabilistic) guard. The changelog's "hardened" claim overstates it — soften the wording.</li>
+        <li><b>[MED] OAuth log hygiene</b> — <code>background.js:447,498,502,1557</code> log callback URLs + <code>JSON.stringify(err)</code> provider bodies; truncate/strip token-ish fields, gate behind a DEBUG flag. <i>(Also flagged by the code pass.)</i></li>
+        <li><b>[MED] <code>whats-new.html</code> is web-accessible to <code>&lt;all_urls&gt;</code></b> — enables extension fingerprinting from any page; scope to <code>chrome-extension://*/*</code> or drop it.</li>
+        <li><b>[MED] xAI token stored in redundant flat keys</b> — <code>oauth-xai.js:61</code>; a partial clear leaves a stale <code>xaiKey</code>. Consolidate to structured creds after a migration window.</li>
+        <li><b>[MED] Backup import has no max string length</b> — <code>backup.js</code> enforces <code>MAX_ROWS</code> but a 1 MB <code>repoId</code> passes; cap field lengths (~256).</li>
+        <li><b>[LOW] <code>esc()</code> doesn't escape single quotes</b> (<code>format.js:4</code>) — latent for single-quoted attributes; align with <code>safe-html.js</code>'s <code>escapeHtml</code>.</li>
+        <li><b>[LOW] Gemini key in URL query string</b> (<code>background.js:1435</code>) — Google's REST design, not a bug, but more exposed than header auth.</li>
+        <li><b>[LOW] <code>tabs</code> permission broader than needed</b> — the <code>tabs.onUpdated</code> OAuth listener duplicates the <code>webNavigation</code> one; dropping it could remove the <code>tabs</code> perm.</li>
+        <li><b>[LOW] No per-message rate limiting</b> — mitigated by same-origin <code>sendMessage</code> + the <code>aiChain</code> serializer.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CODE -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Code &amp; Architecture</h2></div>
+    <p class="sec-sub">Three files hold most of the logic — <code>library.js</code> (2,593), <code>output-tab.js</code> (2,576), <code>background.js</code> (1,567), all ~3× the size guideline. The HIGH findings are duplication that has <em>already silently diverged</em>.</p>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3><code>render()</code> and <code>getVisibleRows()</code> duplicate the filter/sort pipeline — and have diverged</h3><code class="loc">library.js:177 vs 1834</code></div>
+      <p>The export path re-implements the filter→sort pipeline and has already dropped the eval sort, the NL-filter dedup, and parts of the collection/decision filters — so <b>exports can return the wrong rows today</b>.</p>
+      <p class="fix"><strong>Fix:</strong> extract one pure <span class="inline-code">applyFilters(rows, state, maps)</span> that both call. Highest-leverage refactor in the codebase.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>11 near-identical session-patch helpers with a read-modify-write race</h3><code class="loc">background.js:771–1169</code></div>
+      <p>Every <span class="inline-code">runXxx</span> redefines a 3-line read-merge-write against a session sub-key. Two concurrent lens writers to the same key can clobber each other.</p>
+      <p class="fix"><strong>Fix:</strong> a <span class="inline-code">makeSessionPatcher(key, subKey)</span> factory — removes 33 lines and gives one place to serialize writes.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>Duplicated <code>LANG_COLORS</code> and <code>FIT_ORDER</code> — both already drifting</h3><code class="loc">library.js:25,113… · output-tab.js:617</code></div>
+      <p><span class="inline-code">LANG_COLORS</span> is copied in both big files (the copies diverge in palette); <span class="inline-code">FIT_ORDER</span> is re-declared <b>6×</b> inside functions, one of which adds <span class="inline-code">'unrated'</span> so ordering is inconsistent.</p>
+      <p class="fix"><strong>Fix:</strong> a shared <span class="inline-code">lang-colors.js</span>; hoist <span class="inline-code">FIT_ORDER</span> to module scope once.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>Global <code>callAI</code> queue serializes unrelated flows</h3><code class="loc">background.js:1201</code></div>
+      <p>One module-level promise chain throttles all AI calls — so a multi-minute deep-dive blocks a quick <span class="inline-code">ASK_CACHED</span> for its full duration; the keep-alive <span class="inline-code">.catch(()=&gt;{})</span> also swallows rejections.</p>
+      <p class="fix"><strong>Fix:</strong> exempt low-latency parts (<span class="inline-code">ask</span>) from the deep-dive queue; document the throttling intent at the call site.</p>
+    </div>
+
+    <div class="more">
+      <h4>Medium &amp; low</h4>
+      <ul>
+        <li><b>[MED] Silent <code>catch {}</code></b> at <code>output-tab.js:2573</code> swallows a whole render block with no signal — add a <code>console.warn</code> + visible fallback.</li>
+        <li><b>[MED] <code>RERUN</code> set has no <code>.catch</code></b> (<code>background.js:198</code>) — a storage reject leaves the output tab polling to its 90s timeout; add error propagation to <code>sendResponse</code>.</li>
+        <li><b>[MED] Listener leaks</b> — <code>openNote</code>/<code>openQuickAsk</code> (<code>library.js:353,465</code>) re-add keydown handlers on every open (the comment says it's fixed; it isn't). Use <code>{ once: true }</code>.</li>
+        <li><b>[MED] Redundant storage reads</b> — each <code>runXxx</code> re-reads <code>PROVIDER_KEYS</code> (~10 IPC round-trips on "Run All"); pass <code>keys</code> down from one read.</li>
+        <li><b>[MED] 14 mutable module globals in <code>library.js</code></b> — the root cause of the render/getVisibleRows drift; consolidate into one <code>state</code> object incrementally.</li>
+        <li><b>[LOW] <code>window.prompt</code> fallback</b> (<code>library.js:1318</code>) — blocked in some extension contexts; remove the dead path.</li>
+        <li><b>[LOW] Implicit message contract</b> — 20+ <code>msg.type</code> string literals with no shared enum; a typo is a silent no-op. Export a <code>MSG_TYPES</code> constant.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- TESTS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Tests &amp; Coverage</h2></div>
+    <p class="sec-sub">Strong by design — ~60 vitest files cover 57 of ~75 modules, targeting pure logic (the model: extract <code>library-data.js</code> out of <code>library.js</code> and test it). The three big files are untested <em>deliberately</em> (zero exports, explicitly excluded) — not fake coverage. The gaps are real pure logic still trapped inside, plus two security-relevant modules.</p>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3><code>evaluations.js → computeScore</code> has zero tests</h3><code class="loc">evaluations.js</code></div>
+      <p>A pure weighted-average with null-guards, range-filtering and zero-weight fallback — used by both the eval panel and the N-way compare matrix, yet untested. The single highest-value, lowest-effort add.</p>
+      <p class="fix"><strong>Fix:</strong> unit-test <span class="inline-code">computeScore</span>; mock the <span class="inline-code">chrome.storage</span> CRUD exactly as <span class="inline-code">oauth-openai.test.js</span> does.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>OAuth helpers <code>oauth-pkce.js</code> &amp; <code>oauth-xai.js</code> are untested</h3><code class="loc">oauth-pkce.js · oauth-xai.js</code></div>
+      <p>Security-sensitive: <span class="inline-code">base64url</span>/<span class="inline-code">createPkcePair</span> are pure/deterministic, and the full xAI device-code flow (request/poll/store/refresh) has no coverage — while the sibling <span class="inline-code">oauth-openai.js</span> is tested.</p>
+      <p class="fix"><strong>Fix:</strong> add deterministic tests for the PKCE primitives and the xAI token lifecycle.</p>
+    </div>
+
+    <div class="more">
+      <h4>Also</h4>
+      <ul>
+        <li><b>[HIGH] The maintenance flake</b> — see "the one to fix first." Root cause + the latent <code>diff-analysis.test.js</code> sibling; adopt <code>vi.useFakeTimers</code> (used in 0 files today).</li>
+        <li><b>[MED] Extractable pure logic trapped in <code>library.js</code></b> — <code>radarToMarkdown</code>, <code>exportCompareMatrix</code>, <code>exportDecisionMatrix</code>, <code>exportDigest</code> are pure builders that could move to a <code>library-export.js</code> and be tested like <code>library-data.js</code>.</li>
+        <li><b>[MED] The E2E driver isn't enforced</b> — <code>.verify/drive.mjs</code> is a real Playwright harness (~20 assertions, loads the unpacked MV3 extension, 12 screenshot stages) but it's gitignored, <code>playwright</code> isn't a dep, and CI never runs it. Promote it: add the dep + an npm script + non-zero exit + CI wiring.</li>
+        <li><b>[LOW] Minor hygiene</b> — <code>store.test.js</code> doesn't uniformly clear <code>collections</code>; <code>vitest.config.js</code> sets no <code>clearMocks</code>/<code>restoreMocks</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- A11Y -->
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Accessibility</h2></div>
+    <p class="sec-sub">Above-average intent — global <code>:focus-visible</code>, single-key handlers that guard typing fields, an exemplary <code>aria-hidden</code> mascot, real live regions on the library, and strong command-palette ARIA. Two consistent gaps: <strong>focus lifecycle on modals</strong> and <strong>announcement on the main output surface</strong>. Plus a cross-product contrast theme (the website pass found the same class of issue in its tokens).</p>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>The output tab never announces scan progress or completion</h3><code class="loc">output-tab.html:763 · 27 tab panels</code></div>
+      <p>The primary analysis surface cycles loading copy and injects into 27 panels with no <span class="inline-code">aria-live</span>/<span class="inline-code">role="status"</span> — a screen-reader user gets no signal a scan is running or done. (WCAG 4.1.3)</p>
+      <p class="fix"><strong>Fix:</strong> <span class="inline-code">role="status" aria-live="polite"</span> on <span class="inline-code">#loading-msg</span> + one polite sr-only region announcing start/complete/error.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>The 27-tab strip has no tab semantics; <code>j/k</code> nav is visual-only</h3><code class="loc">output-tab.html:832 · library.js:2066</code></div>
+      <p>Tabs are plain buttons with an <span class="inline-code">.active</span> class (no <span class="inline-code">role="tablist/tab/tabpanel"</span>, no <span class="inline-code">aria-selected</span>). And library <span class="inline-code">setJkFocus</span> toggles a class + scrolls but never calls <span class="inline-code">.focus()</span> on the <span class="inline-code">&lt;div&gt;</span> cards — SRs announce nothing, and Tab jumps away. (WCAG 4.1.2, 2.4.3)</p>
+      <p class="fix"><strong>Fix:</strong> add tablist roles + <span class="inline-code">aria-selected</span>; give cards <span class="inline-code">tabindex="-1"</span>/<span class="inline-code">role="article"</span> and move real focus on <span class="inline-code">j/k</span>.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>Command palette &amp; modals: no focus trap or restoration</h3><code class="loc">palette.js:95 · library.js (compare/boards)</code></div>
+      <p>Modals have good <span class="inline-code">role="dialog"</span>+<span class="inline-code">aria-modal</span>+Escape, but none trap Tab or restore focus to the trigger on close, and the palette listbox lacks <span class="inline-code">aria-activedescendant</span> (arrowing is silent to SRs). (WCAG 2.1.2, 4.1.3)</p>
+      <p class="fix"><strong>Fix:</strong> a shared open/close focus-lifecycle helper (move focus in, trap Tab, restore on close) applied to every popover/modal; add <span class="inline-code">aria-activedescendant</span> to the palette.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>Low-contrast text fails WCAG AA — extension themes <em>and</em> the website</h3><code class="loc">themes.css (--text-muted) · website global.css (--faint/--accent/--muted)</code></div>
+      <p><b>Extension:</b> <span class="inline-code">--text-muted</span> (descriptions/hints, 65 uses) fails AA on 5 of 13 themes — including the default <b>midnight</b> (4.15:1) and worst rosepine (3.41:1); <span class="inline-code">--accent</span>-as-text fails on solarized/claude/bmw. <b>Website:</b> <span class="inline-code">--faint</span> body text fails AA in both themes (2.20 latte / 2.69 dark — <span class="inline-code">.hero-foot</span>, footer), and small <span class="inline-code">--accent</span>/<span class="inline-code">--muted</span> labels are AA-large-only.</p>
+      <p class="fix"><strong>Fix:</strong> bump <span class="inline-code">--text-muted</span>/<span class="inline-code">--faint</span> to ≥4.5:1 per theme (darken light, lighten dark); route <span class="inline-code">--accent</span>-as-text through the darker <span class="inline-code">--accent-deep</span>/<span class="inline-code">--accent-2</span>.</p>
+    </div>
+
+    <div class="more">
+      <h4>Medium &amp; low</h4>
+      <ul>
+        <li><b>[MED] No reduced-motion guard on <code>batch.html</code> &amp; <code>stack-tab.html</code></b> — the only two pages missing it; both run <em>infinite</em> pulse loaders. Add the same <code>@media (prefers-reduced-motion: reduce)</code> reset (better: one shared <code>a11y.css</code>).</li>
+        <li><b>[MED] <code>:focus-visible</code> suppressed on focusable widgets</b> — decision-popover buttons, eval badge, palette input get programmatic focus but show no ring (<code>library.html:481</code>, <code>palette.css:46</code>). (WCAG 2.4.11)</li>
+        <li><b>[MED] Icon-only buttons rely on <code>title</code>, not <code>aria-label</code></b> — card actions (pin/compare/note/copy/remove) + header buttons; inconsistent with <code>#settings</code> which has a label.</li>
+        <li><b>[MED] Boards popover has no role/label</b> — a bare <code>&lt;div&gt;</code> (its rows are real buttons, so still operable).</li>
+        <li><b>[LOW] Inline <code>♥</code>/<code>★</code>/<code>?</code> symbols without text alternatives</b> in a few spots.</li>
+        <li><b>[LOW] Output-tab loading bar animates <code>width</code></b> over 25s — perf nit vs the team's own rules; disabled under reduced-motion, so no a11y issue.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- WEBSITE -->
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Website</h2></div>
+    <p class="sec-sub">The fresh redesign's motion/perf hygiene is genuinely exemplary (GSAP fully lazy + 100% behind <code>prefers-reduced-motion</code>, correct reduced-motion video fallback, clean heading order, CLS well-defended with explicit dimensions, the case-sensitive <code>/RepoLens</code> basePath handled). The gaps are SEO basics and a couple of perf nits.</p>
+
+    <div class="finding sev-high">
+      <div class="finding-head"><span class="pill pill-high">HIGH</span><h3>No <code>sitemap.xml</code> or <code>robots.txt</code></h3><code class="loc">add app/sitemap.ts · app/robots.ts</code></div>
+      <p>Nothing tells crawlers the canonical URL set for a freshly launched marketing site. Next 15 emits both under <span class="inline-code">output: export</span>.</p>
+      <p class="fix"><strong>Fix:</strong> add <span class="inline-code">app/sitemap.ts</span> + <span class="inline-code">app/robots.ts</span> with absolute <span class="inline-code">/RepoLens</span> URLs enumerating <span class="inline-code">/</span>, <span class="inline-code">/changelog</span>, and the 10 docs routes.</p>
+    </div>
+
+    <div class="more">
+      <h4>Medium &amp; low</h4>
+      <ul>
+        <li><b>[MED] OG/Twitter card declared but no image</b> — <code>layout.tsx</code> sets <code>summary_large_image</code> with no <code>images</code>; link unfurls render bare. Add <code>public/og.png</code> (1200×630) or <code>app/opengraph-image.tsx</code>.</li>
+        <li><b>[MED] Hero video/poster not fetch-prioritized</b> — the poster is the likely LCP but gets no preload; the 185 KB MP4 autoloads. Add <code>preload="metadata"</code> to the video + a poster <code>&lt;link rel=preload&gt;</code>.</li>
+        <li><b>[MED] Atmosphere paint cost</b> — 3 fixed radial gradients + starfield + header <code>backdrop-filter: blur</code>; trace on a throttled device.</li>
+        <li><b>[LOW] Font-swap CLS</b> on large display headings (no <code>size-adjust</code>; <code>next/font</code> mitigates); <b>focus-ring contrast</b> weak in latte; <b>warm tab underline</b> 1.88:1 (decorative card); <b>fumadocs lazy-files coupling</b> in <code>lib/source.ts</code> is version-fragile; the <b>RSC <code>.txt</code> 404</b> stays cosmetic; stray untracked <code>whats-new.html</code> at repo root (doesn't ship).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- WHAT'S SOLID -->
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>What's solid</h2></div>
+    <p class="sec-sub">An audit is only honest if it says what's done right. A lot is.</p>
+    <div class="finding clean">
+      <ul class="clean-grid">
+        <li><b>API keys are never logged</b> — passed straight to fetch headers.</li>
+        <li><b>Settings export is provably allowlist-driven</b> — <code>pickSafe()</code> excludes keys/tokens on export <em>and</em> import.</li>
+        <li><b>PKCE is correct</b> — CSPRNG verifier/state, SHA-256, base64url; OAuth state verified before exchange.</li>
+        <li><b>No <code>eval</code> / dynamic code</b> anywhere.</li>
+        <li><b>Content script is minimal</b> — sends one message, reads only the URL.</li>
+        <li><b>57 of ~75 modules tested</b> — pure logic extracted and tested deliberately.</li>
+        <li><b>Mascot a11y is exemplary</b> — always <code>aria-hidden</code>, meaning carried by text/color.</li>
+        <li><b>Reduced-motion done right</b> — extension and website both gate all motion; static fallbacks.</li>
+        <li><b>Command-palette ARIA</b> — dialog/listbox/option roles, <code>aria-selected</code>.</li>
+        <li><b>Website motion is fully lazy</b> — GSAP off the critical path, 110 kB First-Load.</li>
+        <li><b>CLS well-defended</b> — explicit dimensions + <code>aspect-ratio</code> on media.</li>
+        <li><b>basePath fixed &amp; correct</b> — case-sensitive <code>/RepoLens</code>, manual asset prefixing.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ACTION PLAN -->
+  <section>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Prioritized action plan</h2></div>
+    <p class="sec-sub">In order of leverage-per-effort.</p>
+    <ol class="plan">
+      <li>
+        <h3>Turn CI green <span class="pill pill-high">HIGH · minutes</span></h3>
+        <p>Inject <code>today</code> into <code>bandFromSignals</code>/<code>daysSincePush</code> (or <code>vi.setSystemTime</code> in the test); fix the latent <code>diff-analysis</code> sibling. One change, <code>main</code> goes green.</p>
+      </li>
+      <li>
+        <h3>Extract <code>applyFilters()</code> <span class="pill pill-high">HIGH</span></h3>
+        <p>Collapse the <code>render()</code>/<code>getVisibleRows()</code> divergence — it's an active wrong-export bug source — then lift <code>FIT_ORDER</code>/<code>LANG_COLORS</code> to shared modules.</p>
+      </li>
+      <li>
+        <h3>Add tests: <code>computeScore</code> + the OAuth helpers <span class="pill pill-high">HIGH</span></h3>
+        <p>High-value, low-effort, security-relevant — the biggest coverage holes that are trivially testable.</p>
+      </li>
+      <li>
+        <h3>Accessibility: announce + focus <span class="pill pill-high">HIGH</span></h3>
+        <p>Add the output-tab live region + tab semantics, make <code>j/k</code> move real focus, and add a shared modal focus-trap/restore helper.</p>
+      </li>
+      <li>
+        <h3>Fix contrast tokens <span class="pill pill-high">HIGH</span></h3>
+        <p>Bump <code>--text-muted</code>/<code>--faint</code> to AA on the failing themes (incl. default midnight) across both extension and site; stop suppressing focus rings on focusable widgets; add the reduced-motion reset to <code>batch.html</code>/<code>stack-tab.html</code>.</p>
+      </li>
+      <li>
+        <h3>Harden endpoints + log hygiene <span class="pill pill-medium">MED</span></h3>
+        <p>Validate custom/Ollama endpoints (block private ranges), scope <code>whats-new.html</code>, truncate OAuth logs, cap backup string lengths.</p>
+      </li>
+      <li>
+        <h3>SEO basics <span class="pill pill-medium">MED</span></h3>
+        <p>Add <code>sitemap.ts</code> + <code>robots.ts</code> + an OG image; preload the hero poster.</p>
+      </li>
+      <li>
+        <h3>Pay down the big-file debt <span class="pill pill-medium">MED · ongoing</span></h3>
+        <p>Split <code>library.js</code>/<code>output-tab.js</code>/<code>background.js</code> along their seams (export builders, session patcher, render vs. state) as growth demands. Promote <code>.verify/drive.mjs</code> to enforced E2E.</p>
+      </li>
+    </ol>
+  </section>
+
+  <footer>
+    <p><b>Methodology.</b> Four specialist passes run in parallel — security, code &amp; architecture, tests &amp; accessibility, and website — over the v3.0.0 extension (~18.8k LoC) and the Next.js site, by static analysis of the real source. Findings were reconciled, de-duplicated across passes, and adversarially verified (the CI-red claim was corrected from "missing script" to "time-flaky test" against live run history). Severity: <b style="color:var(--bad)">CRITICAL</b> = data-loss/exploit · <b style="color:var(--warm)">HIGH</b> = should fix before sustained growth · <b style="color:var(--accent-3)">MEDIUM</b> = maintainability/correctness · <b>LOW</b> = polish.</p>
+    <p style="margin-top:12px;">RepoLens v3.0.0 · audit generated 2026-06-15 · 🔭</p>
+  </footer>
+
+</div>
+</body>
+</html>

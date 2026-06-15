@@ -7,3 +7,7 @@ coverage/
 
 # superpowers skill state
 .superpowers/
+
+# playwright/chrome-devtools MCP scratch output
+.playwright-mcp/
+*-screenshot.png

@@ -78,7 +78,7 @@ export function FeatureBento() {
   return (
     <section className="section feature-section reveal" aria-labelledby="features-heading">
       <div className="container">
-        <span className="eyebrow">What it does</span>
+        <span className="eyebrow">The case file</span>
         <h2 id="features-heading" className="section-title">
           A research tool, not a bookmark folder.
         </h2>

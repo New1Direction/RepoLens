@@ -348,11 +348,9 @@
   max-width: 60ch;
   font-size: 1.02rem;
 }
+/* No gradient text (an AI-template tell) — the key word just goes amber ink. */
 .site-root .grad-text {
-  background: var(--grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent);
 }
 
 /* ── Vee mascot (token-aware SVG; expression = class swap) ────────────── */

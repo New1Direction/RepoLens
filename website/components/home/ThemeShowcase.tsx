@@ -1,35 +1,27 @@
 import { Vee, type VeeState } from '@/components/site/Vee';
-import { PaletteSwatches } from '@/components/site/PaletteSwatches';
 
 const EXPRESSIONS: { state: VeeState; label: string }[] = [
-  { state: 'resting', label: 'Resting' },
-  { state: 'scanning', label: 'Scanning' },
+  { state: 'resting', label: 'On the case' },
+  { state: 'scanning', label: 'Reading' },
   { state: 'thinking', label: 'Deep dive' },
-  { state: 'strong', label: 'Strong' },
-  { state: 'risky', label: 'Risky' },
-  { state: 'empty', label: 'Empty' },
+  { state: 'strong', label: 'Cleared' },
+  { state: 'risky', label: 'Suspicious' },
+  { state: 'empty', label: 'Off duty' },
 ];
 
 export function ThemeShowcase() {
   return (
     <section className="section showcase-section reveal" aria-labelledby="showcase-heading">
       <div className="container">
-        <span className="eyebrow">Make it yours</span>
-        <h2 id="showcase-heading" className="section-title">
-          Vee <span className="grad-text">speaks every theme.</span>
-        </h2>
+        <span className="eyebrow">The detective</span>
+        <h2 id="showcase-heading" className="section-title">Vee reads every case.</h2>
         <p className="section-note">
-          One token-aware lens, thirteen themes, one accent swap away. Try a palette — the whole
-          page and the mascot re-skin live. Every expression maps to a real scan moment, and all of
-          it folds to a static glyph under reduced-motion.
+          The lens mascot reacts to what it finds — wide-open on a clean repo, narrowed and
+          skeptical on a risky one. Every expression maps to a real scan moment, and all of it
+          folds to a static glyph under reduced-motion. Works the day shift or the night stakeout.
         </p>
 
         <div className="showcase-panel">
-          <div className="showcase-controls">
-            <span className="showcase-controls-label">Accent</span>
-            <PaletteSwatches />
-          </div>
-
           <div className="expression-strip">
             {EXPRESSIONS.map((e) => (
               <div className="expression" key={e.state}>
