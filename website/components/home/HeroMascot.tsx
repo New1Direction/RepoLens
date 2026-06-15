@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Static assets live in public/ and are NOT auto-prefixed with the GitHub
 // Pages basePath the way next/link is — so we prefix the <video>/<img> src by hand.
@@ -15,18 +15,21 @@ const CAPTIONS = [
 const ALT = 'Vee, the RepoLens mascot, peering through a lens';
 
 /**
- * The hero mascot: an autoplaying, muted, looping clip of Vee in a framed
- * stage. Under reduced-motion we show the poster frame instead — no autoplay,
- * no loop — and the caption stops rotating.
+ * The hero mascot: an autoplaying, muted clip of Vee in a framed stage. The clip
+ * is a boomerang (forward → reversed) so it loops with no seam, eased slightly
+ * for a smoother feel. Under reduced-motion we show the poster frame instead —
+ * no autoplay, no loop — and the caption stops rotating.
  */
 export function HeroMascot() {
   const [reduced, setReduced] = useState(false);
   const [i, setI] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setReduced(reduce);
     if (reduce) return;
+    if (videoRef.current) videoRef.current.playbackRate = 0.85;
     const id = setInterval(() => setI((n) => (n + 1) % CAPTIONS.length), 3400);
     return () => clearInterval(id);
   }, []);
@@ -39,6 +42,7 @@ export function HeroMascot() {
           <img src={`${BASE}/mascot-poster.jpg`} alt={ALT} width={230} height={270} />
         ) : (
           <video
+            ref={videoRef}
             className="hero-mascot-vid"
             autoPlay
             muted
@@ -49,7 +53,7 @@ export function HeroMascot() {
             width={230}
             height={270}
           >
-            <source src={`${BASE}/mascot.mp4`} type="video/mp4" />
+            <source src={`${BASE}/mascot-loop.mp4`} type="video/mp4" />
           </video>
         )}
       </div>
