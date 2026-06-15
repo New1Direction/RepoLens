@@ -16,6 +16,7 @@ import { initTheme } from './theme.js';
 import { veeSvg } from './mascot.js';
 import { initPalette } from './palette.js';
 import { loadRubric, saveRubric, saveEval, clearEval, listEvals, computeScore, DEFAULT_RUBRIC } from './evaluations.js';
+import { applyFilters } from './library-filters.js';
 
 // Honour the user's chosen theme on this standalone page (sets <html data-theme>).
 initTheme();
@@ -177,62 +178,7 @@ function card(r) {
 function render() {
   jkIdx = -1;
   const grid = document.getElementById('grid');
-  let rows = sortRows(filterRows(allRows, state), state.sort);
-  // 'decided' sort uses decisionMap which lives here, not in library-data.
-  if (state.sort === 'decided') {
-    rows = [...rows].sort((a, b) => {
-      const ta = Date.parse(decisionMap.get(a.repoId)?.savedAt) || 0;
-      const tb = Date.parse(decisionMap.get(b.repoId)?.savedAt) || 0;
-      return tb - ta || a.name.localeCompare(b.name);
-    });
-  }
-  if (state.sort === 'delta') {
-    // Repos with a fitDelta float to the top; among those, improved before regressed.
-    const FIT_ORDER = ['strong', 'solid', 'care', 'risky'];
-    rows = [...rows].sort((a, b) => {
-      const ad = a.fitDelta, bd = b.fitDelta;
-      if (ad && !bd) return -1;
-      if (!ad && bd) return 1;
-      if (ad && bd) {
-        const aImp = FIT_ORDER.indexOf(ad.to) < FIT_ORDER.indexOf(ad.from);
-        const bImp = FIT_ORDER.indexOf(bd.to) < FIT_ORDER.indexOf(bd.from);
-        if (aImp !== bImp) return aImp ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
-    });
-  }
-  if (state.sort === 'eval') {
-    rows = [...rows].sort((a, b) => {
-      const sa = computeScore(evalMap.get(a.repoId) ?? null, rubric) ?? -1;
-      const sb = computeScore(evalMap.get(b.repoId) ?? null, rubric) ?? -1;
-      return sb - sa || a.name.localeCompare(b.name);
-    });
-  }
-  // Collection filter is applied here (not in the pure filterRows) so library-data
-  // stays unaware of collections — the membership lives only in this module.
-  if (state.collection) {
-    const active = collections.find((c) => c.id === state.collection);
-    const ids = new Set(active ? active.repoIds : []);
-    rows = rows.filter((r) => ids.has(r.repoId));
-  }
-  // Decision filter: same pattern — decisionMap lives here, not in library-data.
-  // Special sentinel 'undecided' shows repos without any saved decision.
-  if (state.decision === 'undecided') {
-    rows = rows.filter((r) => !decisionMap.has(r.repoId));
-  } else if (state.decision) {
-    rows = rows.filter((r) => decisionMap.get(r.repoId)?.decision === state.decision);
-  }
-  if (state.lang) {
-    const lq = state.lang.toLowerCase();
-    rows = rows.filter((r) => (r.language || r.languages?.[0]?.name || '').toLowerCase() === lq);
-  }
-  // NL filter: when active, restrict to the AI-ranked ID list (preserving AI order).
-  if (nlFilter?.ids?.length) {
-    const idOrder = new Map(nlFilter.ids.map((id, i) => [id, i]));
-    rows = rows.filter((r) => idOrder.has(r.repoId)).sort((a, b) => idOrder.get(a.repoId) - idOrder.get(b.repoId));
-  } else if (nlFilter && !nlFilter.ids?.length && !nlFilter.error) {
-    rows = []; // AI ran but found nothing
-  }
+  const rows = applyFilters(allRows, state, { decisionMap, evalMap, rubric, collections, nlFilter });
   document.getElementById('count').textContent =
     rows.length === allRows.length ? `${allRows.length} repos` : `${rows.length} of ${allRows.length}`;
   const pinnedRows = rows.filter((r) => pinned.has(r.repoId));
@@ -1832,56 +1778,7 @@ async function recommendFromLibrary(resultsEl) {
 }
 
 function getVisibleRows() {
-  let rows = sortRows(filterRows(allRows, state), state.sort);
-  if (state.sort === 'decided') {
-    rows = [...rows].sort((a, b) => {
-      const ta = Date.parse(decisionMap.get(a.repoId)?.savedAt) || 0;
-      const tb = Date.parse(decisionMap.get(b.repoId)?.savedAt) || 0;
-      return tb - ta || a.name.localeCompare(b.name);
-    });
-  }
-  if (state.sort === 'delta') {
-    const FIT_ORDER = ['strong', 'solid', 'care', 'risky'];
-    rows = [...rows].sort((a, b) => {
-      const ad = a.fitDelta, bd = b.fitDelta;
-      if (ad && !bd) return -1;
-      if (!ad && bd) return 1;
-      if (ad && bd) {
-        const aImp = FIT_ORDER.indexOf(ad.to) < FIT_ORDER.indexOf(ad.from);
-        const bImp = FIT_ORDER.indexOf(bd.to) < FIT_ORDER.indexOf(bd.from);
-        if (aImp !== bImp) return aImp ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
-    });
-  }
-  if (state.sort === 'eval') {
-    rows = [...rows].sort((a, b) => {
-      const sa = computeScore(evalMap.get(a.repoId) ?? null, rubric) ?? -1;
-      const sb = computeScore(evalMap.get(b.repoId) ?? null, rubric) ?? -1;
-      return sb - sa || a.name.localeCompare(b.name);
-    });
-  }
-  if (state.collection) {
-    const active = collections.find((c) => c.id === state.collection);
-    const ids = new Set(active ? active.repoIds : []);
-    rows = rows.filter((r) => ids.has(r.repoId));
-  }
-  if (state.decision === 'undecided') {
-    rows = rows.filter((r) => !decisionMap.has(r.repoId));
-  } else if (state.decision) {
-    rows = rows.filter((r) => decisionMap.get(r.repoId)?.decision === state.decision);
-  }
-  if (state.lang) {
-    const lq = state.lang.toLowerCase();
-    rows = rows.filter((r) => (r.language || r.languages?.[0]?.name || '').toLowerCase() === lq);
-  }
-  if (nlFilter?.ids?.length) {
-    const idSet = new Set(nlFilter.ids);
-    rows = rows.filter((r) => idSet.has(r.repoId));
-  } else if (nlFilter && !nlFilter.ids?.length && !nlFilter.error) {
-    rows = [];
-  }
-  return rows;
+  return applyFilters(allRows, state, { decisionMap, evalMap, rubric, collections, nlFilter });
 }
 
 function showQuickWins() {
