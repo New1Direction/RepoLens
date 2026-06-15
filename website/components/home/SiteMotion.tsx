@@ -113,6 +113,33 @@ export function SiteMotion() {
 
         // Recompute trigger positions once the display font has settled.
         ScrollTrigger.refresh();
+
+        // 5) Magnetic primary CTAs — they pull toward the cursor. Pointer
+        // devices only; quickTo runs off the React render cycle.
+        const magnetCleanups: Array<() => void> = [];
+        if (window.matchMedia('(pointer: fine)').matches) {
+          gsap.utils.toArray<HTMLElement>('.btn-primary').forEach((btn) => {
+            const xTo = gsap.quickTo(btn, 'x', { duration: 0.5, ease: 'power3' });
+            const yTo = gsap.quickTo(btn, 'y', { duration: 0.5, ease: 'power3' });
+            const onMove = (e: PointerEvent) => {
+              const r = btn.getBoundingClientRect();
+              xTo((e.clientX - (r.left + r.width / 2)) * 0.35);
+              yTo((e.clientY - (r.top + r.height / 2)) * 0.5);
+            };
+            const onLeave = () => {
+              xTo(0);
+              yTo(0);
+            };
+            btn.addEventListener('pointermove', onMove);
+            btn.addEventListener('pointerleave', onLeave);
+            magnetCleanups.push(() => {
+              btn.removeEventListener('pointermove', onMove);
+              btn.removeEventListener('pointerleave', onLeave);
+            });
+          });
+        }
+
+        return () => magnetCleanups.forEach((fn) => fn());
       });
 
       cleanup = () => mm.revert();
