@@ -29,6 +29,9 @@ function VeeDisc() {
     crossOrigin: 'anonymous',
   });
   tex.colorSpace = THREE.SRGBColorSpace;
+  // Ease the playback so the loop reads gentler and more continuous.
+  const video = tex.image as HTMLVideoElement | undefined;
+  if (video) video.playbackRate = 0.8;
   return (
     <mesh position={[0, 0.02, -0.55]}>
       <circleGeometry args={[1.02, 64]} />
@@ -41,33 +44,42 @@ function VeeDisc() {
  *  idles with a slow drift. */
 function Lens() {
   const group = useRef<THREE.Group>(null);
+  const hovered = useRef(false);
   useFrame((state, delta) => {
     const g = group.current;
     if (!g) return;
-    const t = state.clock.elapsedTime;
-    // cursor tilt + a slow idle sway
-    const targetY = state.pointer.x * 0.5 + Math.sin(t * 0.35) * 0.12;
-    const targetX = -state.pointer.y * 0.4 + Math.cos(t * 0.28) * 0.08;
-    const k = 1 - Math.pow(0.0015, delta); // frame-rate-independent damping
+    // The glass rests perfectly still until hovered; then it tilts toward the
+    // cursor and eases back to rest on leave. No idle motion.
+    const targetY = hovered.current ? state.pointer.x * 0.5 : 0;
+    const targetX = hovered.current ? -state.pointer.y * 0.4 : 0;
+    const k = 1 - Math.pow(0.0016, delta); // frame-rate-independent damping
     g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, targetY, k);
     g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, targetX, k);
-    g.position.y = Math.sin(t * 0.6) * 0.04;
   });
 
   return (
-    <group ref={group}>
-      {/* the lens: a flattened sphere → a thick magnifying disc */}
+    <group
+      ref={group}
+      onPointerOver={() => {
+        hovered.current = true;
+      }}
+      onPointerOut={() => {
+        hovered.current = false;
+      }}
+    >
+      {/* the lens: a flattened sphere → a thick magnifying disc. Near-clear glass
+          (minimal distortion) so Vee reads almost directly through it. */}
       <mesh scale={[1, 1, 0.42]}>
         <sphereGeometry args={[1.12, 64, 64]} />
         <MeshTransmissionMaterial
           transmission={1}
-          thickness={1.05}
-          roughness={0.03}
-          ior={1.35}
-          chromaticAberration={0.035}
-          anisotropicBlur={0.04}
-          distortion={0.03}
-          distortionScale={0.1}
+          thickness={0.8}
+          roughness={0.02}
+          ior={1.28}
+          chromaticAberration={0.012}
+          anisotropicBlur={0.015}
+          distortion={0}
+          distortionScale={0}
           temporalDistortion={0}
           samples={6}
           resolution={512}
