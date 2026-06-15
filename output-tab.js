@@ -288,6 +288,7 @@ async function init() {
       not_found: 'The model name is unrecognised. Open Settings and pick a valid model from the dropdown.',
       network: 'Can\'t reach the provider. Check your internet connection, then retry.',
       server: 'The provider is temporarily down. Retry in a few seconds.',
+      timeout: 'The provider took too long. Retry, or pick a faster model/provider in Settings.',
     };
     const hint = HINTS[kind];
     let hintEl = document.getElementById('error-hint');

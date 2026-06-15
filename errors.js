@@ -12,6 +12,9 @@ const KIND_META = {
   rate_limit:  { retryable: true,  fixable: false, priority: 2 },
   server:      { retryable: true,  fixable: false, priority: 1 },
   network:     { retryable: true,  fixable: false, priority: 1 },
+  // A client-side request timeout: NOT retryable, so the attempt plan falls
+  // straight to the next provider rather than re-hammering a stalled one.
+  timeout:     { retryable: false, fixable: false, priority: 1 },
   unknown:     { retryable: false, fixable: false, priority: 0 },
 };
 
@@ -37,6 +40,7 @@ function humanize(kind, provider, fallback) {
     case 'rate_limit': return `${who} is rate-limited — wait a moment, or route this part to another provider.`;
     case 'not_found': return `${who} didn’t recognize that model — pick a valid model in Settings.`;
     case 'server': return `${who} is temporarily unavailable — retried and still failing. Try again shortly.`;
+    case 'timeout': return `${who} took too long to respond. Try again, or route this part to a faster provider in Settings.`;
     case 'network': return `Couldn’t reach ${provider || 'the provider'} — check your connection and retry.`;
     case 'bad_request': return fallback || `${who} rejected the request as malformed.`;
     default: return fallback || 'Something went wrong with the AI request.';
@@ -61,6 +65,7 @@ export function categorizeError(err, provider = '') {
   else if (status === 404 || /not found|unknown model|no such model|does not exist/i.test(low)) kind = 'not_found';
   else if (status >= 500 || /server error|unavailable|bad gateway|gateway timeout|overloaded/i.test(low)) kind = 'server';
   else if (status === 400 || /bad request|invalid request/i.test(low)) kind = 'bad_request';
+  else if (/timed out after \d+\s*s\b/i.test(low)) kind = 'timeout';
   else if (/network|failed to fetch|fetch failed|timeout|timed out|connection refused/i.test(low)) kind = 'network';
 
   const meta = KIND_META[kind];

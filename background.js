@@ -1260,6 +1260,24 @@ function callCompat(provider, model, keys, prompt) {
   });
 }
 
+// Every provider request runs under a hard timeout. Without it a stalled connection
+// hangs the (serialized) scan indefinitely — until the output tab's own 90s deadline
+// fires with a generic "Analysis timed out". This aborts at the source, surfaces an
+// actionable Retry, and lets the attempt plan fall through to the next provider.
+const AI_FETCH_TIMEOUT_MS = 60_000;
+async function fetchWithTimeout(url, opts = {}, label = 'Provider', ms = AI_FETCH_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error(`${label} timed out after ${Math.round(ms / 1000)}s`);
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // OpenAI-compatible chat completion. `key` may be empty for keyless local servers (Ollama).
 // headerStyle 'azure' sends `api-key: <key>` (Azure OpenAI); otherwise `Authorization: Bearer`.
 async function callOpenAICompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096, headerStyle = 'bearer' }) {
@@ -1268,11 +1286,11 @@ async function callOpenAICompatible({ endpoint, key, model, prompt, label = 'Pro
     if (headerStyle === 'azure') headers['api-key'] = key;
     else headers['Authorization'] = `Bearer ${key}`;
   }
-  const res = await fetch(endpoint, {
+  const res = await fetchWithTimeout(endpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify(openaiBody(model, prompt, maxTokens)),
-  });
+  }, label);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? err.message ?? `${label} API error ${res.status}`);
@@ -1313,16 +1331,16 @@ async function mintAndStoreOpenAIKey() {
 
 // Bare OpenAI chat request returning the raw Response, so callers can branch on 401.
 function openaiChat(key, model, prompt) {
-  return fetch('https://api.openai.com/v1/chat/completions', {
+  return fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(openaiBody(model, prompt, 4096)),
-  });
+  }, 'OpenAI');
 }
 
 // Anthropic-compatible Messages API (x-api-key + anthropic-version).
 async function callAnthropicCompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096 }) {
-  const res = await fetch(endpoint, {
+  const res = await fetchWithTimeout(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1331,7 +1349,7 @@ async function callAnthropicCompatible({ endpoint, key, model, prompt, label = '
       'x-api-key': key,
     },
     body: JSON.stringify(anthropicBody(model, prompt, maxTokens)),
-  });
+  }, label);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? err.message ?? `${label} API error ${res.status}`);
@@ -1407,7 +1425,7 @@ async function callAnthropic(model = 'claude-sonnet-4-6', prompt) {
   const { anthropicKey } = await chrome.storage.local.get('anthropicKey');
   if (!anthropicKey) throw new Error('No Anthropic API key — add one in Settings');
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'anthropic-version': '2023-06-01',
@@ -1420,7 +1438,7 @@ async function callAnthropic(model = 'claude-sonnet-4-6', prompt) {
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }]
     })
-  });
+  }, 'Anthropic');
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? `Anthropic API error ${res.status}`);
@@ -1433,14 +1451,14 @@ async function callAnthropic(model = 'claude-sonnet-4-6', prompt) {
 
 async function callGemini(key, model = 'gemini-2.5-flash', prompt) {
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 }
     })
-  });
+  }, 'Gemini');
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? `Gemini API error ${res.status}`);
@@ -1466,11 +1484,11 @@ async function callNous(key, model = 'stepfun/step-3.7-flash', prompt) {
   });
 
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch('https://inference-api.nousresearch.com/v1/chat/completions', {
+    const res = await fetchWithTimeout('https://inference-api.nousresearch.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body,
-    });
+    }, 'Nous');
 
     // Rate-limited / transient — back off and retry (honor Retry-After), up to 3 times.
     if ((res.status === 429 || res.status === 503) && attempt < 3) {
@@ -1498,7 +1516,7 @@ async function callNous(key, model = 'stepfun/step-3.7-flash', prompt) {
 }
 
 async function callOpenRouter(key, model = 'x-ai/grok-4.3', prompt) {
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1506,7 +1524,7 @@ async function callOpenRouter(key, model = 'x-ai/grok-4.3', prompt) {
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }]
     })
-  });
+  }, 'OpenRouter');
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? `OpenRouter API error ${res.status}`);
@@ -1546,7 +1564,7 @@ async function callXAI(model = 'grok-4.3', prompt) {
       reqHeaders['x-grok-model-override'] = model || 'grok-4.3';
       reqHeaders['user-agent'] = 'xai-grok-cli';
     }
-    const res = await fetch(endpoint, { method: 'POST', headers: reqHeaders, body });
+    const res = await fetchWithTimeout(endpoint, { method: 'POST', headers: reqHeaders, body }, 'xAI');
     if (res.ok) {
       const data = await res.json();
       const text = data.choices?.[0]?.message?.content;

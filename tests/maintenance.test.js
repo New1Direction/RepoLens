@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { bandFromSignals, daysSincePush, ciSignals, buildMaintenancePrompt, parseMaintenance, MAINT_BANDS, BUS_FACTORS } from '../maintenance.js';
 
 const NOW = new Date('2026-06-13T00:00:00Z').getTime();
 const daysAgo = (n) => new Date(NOW - n * 86400000).toISOString();
+
+// bandFromSignals/daysSincePush read the real Date.now(); pin it to NOW so the
+// day-based assertions stay deterministic regardless of when the suite runs.
+beforeAll(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-06-13T00:00:00Z')); });
+afterAll(() => { vi.useRealTimers(); });
 
 const signals = {
   pushedAt: daysAgo(45),

@@ -22,6 +22,12 @@ describe('categorizeError', () => {
     expect(categorizeError('Failed to fetch').kind).toBe('network');
     expect(categorizeError('overloaded').retryable).toBe(true);
   });
+  it('classifies a client request timeout as a non-retryable timeout (falls to next provider)', () => {
+    const r = categorizeError(new Error('Anthropic timed out after 60s'), 'Anthropic');
+    expect(r.kind).toBe('timeout');
+    expect(r.retryable).toBe(false); // don't re-hammer a stalled provider
+    expect(r.userMessage).toMatch(/took too long/i);
+  });
   it('classifies an unknown model as a fixable not_found', () => {
     const r = categorizeError(new Error('model claude-x does not exist'), 'Anthropic');
     expect(r.kind).toBe('not_found');
