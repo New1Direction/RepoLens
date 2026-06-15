@@ -9,7 +9,7 @@ export function VerdictDemo() {
     <section className="section verdict-demo reveal" aria-labelledby="verdict-heading">
       <div className="container vd-grid">
         <div className="vd-copy">
-          <span className="eyebrow">The output</span>
+          <span className="eyebrow">The verdict</span>
           <h2 id="verdict-heading" className="section-title">
             It opens with the <span className="grad-text">verdict</span>, not the pitch.
           </h2>

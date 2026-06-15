@@ -4,151 +4,141 @@
 @source '../app';
 @source '../components';
 
-/* ────────────────────────────────────────────────────────────────────────
-   RepoLens brand tokens.
-   Two themes drive everything: latte (:root, light) and midnight (.dark).
-   next-themes (wired by fumadocs RootProvider, `class` strategy) flips .dark,
-   so both the marketing pages and the docs re-skin from a single toggle.
-   Accent palettes layer on top via [data-palette] — accent ramp only.
+/* ════════════════════════════════════════════════════════════════════════
+   "The Case File" — a detective/inspector identity for RepoLens.
+   Leads LIGHT (warm manila + ink), with an amber/brass lens-glint accent and a
+   detective red for risk. Dark survives as a warm "night stakeout" (.dark), not
+   a cold terminal. next-themes flips .dark; tokens drive marketing + docs.
    ──────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* type + motion (theme-independent) */
-  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
-  --sans: "SF Pro Display", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* type + motion */
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* --font-display is supplied by next/font (Fraunces); falls back to a serif. */
+  --serif-fallback: "Fraunces", "Iowan Old Style", Georgia, "Times New Roman", serif;
   --dur-fast: 120ms;
   --dur: 200ms;
   --dur-slow: 320ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* the stamp's heavy "slam" */
+  --ease-stamp: cubic-bezier(0.5, 1.8, 0.4, 0.95);
 
-  /* Inspector accent ramp — royal blue → cyan, tied to the mascot.
-     [data-palette] overrides these; nothing else should redefine them. */
-  --accent: #3b82f6;
-  --accent-2: #2563eb;
-  --accent-3: #38bdf8;
-  --grad: linear-gradient(120deg, #60a5fa 0%, #3b82f6 55%, #22d3ee 120%);
-  --grad-soft: linear-gradient(120deg, #3b82f6, #22d3ee);
-  --accent-glow: rgba(59, 130, 246, 0.4);
-  --accent-weak: rgba(59, 130, 246, 0.12);
-  --accent-line: rgba(59, 130, 246, 0.3);
+  /* Amber/brass lens-glint accent + detective red. One ramp tuned for paper;
+     .dark brightens it for the night-stakeout surfaces. */
+  --accent: #9e530e;
+  --accent-2: #934a0c;
+  --accent-3: #d9822b;
+  --grad: linear-gradient(120deg, #d9822b 0%, #9e530e 60%, #934a0c 120%);
+  --grad-soft: linear-gradient(120deg, #d9822b, #9e530e);
+  --accent-glow: rgba(179, 94, 16, 0.35);
+  --accent-weak: rgba(179, 94, 16, 0.1);
+  --accent-line: rgba(179, 94, 16, 0.28);
 
-  /* Warm signature — the lens rim. Complementary to the blue; used sparingly
-     (the primary CTA, select highlights, the verdict tab underline). */
-  --warm: #f59e0b;
-  --warm-2: #fb923c;
+  /* warm = the amber CTA; red = the RISKY stamp / red flags */
+  --warm: #c2691c;
+  --warm-2: #d9822b;
   --warm-ink: #2a1605;
-  --warm-glow: rgba(245, 158, 11, 0.5);
-  --warm-weak: rgba(245, 158, 11, 0.14);
-  --warm-line: rgba(245, 158, 11, 0.36);
+  --warm-glow: rgba(194, 105, 28, 0.4);
+  --warm-weak: rgba(194, 105, 28, 0.12);
+  --warm-line: rgba(194, 105, 28, 0.34);
+  --red: #c0392b;
+  --red-weak: rgba(192, 57, 43, 0.12);
 
-  /* latte — warm paper, light */
-  --bg: #f3f1ec;
-  --bg-2: #eae6dd;
-  --surface: #ffffff;
-  --surface-2: #faf8f3;
-  --border: #e4ded1;
-  --border-2: #d3ccba;
-  --text: #34322c;
-  --text-strong: #1a1813;
-  --sub: #5f5a4d;
-  --muted: #857f6d;
-  --faint: #aaa392;
-  --ok: #0f9d6a;
-  --info: #0284c7;
-  --warn: #b45309;
-  --bad: #dc2647;
-  --shadow-lg: 0 30px 80px -40px rgba(40, 34, 20, 0.28);
-  --shadow-md: 0 18px 40px -24px rgba(40, 34, 20, 0.22);
-  --starfield-opacity: 0;
+  /* Case File — warm manila paper, sepia ink */
+  --bg: #f4ead4;
+  --bg-2: #ecdfc2;
+  --surface: #fbf5e7;
+  --surface-2: #f5ecd6;
+  --border: #ddccab;
+  --border-2: #c8b285;
+  --text: #2a2114;
+  --text-strong: #17110a;
+  --sub: #5d5034;
+  --muted: #756544;
+  --faint: #a89571;
+  --ok: #2c7631;
+  --info: #1d6fa3;
+  --warn: #b4690a;
+  --bad: #c0392b;
+  --shadow-lg: 0 26px 70px -34px rgba(60, 42, 16, 0.38);
+  --shadow-md: 0 16px 38px -22px rgba(60, 42, 16, 0.3);
+  --paper-grain: 0.5;
 
-  /* fumadocs remap → latte */
-  --color-fd-background: #f3f1ec;
-  --color-fd-foreground: #34322c;
-  --color-fd-muted: #eae6dd;
-  --color-fd-muted-foreground: #6f6a5b;
-  --color-fd-popover: #ffffff;
-  --color-fd-popover-foreground: #1a1813;
-  --color-fd-card: #faf8f3;
-  --color-fd-card-foreground: #1a1813;
-  --color-fd-border: #e2ddd1;
-  --color-fd-primary: #2563eb;
-  --color-fd-primary-foreground: #ffffff;
-  --color-fd-secondary: #eee9df;
-  --color-fd-secondary-foreground: #34322c;
-  --color-fd-accent: #ece7dc;
-  --color-fd-accent-foreground: #1a1813;
-  --color-fd-ring: #3b82f6;
+  /* fumadocs remap → Case File light */
+  --color-fd-background: #f4ead4;
+  --color-fd-foreground: #2a2114;
+  --color-fd-muted: #ecdfc2;
+  --color-fd-muted-foreground: #6a5c3d;
+  --color-fd-popover: #fbf5e7;
+  --color-fd-popover-foreground: #17110a;
+  --color-fd-card: #fbf5e7;
+  --color-fd-card-foreground: #17110a;
+  --color-fd-border: #ddccab;
+  --color-fd-primary: #9e530e;
+  --color-fd-primary-foreground: #fbf5e7;
+  --color-fd-secondary: #efe3ca;
+  --color-fd-secondary-foreground: #2a2114;
+  --color-fd-accent: #ecdfc2;
+  --color-fd-accent-foreground: #17110a;
+  --color-fd-ring: #9e530e;
 }
 
 .dark {
-  /* midnight — blue-black observatory, dark */
-  --bg: #0a0e1a;
-  --bg-2: #0c1220;
-  --surface: #111a2e;
-  --surface-2: #16203a;
-  --border: #223149;
-  --border-2: #32486e;
-  --text: #eaeefb;
-  --text-strong: #ffffff;
-  --sub: #9aa6c2;
-  --muted: #6b7794;
-  --faint: #4b5570;
-  --ok: #34d399;
-  --info: #38bdf8;
-  --warn: #fbbf24;
-  --bad: #fb7185;
-  --shadow-lg: 0 30px 80px -40px rgba(0, 0, 0, 0.8);
-  --shadow-md: 0 20px 50px -28px rgba(0, 0, 0, 0.7);
-  --starfield-opacity: 0.5;
+  /* Night Stakeout — warm noir, not a cold terminal */
+  --bg: #1b1610;
+  --bg-2: #221b12;
+  --surface: #2a2116;
+  --surface-2: #32281a;
+  --border: #43361f;
+  --border-2: #5e4b2c;
+  --text: #ece1cd;
+  --text-strong: #fff8ec;
+  --sub: #c3b094;
+  --muted: #9c8a6a;
+  --faint: #6f6045;
 
-  /* fumadocs remap → midnight */
-  --color-fd-background: #0a0e1a;
-  --color-fd-foreground: #eaeefb;
-  --color-fd-muted: #111a2e;
-  --color-fd-muted-foreground: #9aa6c2;
-  --color-fd-popover: #0c1220;
-  --color-fd-popover-foreground: #eaeefb;
-  --color-fd-card: #111a2e;
-  --color-fd-card-foreground: #eaeefb;
-  --color-fd-border: #223149;
-  --color-fd-primary: #60a5fa;
-  --color-fd-primary-foreground: #0a0e1a;
-  --color-fd-secondary: #16203a;
-  --color-fd-secondary-foreground: #eaeefb;
-  --color-fd-accent: #18233c;
-  --color-fd-accent-foreground: #ffffff;
-  --color-fd-ring: #3b82f6;
-}
+  /* brighter amber + red read better on the warm-dark surfaces */
+  --accent: #e0934a;
+  --accent-2: #cf7a2a;
+  --accent-3: #f0aa63;
+  --grad: linear-gradient(120deg, #f0aa63 0%, #e0934a 60%, #cf7a2a 120%);
+  --grad-soft: linear-gradient(120deg, #f0aa63, #e0934a);
+  --accent-glow: rgba(224, 147, 74, 0.45);
+  --accent-weak: rgba(224, 147, 74, 0.14);
+  --accent-line: rgba(224, 147, 74, 0.32);
+  --warm: #e0934a;
+  --warm-2: #f0aa63;
+  --warm-ink: #2a1605;
+  --warm-glow: rgba(224, 147, 74, 0.45);
+  --warm-weak: rgba(224, 147, 74, 0.16);
+  --warm-line: rgba(224, 147, 74, 0.36);
+  --red: #e06a5c;
+  --red-weak: rgba(224, 106, 92, 0.16);
+  --ok: #5cc05f;
+  --info: #56b6e8;
+  --warn: #e0a341;
+  --bad: #e06a5c;
+  --shadow-lg: 0 26px 70px -34px rgba(0, 0, 0, 0.72);
+  --shadow-md: 0 16px 44px -26px rgba(0, 0, 0, 0.66);
+  --paper-grain: 0.7;
 
-/* ── Accent palettes (showcase the theme engine) — accent ramp only ─────── */
-:root[data-palette="terminal"] {
-  --accent: #34d399;
-  --accent-2: #10b981;
-  --accent-3: #6ee7b7;
-  --grad: linear-gradient(120deg, #6ee7b7 0%, #10b981 55%, #059669 120%);
-  --grad-soft: linear-gradient(120deg, #34d399, #10b981);
-  --accent-glow: rgba(16, 185, 129, 0.5);
-  --accent-weak: rgba(16, 185, 129, 0.12);
-  --accent-line: rgba(16, 185, 129, 0.3);
-}
-:root[data-palette="nord"] {
-  --accent: #88c0d0;
-  --accent-2: #5e81ac;
-  --accent-3: #8fbcbb;
-  --grad: linear-gradient(120deg, #8fbcbb 0%, #88c0d0 50%, #5e81ac 120%);
-  --grad-soft: linear-gradient(120deg, #88c0d0, #5e81ac);
-  --accent-glow: rgba(94, 129, 172, 0.5);
-  --accent-weak: rgba(136, 192, 208, 0.14);
-  --accent-line: rgba(136, 192, 208, 0.32);
-}
-:root[data-palette="claude"] {
-  --accent: #d97757;
-  --accent-2: #cc785c;
-  --accent-3: #e8a87c;
-  --grad: linear-gradient(120deg, #e8a87c 0%, #d97757 55%, #c15f3c 120%);
-  --grad-soft: linear-gradient(120deg, #d97757, #c15f3c);
-  --accent-glow: rgba(217, 119, 87, 0.5);
-  --accent-weak: rgba(217, 119, 87, 0.13);
-  --accent-line: rgba(217, 119, 87, 0.3);
+  /* fumadocs remap → night stakeout */
+  --color-fd-background: #1b1610;
+  --color-fd-foreground: #ece1cd;
+  --color-fd-muted: #2a2116;
+  --color-fd-muted-foreground: #c3b094;
+  --color-fd-popover: #221b12;
+  --color-fd-popover-foreground: #ece1cd;
+  --color-fd-card: #2a2116;
+  --color-fd-card-foreground: #ece1cd;
+  --color-fd-border: #43361f;
+  --color-fd-primary: #e0934a;
+  --color-fd-primary-foreground: #1b1610;
+  --color-fd-secondary: #32281a;
+  --color-fd-secondary-foreground: #ece1cd;
+  --color-fd-accent: #322619;
+  --color-fd-accent-foreground: #fff8ec;
+  --color-fd-ring: #e0934a;
 }

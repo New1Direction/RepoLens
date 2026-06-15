@@ -2,15 +2,15 @@
 
 # 🔭 RepoLens
 
-### One click turns any repo into a plain-English briefing.
+### One click opens the case file on any repo.
 
-**What it is · whether it's a good fit · how it's actually built · what it connects to.**
+**The verdict · the evidence · the red flags · how it's actually built — in plain English, before the README's pitch.**
 
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-1a73e8?logo=googlechrome&logoColor=white)
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-420%2B_passing-4ade80)
-![Version](https://img.shields.io/badge/version-1.7.0-7c5cff)
+![Tests](https://img.shields.io/badge/tests-730%2B_passing-2f7d34)
+![Version](https://img.shields.io/badge/version-3.0.0-c2691c)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -32,6 +32,9 @@ A scan opens to a **verdict landing** and fans out into focused tabs:
 | ⚖️ | **Verdict** | Fit call (strong / solid / care / risky), a one-line bottom line, measured facts, and the top things worth noting — first thing you see. |
 | 🧠 | **Deep Dive** | The core concepts → how they build on each other → a plain-English ("explain it like I'm five") walkthrough. Optionally grounded by **measured facts** from the local runner. |
 | 📚 | **Library** | Every repo you've analyzed, as a sortable / filterable triage grid with fit chips, a stats bar, **bulk multi-select delete**, and one-click **Export / Import / Backup**. |
+| 🗂️ | **Triage & decide** | Keyboard-first **Adopt / Trial / Hold / Reject**, a Tech Radar, Boards, fit-delta tracking, notes, and daily **drift alerts** when repos go stale. |
+| ★ | **Evaluate & compare** | Score repos **1–5** against your own rubric, grade docs **A–F**, and put any **2–10** side-by-side in a decision matrix (CSV / Markdown export). |
+| 🔍 | **Discover** | Search GitHub from inside the extension, or get **recommendations** from the repos you've already adopted. |
 | 🕸️ | **Connections** | A walkable map centred on the current repo, showing how it relates to the others you've scanned. |
 | 🤝 | **Synergies** · **Versus** · **Combinator** | Complements, head-to-heads, and fused project ideas — grounded in *your* library. |
 
