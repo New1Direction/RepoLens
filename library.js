@@ -46,6 +46,11 @@ let cacheByRepo = new Map(); // repoId → full cached analysis (instant reopen)
 let decisionMap = new Map(); // repoId → decision payload
 const state = { query: '', sort: 'fit', capability: '', collection: '', decision: '', lang: '', view: 'list' };
 
+// Fit levels best→worst — module-level so cards, the compare modal, and the stats
+// bar share one source. (Was re-declared per-function, leaving the compare modal
+// referencing an out-of-scope FIT_ORDER → runtime ReferenceError.)
+const FIT_ORDER = ['strong', 'solid', 'care', 'risky'];
+
 // NL filter state: when the user types ?query, the AI returns a ranked list of IDs.
 let nlFilter = null; // null | { question, ids: string[], error?: string }
 
@@ -111,7 +116,6 @@ function card(r) {
   const decBadge = dec
     ? `<span class="lc-decision" data-d="${esc(dec.decision)}" title="Decided ${dec.savedAt ? relativeTime(dec.savedAt) : 'some time ago'}">${esc(DECISION_META[dec.decision]?.label || dec.decision)}${dec.savedAt ? `<span class="lc-dec-when"> · ${esc(relativeTime(dec.savedAt))}</span>` : ''}</span>`
     : '';
-  const FIT_ORDER = ['strong', 'solid', 'care', 'risky'];
   const deltaBadge = r.fitDelta
     ? (() => {
         const improved = FIT_ORDER.indexOf(r.fitDelta.to) < FIT_ORDER.indexOf(r.fitDelta.from);
@@ -351,7 +355,6 @@ function showHoverPreview(repoId, cardEl) {
     : '';
   const deltaHtml = row?.fitDelta
     ? (() => {
-        const FIT_ORDER = ['strong', 'solid', 'care', 'risky'];
         const imp = FIT_ORDER.indexOf(row.fitDelta.to) < FIT_ORDER.indexOf(row.fitDelta.from);
         return `<p class="lchc-delta ${imp ? 'up' : 'down'}">${imp ? '↑' : '↓'} fit: ${esc(row.fitDelta.from)} → ${esc(row.fitDelta.to)}</p>`;
       })()
@@ -765,8 +768,8 @@ function renderStats() {
   const stalePill = staleCount
     ? html`<button class="ls-stale" id="refresh-stale" title="Queue stale repos for a fresh scan">↻ ${staleCount} stale</button>`
     : '';
-  const FIT_ORDER = ['strong', 'solid', 'care', 'risky', 'unrated'];
-  const barSegments = FIT_ORDER.filter((lvl) => s.byFit[lvl] > 0)
+  const FIT_ORDER_ALL = ['strong', 'solid', 'care', 'risky', 'unrated'];
+  const barSegments = FIT_ORDER_ALL.filter((lvl) => s.byFit[lvl] > 0)
     .map((lvl) => `<span class="ls-bar-seg ls-bar-${lvl}" style="flex:${s.byFit[lvl]}" title="${s.byFit[lvl]} ${lvl}"></span>`)
     .join('');
   const decCounts = { adopt: 0, trial: 0, hold: 0, reject: 0 };
@@ -792,7 +795,7 @@ function renderStats() {
     <span class="ls-total">${s.total} repo${s.total === 1 ? '' : 's'}</span>
     ${triagePill}
     ${barSegments ? `<span class="ls-bar" title="Fit distribution">${barSegments}</span>` : ''}
-    <span class="ls-pills">${FIT_ORDER.map((lvl) => pill(lvl, s.byFit[lvl]))}</span>
+    <span class="ls-pills">${FIT_ORDER_ALL.map((lvl) => pill(lvl, s.byFit[lvl]))}</span>
     ${s.avgHealth != null ? html`<span class="ls-health">avg health ${s.avgHealth}</span>` : ''}
     ${stalePill}
     ${decSummary}
@@ -1895,7 +1898,7 @@ function showQuickDecision(repoId, anchorEl) {
     { key: 'reject', label: 'Reject', color: '#ef4444' },
   ];
   const veeHint = suggested
-    ? `<button class="qdec-vee" data-d="${suggested}" title="Accept Vee's suggestion"><span class="qdec-vee-ic" aria-hidden="true">✦</span><span class="qdec-vee-tier">${esc(DECISION_META[suggested]?.label || suggested)}</span><span class="qdec-vee-why">${esc(fitLabel)}${health ? ` · ♥ ${health}` : ''}</span></button>`
+    ? `<button class="qdec-vee" data-d="${suggested}" title="Accept Vee's suggestion"><span class="qdec-vee-ic" aria-hidden="true">✦</span><span class="qdec-vee-tier">${esc(DECISION_META[suggested]?.label || suggested)}</span><span class="qdec-vee-why">${esc(fitLabel)}${health ? ` · ♥ ${health}` : ''}</span></button>`
     : '';
   pop.innerHTML = `<p class="qdec-heading">${esc(repoId.replace(/^[^/]+\//, ''))}</p>` +
     veeHint +

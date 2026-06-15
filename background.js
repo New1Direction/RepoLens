@@ -152,7 +152,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   try {
     const points = await scrollPoints({ limit: 2000 });
     const STALE_MS = 14 * 24 * 60 * 60 * 1000;
-    const staleCount = points.filter(p => p.payload?.savedAt && (Date.now() - Date.parse(p.payload.savedAt)) > STALE_MS).length;
+    const staleCount = points.filter(p => p.payload?.saved_at && (Date.now() - Date.parse(p.payload.saved_at)) > STALE_MS).length;
     await chrome.storage.local.set({ repolens_drift: { staleCount, checkedAt: new Date().toISOString() } });
   } catch { /* offline or IDB unavailable */ }
 });
@@ -200,7 +200,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then(() => {
         sendResponse({ ok: true });
         runAnalysis(msg.sessionKey, detected); // fire and forget; tab polls the session
-      });
+      })
+      .catch((err) => sendResponse({ ok: false, error: err?.message || 'Could not start the scan' }));
     return true; // keep the message channel open for the async sendResponse
   }
 
@@ -444,8 +445,6 @@ const _handledOAuthCodes = new Set();
 async function handleOpenAIOAuthCallback(rawUrl, tabId) {
   if (!rawUrl || !isOpenAIOAuthCallbackUrl(rawUrl)) return;
 
-  console.log('[RepoLens OAuth] OpenAI callback detected:', rawUrl.split('?')[0]); // strip ?code=…
-
   let url;
   try {
     url = new URL(rawUrl);
@@ -495,7 +494,6 @@ async function handleOpenAIOAuthCallback(rawUrl, tabId) {
     // Mint a usable API key so scans run through the ordinary OpenAI engine.
     const apiKey = await mintOpenAIApiKey(creds.id_token);
     await chrome.storage.local.set({ openaiKey: apiKey });
-    console.log('[RepoLens OAuth] OpenAI success — signed in via ChatGPT');
     await cleanupFlowMarkers();
     if (tabId) chrome.tabs.remove(tabId).catch(() => {});
   } catch (err) {
@@ -1133,13 +1131,15 @@ async function runCombinator(sessionKey, detected, { mode = 'repo', wildness = 0
     const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
     await setC({ status: 'running', mode, wildness, results: [] });
 
-    const rows = await scrollLibrary();
+    let rows = await scrollLibrary();
     if (mode === 'repo') {
       // Repo-anchored: ensure the current repo (the seed) is represented with its capabilities.
       const seedCaps = (Array.isArray(cur.capabilities) && cur.capabilities.length) ? cur.capabilities : deriveCapabilities(cur);
       const seedRow = { repoId: detected.repoId, name: detected.repoId.split('/').pop() || detected.repoId, capabilities: seedCaps, eli5: cur.eli5 || '' };
-      const existing = rows.find(r => r.repoId === detected.repoId);
-      if (existing) existing.capabilities = seedRow.capabilities; else rows.push(seedRow);
+      // Immutable: rebuild rather than mutate the objects scrollLibrary returned.
+      rows = rows.some(r => r.repoId === detected.repoId)
+        ? rows.map(r => (r.repoId === detected.repoId ? { ...r, capabilities: seedRow.capabilities } : r))
+        : [...rows, seedRow];
     }
 
     // Library/studio mode mines the whole library seed-free; pairs only, to bound the candidate count.
