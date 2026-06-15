@@ -879,6 +879,11 @@
 }
 
 /* ── Final CTA ───────────────────────────────────────────────────────── */
+/* Pull the closing CTA up — the generic section top padding left it floating in
+   a void between the showcase strip and the footer. */
+.site-root .final-cta {
+  padding-top: clamp(36px, 3.5vw, 60px);
+}
 .final-cta-inner {
   text-align: center;
   display: flex;
