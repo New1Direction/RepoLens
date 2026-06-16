@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="72" viewBox="0 0 320 72" role="img" aria-label="RepoLens">
+  <title>RepoLens</title>
+  <!-- Mark: the Vee lens on a dark Mono Ink tile (matches the app icon). -->
+  <g>
+    <rect x="4" y="4" width="64" height="64" rx="15" fill="#0f1115"/>
+    <g transform="translate(36 36) scale(1.0833)">
+      <!-- lens drawn on the 48-grid, centered at (0,0): factor 64/48 ≈ 1.333 baked via scale + grid coords -->
+      <g transform="scale(1.333)">
+        <circle cx="0" cy="0" r="17" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+        <circle cx="0" cy="0" r="9" fill="none" stroke="#3b82f6" stroke-width="3"/>
+        <circle cx="0" cy="0" r="2.4" fill="#e5edff"/>
+      </g>
+    </g>
+  </g>
+  <!-- Wordmark: Space Grotesk with a system fallback, near-black, optical-left of baseline. -->
+  <text x="84" y="47" fill="#0f1115"
+        font-family="'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="34" font-weight="600" letter-spacing="-0.5">Repo<tspan fill="#1d4ed8">Lens</tspan></text>
+</svg>
