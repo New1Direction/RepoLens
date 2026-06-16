@@ -21,9 +21,46 @@ import { veeSvg } from './mascot.js';
 import { initPalette } from './palette.js';
 import { loadRubric, saveRubric, saveEval, clearEval, listEvals, computeScore, DEFAULT_RUBRIC } from './evaluations.js';
 import { applyFilters } from './library-filters.js';
+// Vendored animation libs (local ES modules — never CDN; the MV3 CSP forbids remote scripts).
+import confetti from './vendor/confetti.mjs';
+import { autoAnimate } from './vendor/auto-animate.mjs';
+import { CountUp } from './vendor/countup.mjs';
 
 // Honour the user's chosen theme on this standalone page (sets <html data-theme>).
 initTheme();
+
+// Respect the OS "reduce motion" setting — used to skip count-up / confetti / etc.
+const prefersReducedMotion = () =>
+  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// A restrained confetti burst, fired when a repo is marked "Adopt". Origin is
+// optional (defaults to centre); particle count is deliberately small. No-op
+// under reduced-motion.
+function celebrateAdopt(origin) {
+  if (prefersReducedMotion()) return;
+  try {
+    confetti({
+      particleCount: 36,
+      spread: 52,
+      startVelocity: 28,
+      ticks: 120,
+      scalar: 0.85,
+      origin: origin || { x: 0.5, y: 0.35 },
+      disableForReducedMotion: true,
+    });
+  } catch { /* confetti is decorative — never let it break a decision save */ }
+}
+
+// Translate a DOM element's centre into confetti's normalized {x,y} origin.
+function originFromEl(el) {
+  if (!el || typeof el.getBoundingClientRect !== 'function') return undefined;
+  const r = el.getBoundingClientRect();
+  if (!r.width && !r.height) return undefined;
+  return {
+    x: (r.left + r.width / 2) / window.innerWidth,
+    y: (r.top + r.height / 2) / window.innerHeight,
+  };
+}
 
 const MAX_BACKUP_BYTES = 50 * 1024 * 1024; // refuse absurd import files before parsing
 
@@ -33,6 +70,14 @@ const LANG_COLORS = {
   Swift: '#F05138', Kotlin: '#A97BFF', Shell: '#89e051', HTML: '#e34c26', CSS: '#563d7c', Vue: '#41b883', Dart: '#00B4AB',
 };
 const langColor = (n) => LANG_COLORS[n] || '#64748b';
+
+// Static, code-owned empty-state glyph: a magnifying glass whose outline draws
+// itself in (stroke-dashoffset keyframe in library.html, gated to no-preference).
+// Colour comes from --accent via the .lib-empty-glyph rule (currentColor).
+const EMPTY_GLYPH = `<svg class="lib-empty-glyph" width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
+  <circle class="leg l1" cx="30" cy="30" r="19" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+  <path class="leg l2" d="M44 44 L62 62" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+</svg>`;
 
 // Highlight search terms in card text. Returns HTML with <mark> around matches.
 // Only used for plain text queries (not NL/AI filter). Safe: escapes all content.
@@ -99,8 +144,11 @@ async function togglePin(repoId) {
   render();
 }
 
-function card(r) {
+function card(r, i = 0) {
   const hq = !nlFilter && state.query.length >= 2 ? state.query.toLowerCase() : '';
+  // Staggered reveal: each card enters ~40ms after the previous, capped at ~600ms
+  // so a large library doesn't crawl in. The @keyframes is gated to no-preference.
+  const revealDelay = Math.min(i, 15) * 40;
   const owner = r.repoId.includes('/') ? r.repoId.slice(0, r.repoId.indexOf('/')) : '';
   const dots = r.languages
     .map((l) => `<span class="lc-dot" style="background:${langColor(l.name)}" title="${esc(l.name)}"></span>`)
@@ -136,7 +184,7 @@ function card(r) {
   const evalBadge = evalScore !== null
     ? `<button class="lc-eval-badge" data-act="eval" title="Evaluation: ${evalScore.toFixed(1)}/5 — click to edit">▣ ${evalScore.toFixed(1)}</button>`
     : `<button class="lc-eval-badge lc-eval-empty" data-act="eval" title="Add evaluation scores">▣</button>`;
-  return `<div class="lib-card${sel ? ' is-selected' : ''}${isPinned ? ' is-pinned' : ''}" data-repo="${esc(r.repoId)}" title="${r.hasCache ? 'Open the saved analysis (instant, no AI call)' : 'Open the project page'}">
+  return `<div class="lib-card${sel ? ' is-selected' : ''}${isPinned ? ' is-pinned' : ''}" style="animation-delay:${revealDelay}ms" data-repo="${esc(r.repoId)}" title="${r.hasCache ? 'Open the saved analysis (instant, no AI call)' : 'Open the project page'}">
     <div class="lc-top">
       <input type="checkbox" class="lc-check"${sel ? ' checked' : ''} aria-label="Select ${esc(r.name)} for removal" title="Select for bulk removal">
       <span class="lc-name">${hilite(r.name, hq)}</span>
@@ -300,6 +348,25 @@ function wireGridEvents(grid) {
     clearTimeout(_hoverTimer);
     scheduleHidePreview();
   });
+
+  // Hover spotlight: a single delegated pointermove updates the hovered card's
+  // --mx/--my so its ::before radial-gradient tracks the cursor. Compositor-only
+  // (it just drives a custom property); skipped entirely under reduced-motion.
+  if (!prefersReducedMotion()) {
+    grid.addEventListener('pointermove', (e) => {
+      const c = e.target.closest('.lib-card');
+      if (!c) return;
+      const b = c.getBoundingClientRect();
+      c.style.setProperty('--mx', `${e.clientX - b.left}px`);
+      c.style.setProperty('--my', `${e.clientY - b.top}px`);
+    });
+  }
+
+  // Smoothly reflow the grid when sort/filter changes reorder the cards. The
+  // Radar / Corkboard views hide #grid and render into their own hosts, so this
+  // never fights them. autoAnimate disables itself automatically under
+  // (prefers-reduced-motion: reduce).
+  autoAnimate(grid);
 }
 
 const rowFor = (repoId) => allRows.find((r) => r.repoId === repoId);
@@ -763,6 +830,7 @@ async function bulkDecide(decision) {
   setSelectionMode(false, false);
   renderDecisionFilter();
   render();
+  if (decision === 'adopt') celebrateAdopt(); // one restrained burst for the batch
   setStatus(`Decision set to ${label} for ${ids.length} repo${ids.length === 1 ? '' : 's'}.`);
 }
 
@@ -806,14 +874,16 @@ function renderStats() {
     ? `<span class="ls-triage-pct" title="${totalDecided} of ${s.total} repos triaged">${triagePct}% triaged</span>`
     : '';
   host.innerHTML = String(html`
-    <span class="ls-total">${s.total} repo${s.total === 1 ? '' : 's'}</span>
+    <span class="ls-total"><span class="ls-total-n" data-count="${s.total}">${s.total}</span> repo${s.total === 1 ? '' : 's'}</span>
     ${triagePill}
     ${barSegments ? `<span class="ls-bar" title="Fit distribution">${barSegments}</span>` : ''}
     <span class="ls-pills">${FIT_ORDER_ALL.map((lvl) => pill(lvl, s.byFit[lvl]))}</span>
-    ${s.avgHealth != null ? html`<span class="ls-health">avg health ${s.avgHealth}</span>` : ''}
+    ${s.avgHealth != null ? html`<span class="ls-health">avg health <span class="ls-health-n" data-count="${s.avgHealth}">${s.avgHealth}</span></span>` : ''}
     ${stalePill}
     ${decSummary}
   `);
+  countUpStat(host.querySelector('.ls-total-n'));
+  countUpStat(host.querySelector('.ls-health-n'));
   host.querySelectorAll('[data-filter-dec]').forEach((btn) => {
     btn.addEventListener('click', () => {
       state.decision = btn.dataset.filterDec;
@@ -822,6 +892,18 @@ function renderStats() {
     });
   });
   document.getElementById('refresh-stale')?.addEventListener('click', refreshStale);
+}
+
+// Animate a single stat number from 0 → its value with the vendored CountUp.
+// Under reduced-motion we skip the animation and leave the final value in place.
+function countUpStat(el) {
+  if (!el) return;
+  const target = Number(el.dataset.count);
+  if (!Number.isFinite(target)) return;
+  if (prefersReducedMotion()) { el.textContent = String(target); return; }
+  const cu = new CountUp(el, target, { duration: 0.9, useGrouping: true });
+  if (cu.error) { el.textContent = String(target); return; }
+  cu.start();
 }
 
 function renderNlFilterBanner() {
@@ -1106,15 +1188,33 @@ function renderCaps() {
 
 const RADAR_ICONS = { adopt: '✅', trial: '🔬', hold: '⏸', reject: '🚫' };
 
+// Keep the segmented view switcher in lockstep with state.view. Grid is the
+// "on" segment whenever no overlay view is active (state.view === 'list').
+function syncViewSwitcher() {
+  const map = { 'lib-btn-grid': 'list', 'lib-btn-radar': 'radar', 'lib-btn-corkboard': 'corkboard' };
+  for (const [id, view] of Object.entries(map)) {
+    const b = document.getElementById(id);
+    if (!b) continue;
+    const on = state.view === view;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  }
+}
+
+// Return to the default card grid from any overlay view (Radar / Corkboard).
+function showGridView() {
+  if (state.view === 'radar') toggleRadarView();
+  else if (state.view === 'corkboard') toggleCorkboardView();
+  else syncViewSwitcher(); // already on the grid — just refresh the switcher
+}
+
 function toggleRadarView() {
   state.view = state.view === 'radar' ? 'list' : 'radar';
-  const btn = document.getElementById('lib-btn-radar');
-  btn?.classList.toggle('on', state.view === 'radar');
   document.getElementById('radar-panel')?.classList.toggle('hidden', state.view !== 'radar');
   document.getElementById('grid')?.classList.toggle('hidden', state.view === 'radar');
   // Ensure the Corkboard view is closed when the Radar opens.
   document.getElementById('corkboard-panel')?.classList.add('hidden');
-  document.getElementById('lib-btn-corkboard')?.classList.remove('on');
+  syncViewSwitcher();
   if (state.view === 'radar') renderRadar(); else render();
 }
 
@@ -1194,12 +1294,11 @@ function radarToMarkdown(byDecision) {
 function toggleCorkboardView() {
   state.view = state.view === 'corkboard' ? 'list' : 'corkboard';
   const on = state.view === 'corkboard';
-  document.getElementById('lib-btn-corkboard')?.classList.toggle('on', on);
   document.getElementById('corkboard-panel')?.classList.toggle('hidden', !on);
   document.getElementById('grid')?.classList.toggle('hidden', on);
   // Ensure the Radar view is closed when the Corkboard opens.
   document.getElementById('radar-panel')?.classList.add('hidden');
-  document.getElementById('lib-btn-radar')?.classList.remove('on');
+  syncViewSwitcher();
   if (on) renderCorkboard(); else render();
 }
 
@@ -1984,6 +2083,7 @@ function showQuickDecision(repoId, anchorEl) {
     (current ? `<button class="qdec-btn qdec-clear" data-d="">Clear</button>` : '');
 
   async function pick(d) {
+    const origin = originFromEl(anchorEl);
     pop.remove();
     document.removeEventListener('keydown', onKey, true);
     document.removeEventListener('mousedown', onOutside, true);
@@ -1991,6 +2091,7 @@ function showQuickDecision(repoId, anchorEl) {
       const rec = { repoId, decision: d, savedAt: new Date().toISOString() };
       await saveDecision(rec);
       decisionMap.set(repoId, rec);
+      if (d === 'adopt') celebrateAdopt(origin);
     } else {
       const { clearDecision } = await import('./store.js');
       await clearDecision(repoId);
@@ -2228,16 +2329,19 @@ async function applyVeeSuggestions() {
   if (!undecided.length) { setStatus('All rated repos already have a decision.'); return; }
   const now = new Date().toISOString();
   setStatus(`Applying Vee's suggestions to ${undecided.length} repos…`);
+  let adopted = 0;
   for (const row of undecided) {
     const decision = FIT_SUGGESTION[row.fit.level];
     if (!decision) continue;
     const rec = { repoId: row.repoId, decision, savedAt: now };
     await saveDecision(rec);
     decisionMap.set(row.repoId, rec);
+    if (decision === 'adopt') adopted++;
   }
   renderDecisionFilter();
   renderStats();
   render();
+  if (adopted) celebrateAdopt(); // one restrained burst when Vee adopts anything
   setStatus(`Vee auto-decided ${undecided.length} repo${undecided.length === 1 ? '' : 's'}.`);
 }
 
@@ -2375,6 +2479,7 @@ function initLibraryPalette() {
 
 async function init() {
   document.getElementById('settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
+  document.getElementById('lib-btn-grid')?.addEventListener('click', showGridView);
   document.getElementById('lib-btn-radar')?.addEventListener('click', toggleRadarView);
   document.getElementById('lib-btn-corkboard')?.addEventListener('click', toggleCorkboardView);
   wireToolbar(); // before the empty-state return, so Import works on an empty library
@@ -2447,8 +2552,9 @@ async function init() {
   }
 
   if (!allRows.length) {
-    // veeSvg() is a static, code-owned string — safe for the STATIC-only showEmpty.
-    const vee = mascotOn ? `<div class="vee is-empty" aria-hidden="true" style="margin-bottom:14px">${veeSvg()}</div>` : '';
+    // veeSvg() and EMPTY_GLYPH are static, code-owned strings — safe for the
+    // STATIC-only showEmpty (no user data ever reaches innerHTML here).
+    const vee = mascotOn ? `<div class="vee is-empty" aria-hidden="true" style="margin-bottom:14px">${veeSvg()}</div>` : EMPTY_GLYPH;
     showEmpty(
       `${vee}<h2>No repos yet</h2><p>Open any <b>GitHub / GitLab / npm / PyPI</b> page and click the RepoLens icon —<br>every scan lands here automatically.</p>`
     );
