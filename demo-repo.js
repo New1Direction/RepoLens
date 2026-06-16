@@ -48,3 +48,16 @@ export function demoScene() {
 export function isDemo(repo) {
   return !!(repo && (repo.__demo__ === true || (repo.repoId === DEMO_REPO.repoId && repo.__demo__)));
 }
+
+/**
+ * Tear down the seeded demo (repo row + blueprint scene). Best-effort.
+ * Uses a dynamic import so this fixture module never pulls the IndexedDB/store
+ * layer into its static import graph (it's also imported by pure unit tests).
+ */
+export async function clearDemoEverywhere() {
+  try {
+    const { deleteRepo, deleteScene } = await import('./store.js');
+    await deleteRepo(DEMO_REPO.repoId);
+    await deleteScene(demoScene().id);
+  } catch { /* best-effort teardown */ }
+}

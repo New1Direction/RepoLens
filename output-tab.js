@@ -36,6 +36,9 @@ import { startTour } from './tour-runner.js';
 import { toCanvasSvg, toExcalidraw } from './canvas-export.js';
 import { getScene, saveScene } from './store.js';
 import { snapshotTrend, sparkline } from './snapshots.js';
+import { introStageB, COPY } from './onboarding.js';
+import { startCoachmark } from './coachmark.js';
+import { clearDemoEverywhere } from './demo-repo.js';
 
 // Apply the saved theme ASAP (before render) to minimise flash.
 initTheme();
@@ -269,6 +272,28 @@ async function initOutputPalette(data) {
   });
 }
 
+// Stage B of the Vee intro: if the Library handed off (`onboardingStage:'verdict'`),
+// continue the coachmark over this repo's Verdict + Blueprint, then tear the demo down.
+async function maybeContinueOnboarding(d) {
+  const { onboardingStage } = await chrome.storage.local.get('onboardingStage');
+  if (onboardingStage !== 'verdict') return;
+  await chrome.storage.local.remove('onboardingStage');
+  // Immutable copy before injecting the before-hook on the Blueprint/Canvas step.
+  const steps = introStageB().map((s) => ({ ...s }));
+  // onboarding.js is pure and can't reference show(); inject the tab switch here.
+  // The Blueprint step is the one targeting the Canvas tab ([data-tab="27"]).
+  const blueprintStep = steps.find((s) => s.copyKey === 'blueprint');
+  if (blueprintStep) blueprintStep.before = () => show(27);
+  startCoachmark({
+    steps,
+    copy: COPY,
+    onExit: async () => {
+      await clearDemoEverywhere();
+      await chrome.storage.local.set({ onboardingSeen: true });
+    },
+  });
+}
+
 async function init() {
   mascotOn = await isMascotEnabled();
   if (mascotOn) renderMascot(document.getElementById('loading-vee'), 'scanning');
@@ -329,6 +354,7 @@ async function init() {
 
   lastData = data;
   renderPage(data);
+  await maybeContinueOnboarding(data);
   main.style.display = 'block';
   const fitEmoji = { strong: '✅', solid: '✓', care: '⚠️', risky: '🔴' }[deriveFit(data).level] || '';
   document.title = `${fitEmoji} ${data.repoId} — RepoLens`;
