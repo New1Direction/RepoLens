@@ -17,8 +17,19 @@ describe('toSnapshot', () => {
       fit: 'care',
       stars: 1200,
       flags: ['No tests'], // empty title dropped; titles kept regardless of severity
-      version: null,
     });
+    // B-4: `version` is never populated upstream (the persisted repo payload has no
+    // version field), so the snapshot must not carry an always-null key.
+    expect(snap).not.toHaveProperty('version');
+  });
+
+  it('reads an old snapshot that still carries a version field (backward-compatible)', () => {
+    // snapshotTrend must tolerate legacy snaps that predate dropping the field.
+    const trend = snapshotTrend([
+      { ts: '2026-06-01T00:00:00.000Z', health: 60, fit: 'care', stars: 0, flags: [], version: '1.0.0' },
+      { ts: '2026-06-02T00:00:00.000Z', health: 70, fit: 'care', stars: 0, flags: [] },
+    ]);
+    expect(trend.healthDelta).toBe(10);
   });
   it('derives a strong fit for a healthy, flag-free repo', () => {
     const snap = toSnapshot({ repoId: 'a/b', health: 90, stars: 0, red_flags: [] }, '2026-06-01T00:00:00.000Z');

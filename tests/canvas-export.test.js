@@ -48,6 +48,35 @@ describe('toCanvasSvg', () => {
     // edge starts at the right edge of node a: x = 0 + _w(210), not 0 + NW(132)
     expect(svg).toContain('d="M210,');
   });
+
+  // B-7: bounds used Math.min(...nodes.map(...)) / Math.max(...), which RangeErrors
+  // (call-stack overflow) when spreading a large array as call args. The reduce path
+  // must not throw. 1M nodes is comfortably past the spread-arg ceiling.
+  it('does not throw on a scene with a very large node array', () => {
+    const big = {
+      nodes: Array.from({ length: 1_000_000 }, (_, i) => ({ id: 'n' + i, label: 'N', kind: 'module', x: i, y: i })),
+      edges: [],
+      annotations: [],
+    };
+    expect(() => toCanvasSvg(big)).not.toThrow();
+  });
+
+  it('computes correct bounds for a small scene (reduce matches the old spread)', () => {
+    const s = {
+      nodes: [
+        { id: 'a', label: 'A', kind: 'module', x: 40, y: 40 },
+        { id: 'b', label: 'B', kind: 'module', x: 300, y: 120, _w: 50 },
+      ],
+      edges: [],
+      annotations: [],
+    };
+    // minX = min(0, 40, 300) - 20 = -20 ; minY = min(0, 40, 120) - 20 = -20
+    // maxX = max(40+NW(132), 300+_w(50), 200) + 20 = 350 + 20 = 370
+    // maxY = max(40+NH(44), 120+44, 200) + 60 = 200 + 60 = 260
+    // viewBox = "minX minY (maxX-minX) (maxY-minY)" = "-20 -20 390 280"
+    const svg = toCanvasSvg(s);
+    expect(svg).toContain('viewBox="-20 -20 390 280"');
+  });
 });
 
 describe('toExcalidraw', () => {

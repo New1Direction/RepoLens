@@ -381,10 +381,33 @@ export async function importStores({ repos = [], nodes = [], edges = [], collect
   for (const row of ve) await idbPut('edges', row);
   for (const row of vc) await idbPut('collections', row);
   for (const row of vd) await idbPut('decisions', row);
-  for (const row of vs) await idbPut('snapshots', row);
+  for (const row of vs) await idbPut('snapshots', mode === 'merge' ? await mergeSnapshotRow(row) : row);
   for (const row of vsc) await idbPut('scenes', row);
   return { repos: vr.length, nodes: vn.length, edges: ve.length, collections: vc.length, decisions: vd.length, snapshots: vs.length, scenes: vsc.length };
 }
+
+/**
+ * In merge mode, fold an incoming snapshot row into the local one (same id) instead
+ * of overwriting it — so importing a short backup never wipes a repo's longer local
+ * history. Snaps are unioned by `ts` (incoming wins on tie), sorted oldest→newest,
+ * and re-clamped to SNAPSHOT_CAP. A row with no local counterpart passes through
+ * (still clamped, so a hostile file can't blow the cap).
+ */
+async function mergeSnapshotRow(row) {
+  const local = await idbGet('snapshots', row.id).catch(() => null);
+  const incoming = Array.isArray(row.snaps) ? row.snaps : [];
+  if (!local || !Array.isArray(local.snaps) || !local.snaps.length) {
+    return { ...row, snaps: clampSnaps(incoming) };
+  }
+  const byTs = new Map();
+  for (const s of local.snaps) if (s && s.ts) byTs.set(s.ts, s);
+  for (const s of incoming) if (s && s.ts) byTs.set(s.ts, s); // incoming wins on tie
+  const union = [...byTs.values()].sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
+  return { ...row, snaps: clampSnaps(union) };
+}
+
+/** Keep only the most recent SNAPSHOT_CAP snaps (the list is already sorted ascending). */
+const clampSnaps = (snaps) => (snaps.length > SNAPSHOT_CAP ? snaps.slice(snaps.length - SNAPSHOT_CAP) : snaps);
 
 /** Wipe the whole library (all stores). Backs the "Clear library" action. */
 export async function clearLibrary() {

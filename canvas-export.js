@@ -16,10 +16,25 @@ export function toCanvasSvg(scene) {
   const edges = scene.edges || [];
   const ann = scene.annotations || [];
   const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
-  const minX = Math.min(0, ...nodes.map((n) => num(n.x))) - 20;
-  const minY = Math.min(0, ...nodes.map((n) => num(n.y))) - 20;
-  const maxX = Math.max(...nodes.map((n) => num(n.x) + (num(n._w) || NW)), 200) + 20;
-  const maxY = Math.max(...nodes.map((n) => num(n.y) + NH), 200) + 60;
+  // Fold bounds in one pass instead of spreading the node array into Math.min/max —
+  // spreading thousands+ of args overflows the call stack (RangeError) on big scenes.
+  // Seeds match the old literals: minX/minY start at 0, maxX at 200, maxY at 200.
+  const b = nodes.reduce(
+    (acc, n) => {
+      const x = num(n.x), y = num(n.y);
+      return {
+        minX: Math.min(acc.minX, x),
+        minY: Math.min(acc.minY, y),
+        maxX: Math.max(acc.maxX, x + (num(n._w) || NW)),
+        maxY: Math.max(acc.maxY, y + NH),
+      };
+    },
+    { minX: 0, minY: 0, maxX: 200, maxY: 200 }
+  );
+  const minX = b.minX - 20;
+  const minY = b.minY - 20;
+  const maxX = b.maxX + 20;
+  const maxY = b.maxY + 60;
 
   const edgeSvg = edges.map((e) => {
     const a = pos[e.from], b = pos[e.to];

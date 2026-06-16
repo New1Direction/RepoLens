@@ -215,8 +215,9 @@ function card(r, i = 0) {
       if (!trend) return '';
       const svg = sparkline(trend.series, { metric: 'health', width: 96, height: 22 });
       if (!svg) return '';
+      // A zero delta is treated like absent — no "(+0)" noise; show a delta only when health actually moved.
       const sign = trend.healthDelta > 0 ? '+' : '';
-      const delta = trend.healthDelta != null ? `${sign}${trend.healthDelta}` : '';
+      const delta = trend.healthDelta ? `${sign}${trend.healthDelta}` : '';
       return `<div class="lc-spark fit-${trend.fitTo}">${svg}<span class="lc-spark-cap">${delta ? `<b>${delta}</b> · ` : ''}${trend.count} scans${trend.daysSpan ? ` · ${trend.daysSpan}d` : ''}</span></div>`;
     })()}
     ${tags || boardDots ? `<div class="lc-tags">${tags}${boardDots}</div>` : ''}

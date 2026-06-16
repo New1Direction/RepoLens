@@ -17,7 +17,10 @@ function snapHealth(payload) {
 /**
  * Trim a repo payload to a Snapshot. `ts` is injectable for deterministic tests;
  * it defaults to the payload's saved_at, then now.
- * @returns {{ ts:string, health:number|null, fit:string, stars:number, flags:string[], version:string|null }}
+ * No `version` field: the persisted repo payload never carries one in-app, so it
+ * was always null — omitted rather than stored. Old snaps that still have it read
+ * back fine (snapshotTrend ignores the field).
+ * @returns {{ ts:string, health:number|null, fit:string, stars:number, flags:string[] }}
  */
 export function toSnapshot(payload, ts) {
   const health = snapHealth(payload);
@@ -33,7 +36,6 @@ export function toSnapshot(payload, ts) {
     fit,
     stars: Number(payload && payload.stars) || 0,
     flags: ((payload && payload.red_flags) || []).map((f) => f && f.title).filter(Boolean),
-    version: (payload && payload.version) || null,
   };
 }
 

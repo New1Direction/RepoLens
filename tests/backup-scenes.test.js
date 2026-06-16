@@ -15,4 +15,15 @@ describe('backup with scenes', () => {
     expect(r.ok).toBe(true);
     expect(r.value.scenes).toHaveLength(1);
   });
+  // B-6: dropping an invalid scene row must be surfaced in `warnings`, not silent.
+  it('reports dropped invalid scene rows in warnings', () => {
+    const env = buildBackup({ scenes: [scene, { nope: true }] });
+    const r = validateBackup(env);
+    expect(r.value.scenes).toHaveLength(1);
+    expect(r.warnings.join(' ')).toMatch(/1 .*scene/i);
+  });
+  it('does not warn when every scene row is valid', () => {
+    const r = validateBackup(buildBackup({ scenes: [scene] }));
+    expect(r.warnings.join(' ')).not.toMatch(/scene/i);
+  });
 });

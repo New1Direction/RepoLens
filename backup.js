@@ -83,6 +83,13 @@ export function validateBackup(obj) {
     }
     return list;
   };
+  // Filter a row list, surfacing how many malformed rows were dropped (never silent).
+  const filterWarn = (key, list, ok) => {
+    const kept = list.filter(ok);
+    const dropped = list.length - kept.length;
+    if (dropped > 0) warnings.push(`Backup has ${dropped} invalid ${key} row${dropped === 1 ? '' : 's'}; skipping ${dropped === 1 ? 'it' : 'them'}.`);
+    return kept;
+  };
   const value = {
     repos: clamp('repos', arr(obj.repos).filter(rowHasRepo)),
     nodes: clamp('nodes', arr(obj.nodes).filter(rowHasId)),
@@ -96,7 +103,7 @@ export function validateBackup(obj) {
       // file may carry a non-array `flags` that would later throw in snapshotTrend.
       snaps: arr(r.snaps).slice(-SNAP_CAP).map((s) => (s && typeof s === 'object' ? { ...s, flags: arr(s.flags) } : s)),
     }))),
-    scenes: clamp('scenes', arr(obj.scenes).filter(sceneOk)),
+    scenes: clamp('scenes', filterWarn('scene', arr(obj.scenes), sceneOk)),
   };
   return { ok: errors.length === 0, errors, warnings, value };
 }

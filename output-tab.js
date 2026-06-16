@@ -571,16 +571,30 @@ async function renderCanvas(d) {
   if (!hostWrap || hostWrap.dataset.mounted === '1') return;   // mount once per page
   const dd = d && d.deepDive;
   if (!dd || !dd.atoms || !dd.atoms.length) {
+    // No atoms yet — show the CTA and leave the guard UNclaimed so a later Deep Dive
+    // (B-3) can re-render this same host into a real Blueprint.
     hostWrap.innerHTML = '<div class="dd-cta">Run <b>Deep Dive</b> first — the Blueprint is built from its atoms &amp; lineage.</div>';
     return;
   }
+  // Claim the guard synchronously, before the first await — otherwise two concurrent
+  // calls (tab switch + a storage event) both pass the check above, then both mount,
+  // leaking a second engine. Reset it on failure so a failed render can retry.
+  hostWrap.dataset.mounted = '1';
+  try {
+    return await mountBlueprint(hostWrap, d, dd);
+  } catch (err) {
+    delete hostWrap.dataset.mounted;
+    throw err;
+  }
+}
+
+async function mountBlueprint(hostWrap, d, dd) {
   const sceneId = 'repo:' + hashId(d.repoId);
   let scene = await getScene(sceneId);
   if (!scene) {
     scene = buildBlueprintScene({ deepDive: dd, repoId: d.repoId, title: d.repoId, scanAt: d.saved_at || null });
     await saveScene(scene);
   }
-  hostWrap.dataset.mounted = '1';
   const api = mountCanvas(hostWrap, scene, { onChange: (s) => saveScene(s).catch(() => {}) });
 
   const bar = document.createElement('div');
@@ -1767,6 +1781,16 @@ chrome.storage.onChanged.addListener((changes, area) => {
   renderVersus(nv);
   renderSynergies(nv);
   renderCombinator(nv);
+
+  // Canvas tab opened before Deep Dive finished shows a "run Deep Dive" CTA; when the
+  // atoms it needs now arrive, re-render the open/active Canvas so it builds the
+  // Blueprint instead of staying stuck on the CTA. Guarded so it only fires when the
+  // tab is active and the host hasn't already mounted (renderCanvas is also idempotent).
+  const canvasActive = document.getElementById('t27')?.classList.contains('active');
+  const hostMounted = document.querySelector('#t27 .canvas-host')?.dataset.mounted === '1';
+  if (canvasActive && !hostMounted && nv.deepDive?.atoms?.length) {
+    renderCanvas(nv).catch((err) => console.error('[canvas] refresh failed', err));
+  }
 
   // Tick the Run All Lenses counter when a lens transitions to done.
   if (runAllTotal > 0) {
