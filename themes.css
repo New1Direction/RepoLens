@@ -425,3 +425,46 @@
   --warn-ink: #8a5a00;
   --bad-ink:  #b91c1c;
 }
+
+/* ── Interactive canvas ── */
+.rl-canvas { width: 100%; height: 520px; display: block; background: var(--bg, #fbf6ea); touch-action: none; cursor: grab; }
+.rl-canvas:active { cursor: grabbing; }
+.rl-node rect { fill: var(--surface, #fffdf6); stroke: var(--text, #211c14); stroke-width: 1.5; }
+.rl-node text { font: 600 13px ui-monospace, monospace; fill: var(--text, #211c14); pointer-events: none; }
+.rl-node { cursor: grab; }
+.rl-node.is-root rect { fill: var(--accent, #c2691c); stroke: #8a480f; }
+.rl-node.is-root text { fill: #fff; }
+/* colour by atom kind (is-root overrides) */
+.rl-kind-entrypoint rect { stroke: #3b6ea5; }
+.rl-kind-subsystem rect { stroke: #8a480f; }
+.rl-kind-data rect { stroke: #2f7d34; }
+.rl-kind-concept rect { stroke-dasharray: 4 3; }
+.canvas-legend { display: flex; gap: 12px; padding: 8px 12px; font: 11px ui-monospace, monospace; color: var(--text-sub, #6b5a36); flex-wrap: wrap; }
+.canvas-legend .lg { display: inline-flex; align-items: center; gap: 5px; }
+.canvas-legend .lg::before { content: ''; width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid; background: var(--surface, #fffdf6); }
+.canvas-legend .lg-entrypoint::before { border-color: #3b6ea5; }
+.canvas-legend .lg-subsystem::before { border-color: #8a480f; background: var(--accent, #c2691c); }
+.canvas-legend .lg-module::before { border-color: var(--text, #211c14); }
+.canvas-legend .lg-data::before { border-color: #2f7d34; }
+.canvas-legend .lg-concept::before { border-color: var(--text, #211c14); border-style: dashed; }
+.canvas-export-bar { display: flex; gap: 8px; padding: 9px 12px; border-top: 1px solid var(--border, #b9a273); }
+.canvas-export-bar button { padding: 5px 11px; border-radius: 7px; font-size: 12px; cursor: pointer; border: 1px solid var(--text, #211c14); background: var(--surface, #fffdf6); }
+.rl-node:focus { outline: none; }
+.rl-node:focus rect { stroke: var(--accent, #3b6ea5); stroke-width: 2.5; }
+.rl-edge { stroke: var(--text, #211c14); stroke-width: 1.7; }
+.rl-edge.rl-triggers { stroke: #3b6ea5; stroke-dasharray: 6 4; }
+.rl-edge.rl-enables { stroke: #2f7d34; }
+@media (prefers-reduced-motion: no-preference) {
+  .rl-node { transition: opacity var(--dur, .2s) var(--ease-out, ease); }
+}
+.rl-node.is-dim { opacity: .3; }
+.rl-node.is-spotlight rect { stroke-width: 2.5; filter: drop-shadow(0 0 8px rgba(194,105,28,.5)); }
+.rl-tour-card { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(440px, 90%);
+  background: var(--surface, #fffdf6); border: 1px solid var(--border, #b9a273); border-left: 4px solid var(--accent, #c2691c);
+  border-radius: 11px; padding: 13px 15px; box-shadow: 0 8px 22px rgba(33,28,20,.2); z-index: 5; }
+.rl-tour-step { font: 600 10.5px ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--accent, #c2691c); }
+.rl-tour-title { font-size: 15px; font-weight: 800; margin: 5px 0; color: var(--text, #211c14); }
+.rl-tour-blurb { font-size: 12.5px; line-height: 1.5; color: var(--text-sub, #4a4034); margin: 0; }
+.rl-tour-lesson { font-size: 11px; color: var(--text-sub, #5a4f3e); background: var(--border, #f3ead6); border-radius: 6px; padding: 6px 9px; margin-top: 8px; }
+.rl-tour-ctl { display: flex; gap: 8px; margin-top: 11px; }
+.rl-tour-ctl button { padding: 5px 11px; border-radius: 7px; font-size: 12px; cursor: pointer; }
