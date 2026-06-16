@@ -2520,7 +2520,10 @@ function runIntroTour() {
       // Stage B picks up in the output tab (Task 7) — hand it the demo + a marker.
       try { await chrome.storage.local.set({ onboardingSeen: true, onboardingStage: 'verdict' }); }
       catch { /* storage best-effort */ }
-      openRow(DEMO_REPO.repoId);
+      // openCachedAnalysis writes the demo payload into chrome.storage.session and opens
+      // output-tab.html?key=… (the path Stage B reads). openRow would miss — the demo lives
+      // in the IndexedDB repos/scenes stores, not the listCached() cache that backs cacheByRepo.
+      await openCachedAnalysis(DEMO_REPO);
     },
   });
 }
@@ -2542,9 +2545,24 @@ function offerMilestone(realCount) {
   ctl.append(never, later, show);
   cardEl.append(textEl, ctl);
   veil.append(cardEl);
+  // Remember where focus was so we can hand it back on close (a11y: no focus loss).
+  const prevFocus = document.activeElement;
+  const focusables = [never, later, show]; // DOM/tab order
   const persist = (patch) => chrome.storage.local.set(patch).catch(() => {});
-  const onKeydown = (e) => { if (e.key === 'Escape') { e.preventDefault(); later.click(); } };
-  const close = () => { document.removeEventListener('keydown', onKeydown); veil.remove(); };
+  const onKeydown = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); later.click(); return; }
+    if (e.key !== 'Tab') return;
+    // Trap Tab/Shift+Tab so focus cycles the three buttons (wrap first↔last).
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  const close = () => {
+    document.removeEventListener('keydown', onKeydown);
+    veil.remove();
+    if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus(); // restore focus
+  };
   show.onclick = () => { close(); persist({ milestoneTourSeen: true }); startCoachmark({ steps: milestoneSteps(), copy: COPY }); };
   later.onclick = () => { close(); persist({ milestoneSnoozeAt10: true }); }; // Escape maps here (snooze)
   never.onclick = () => { close(); persist({ milestoneTourSeen: true }); };

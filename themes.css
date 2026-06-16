@@ -500,6 +500,7 @@
 .stack-canvas .rl-layer-tooling  rect { stroke: #6b5a36; stroke-width: 2.5; }
 .stack-canvas .rl-kind-gap rect { fill: #fbeae6; stroke: #b3372f; stroke-dasharray: 5 3; }
 .stack-canvas .rl-kind-gap text { fill: #8a2f25; }
+.stack-canvas .rl-integrates { stroke: #3b6ea5; stroke-width: 1.8; }
 
 /* ── Onboarding coachmark ── */
 .cm-veil { position: fixed; inset: 0; z-index: 9000; background: color-mix(in srgb, var(--text, #000) 55%, transparent); }
@@ -512,4 +513,3 @@
 .cm-ctl .cm-skip { margin-right: auto; border: none; background: transparent; color: var(--text-sub, #6b5a36); }
 .cm-badge-demo { font: 700 9px/1 ui-monospace, monospace; letter-spacing: .1em; color: #fff; background: var(--accent, #c2691c); border-radius: 4px; padding: 2px 5px; margin-left: 6px; vertical-align: middle; }
 @media (prefers-reduced-motion: reduce) { .cm-spotlight { transition: none; } }
-.stack-canvas .rl-integrates { stroke: #3b6ea5; stroke-width: 1.8; }

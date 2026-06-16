@@ -25,11 +25,11 @@ export function introStageB() {
 }
 export function milestoneSteps() {
   return [
-    { target: '#lib-ask-input', copyKey: 'milestoneAsk', mascotState: 'idle' },
+    { target: '#ask-input', copyKey: 'milestoneAsk', mascotState: 'idle' },
     { target: '#lib-btn-corkboard', copyKey: 'milestoneCorkboard', mascotState: 'thinking' },
-    { target: '#lib-btn-select, [data-act="select"]', copyKey: 'milestoneCompare', mascotState: 'idle' },
+    { target: '#select', copyKey: 'milestoneCompare', mascotState: 'idle' },
     { target: '#lib-btn-radar', copyKey: 'milestoneOrganize', mascotState: 'idle' },
-    { target: '#lib-btn-discover', copyKey: 'milestoneDiscover', mascotState: 'idle' },
+    { target: '#discover-btn', copyKey: 'milestoneDiscover', mascotState: 'idle' },
   ];
 }
 
