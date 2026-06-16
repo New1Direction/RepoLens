@@ -14,7 +14,7 @@ provider call is MCP-specific.
 - **Bring your own key.** The Anthropic key comes from the environment, never from
   a server or the extension's storage. Nothing phones home.
 
-## Tool
+## Tools
 
 ### `scan_repo({ repo })`
 
@@ -34,6 +34,22 @@ provider call is MCP-specific.
   "cons": ["..."],
   "red_flags": [],
   "capabilities": ["routing", "middleware", "edge"]
+}
+```
+
+### `blueprint_scene({ repo })`
+
+Maps how the repo is built and returns a laid-out graph — `nodes` (key parts) and
+`edges` (how they relate), with positions — ready for a `<DependencyGraph>`-style
+component. Heavier than `scan_repo`: it reads source and makes two model calls
+(atoms, then lineage).
+
+```json
+{
+  "id": "repo:...", "scope": "blueprint", "repoId": "honojs/hono",
+  "nodes": [{ "id": "app", "label": "Hono app", "kind": "entrypoint", "x": 120, "y": 40 }],
+  "edges": [{ "source": "app", "target": "router", "label": "depends-on" }],
+  "camera": { "x": 0, "y": 0, "zoom": 1 }
 }
 ```
 
@@ -67,5 +83,5 @@ In `claude_desktop_config.json`:
 
 - Unauthenticated GitHub requests are rate-limited. For heavier use, a `GITHUB_TOKEN`
   pass-through is a follow-up.
-- Next tools (follow-ups): `blueprint_scene` (the nodes/edges graph), `deep_dive`,
-  multi-provider, and npm / PyPI / GitLab.
+- Next (follow-ups): `deep_dive` (the plain-English layer), multi-provider, and
+  npm / PyPI / GitLab support; a `GITHUB_TOKEN` pass-through for higher rate limits.
