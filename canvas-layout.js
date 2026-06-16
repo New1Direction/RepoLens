@@ -58,3 +58,16 @@ export function layoutCorkboard(nodes, edges) {
 
   return nodes.map((n) => (n.pinned ? { ...n } : { ...n, x: pos[n.id].x, y: pos[n.id].y }));
 }
+
+/** Stack layout: repos left→right by adoption `order`, gap cards in a row below. Pinned kept. Pure. */
+export function layoutStack(nodes, order = []) {
+  const rank = Object.fromEntries((order || []).map((id, i) => [String(id), i]));
+  const repos = nodes.filter((n) => n.kind !== 'gap');
+  const gaps = nodes.filter((n) => n.kind === 'gap');
+  const sorted = repos.slice().sort((a, b) =>
+    ((rank[a.id] ?? 999) - (rank[b.id] ?? 999)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const pos = {};
+  sorted.forEach((n, i) => { pos[n.id] = { x: ORIGIN + i * (CARD_W + GAP_X), y: ORIGIN }; });
+  gaps.forEach((n, i) => { pos[n.id] = { x: ORIGIN + i * (CARD_W + GAP_X), y: ORIGIN + 2 * (CARD_H + GAP_Y) }; });
+  return nodes.map((n) => (n.pinned ? { ...n } : { ...n, x: pos[n.id].x, y: pos[n.id].y }));
+}
