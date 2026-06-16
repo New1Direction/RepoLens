@@ -59,6 +59,32 @@
   --bad-edge:  color-mix(in srgb, var(--bad) 40%, var(--surface));
 }
 
+[data-theme="monoink"] {
+  --body-bg: #f4f6f9;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-alt: #f4f6f9;
+  --border: #d7dde6;
+  --border-2: #c4ccd8;
+
+  --text: #0f1115;
+  --text-strong: #0f1115;
+  --text-body: #1f2430;
+  --text-sub: #6b7280;
+  --text-muted: #9aa3af;
+  --text-faint: #aab2bd;
+  --text-fainter: #c4ccd8;
+
+  --accent: #2563eb;            /* cobalt — UI accent (AA on white) */
+  --accent-deep: #1d4ed8;       /* electric blue — strong/brand */
+  --accent-deep-hover: #1e40af;
+  --accent-grad: linear-gradient(135deg, #1d4ed8, #2563eb);
+
+  --font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --card-shadow: 0 1px 2px rgba(15, 17, 21, 0.06), 0 8px 24px rgba(15, 17, 21, 0.06);
+}
+
 [data-theme="paper"] {
   --body-bg: #f7f7fb;
   --bg: #f7f7fb;
