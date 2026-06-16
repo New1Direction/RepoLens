@@ -27,6 +27,8 @@ import { FITS_VERDICTS } from './fits-stack.js';
 import { initPalette } from './palette.js';
 import { toggleRepoInCollection, collectionContains, sortedCollections, COLLECTION_COLORS } from './collections.js';
 import { detectPlatform } from './url-detector.js';
+import { listSnapshots } from './store.js';
+import { snapshotTrend, sparkline } from './snapshots.js';
 
 // Apply the saved theme ASAP (before render) to minimise flash.
 initTheme();
@@ -712,10 +714,32 @@ function renderHighlights(d) {
   });
 }
 
+async function renderHistory(d) {
+  const host = document.getElementById('scan-history');
+  if (!host || !d || !d.repoId) return;
+  const trend = snapshotTrend(await listSnapshots(d.repoId));
+  if (!trend) { host.innerHTML = ''; return; }
+  const svg = sparkline(trend.series, { metric: 'health', width: 160, height: 30 }) || '';
+  const sign = trend.healthDelta > 0 ? '+' : '';
+  const healthLine = trend.series.map((s) => (s.health == null ? '–' : s.health)).join(' → ');
+  const fitLine = trend.series.map((s) => esc(s.fit)).join(' → ');
+  const arrow = trend.fitDirection === 'up' ? '↑' : trend.fitDirection === 'down' ? '↓' : '';
+  const resolved = trend.flagsResolved.length ? `−${trend.flagsResolved.length} resolved` : '';
+  const added = trend.flagsNew.length ? `+${trend.flagsNew.length} new` : '';
+  const flags = [resolved, added].filter(Boolean).join(' · ') || 'no flag changes';
+  host.innerHTML = `<div class="sh-card sh-fit-${esc(trend.fitTo)}">
+    <div class="sh-head">History · ${trend.count} scans${trend.daysSpan ? ` · ${trend.daysSpan}d` : ''}</div>
+    <div class="sh-row"><span class="sh-k">Health</span><span class="sh-v">${svg} ${esc(healthLine)} ${trend.healthDelta != null ? `<b>(${sign}${trend.healthDelta})</b>` : ''}</span></div>
+    <div class="sh-row"><span class="sh-k">Fit</span><span class="sh-v">${fitLine} <span class="sh-arrow">${arrow}</span></span></div>
+    <div class="sh-row"><span class="sh-k">Flags</span><span class="sh-v">${esc(flags)}</span></div>
+  </div>`;
+}
+
 function renderPage(d) {
   renderHeader(d);
   renderTabs(d);
   renderHighlights(d);
+  renderHistory(d);
 }
 
 // ─── Deep Dive tab ────────────────────────────────────────────────────────────

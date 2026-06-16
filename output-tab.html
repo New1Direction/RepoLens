@@ -752,6 +752,18 @@
   .guide-veil.open { visibility: visible; opacity: 1; transition: opacity var(--dur-slow) var(--ease-out); }
   .guide { transform: translateY(10px) scale(0.985); transition: transform var(--dur-slow) var(--ease-out); }
   .guide-veil.open .guide { transform: none; }
+
+  .sh-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin: 16px 0; background: var(--surface); }
+  .sh-head { font: 600 11px ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
+  .sh-row { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: center; padding: 5px 0; border-top: 1px solid var(--border-2); font-size: 13px; }
+  .sh-k { font: 600 10px ui-monospace, monospace; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); }
+  .sh-v { color: var(--text-sub); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sh-v b { color: var(--text); }
+  .sh-card.sh-fit-strong .rl-spark { color: var(--ok-ink, #2f7d34); }
+  .sh-card.sh-fit-solid  .rl-spark { color: var(--accent, #2f5fae); }
+  .sh-card.sh-fit-care   .rl-spark { color: var(--warn-ink, #b8902a); }
+  .sh-card.sh-fit-risky  .rl-spark { color: var(--bad-ink, #b4322a); }
+  .sh-arrow { color: var(--ok-ink, #2f7d34); font-weight: 700; }
 }
 </style>
 </head>
@@ -827,6 +839,7 @@
   </div>
 
   <div id="highlights"></div>
+  <div id="scan-history"></div>
 
   <!-- Tabs -->
   <div class="tab-nav">
