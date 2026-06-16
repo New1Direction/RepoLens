@@ -43,4 +43,18 @@ describe('repairGraph', () => {
   it('throws in strict mode on a dropped issue', () => {
     expect(() => repairGraph({ nodes: [], edges: [{ from: 'x', to: 'y' }] }, { strict: true })).toThrow();
   });
+
+  // L-1: pinned nodes whose coords arrive as numeric strings (e.g. from JSON) must
+  // keep their position — Number.isFinite('100') is false, so coords would collapse to 0.
+  it('preserves a pinned node whose coordinates are numeric strings', () => {
+    const { nodes } = repairGraph({ nodes: [{ id: 'a', name: 'A', pinned: true, x: '100', y: '250' }], edges: [] });
+    expect(nodes[0].x).toBe(100);
+    expect(nodes[0].y).toBe(250);
+  });
+
+  it('falls back to 0 for truly non-numeric coordinates', () => {
+    const { nodes } = repairGraph({ nodes: [{ id: 'a', name: 'A', x: 'nope', y: null }], edges: [] });
+    expect(nodes[0].x).toBe(0);
+    expect(nodes[0].y).toBe(0);
+  });
 });

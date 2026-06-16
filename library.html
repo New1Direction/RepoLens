@@ -221,6 +221,10 @@
 
   .lib-empty { text-align: center; padding: 80px 20px; color: var(--sub); }
   .lib-empty h2 { font-size: 17px; color: var(--text); margin: 0 0 8px; }
+  .lib-tour-chip { margin-top: 18px; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+    font-size: 13px; font-weight: 600; transition: background var(--dur-fast, 120ms) var(--ease-out, ease), color var(--dur-fast, 120ms) var(--ease-out, ease); }
+  .lib-tour-chip:hover, .lib-tour-chip:focus-visible { background: var(--accent); color: var(--bg, #fff); }
   .lib-empty code { font: 600 12px var(--mono); background: var(--panel); border: 1px solid var(--border); padding: 2px 7px; border-radius: 5px; color: var(--cyan); }
   /* Empty-state glyph — a magnifying glass that draws itself in. */
   .lib-empty-glyph { display: block; margin: 0 auto 18px; color: var(--accent); }

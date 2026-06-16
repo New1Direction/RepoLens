@@ -49,13 +49,16 @@ export function repairGraph(raw, opts = {}) {
     const kind = coerceKind(n.kind);
     if (n.kind && coerceKind(n.kind) !== String(n.kind).toLowerCase())
       add('auto-corrected', 'kind-alias', `kind "${n.kind}" → ${kind}`);
+    // Coerce first: Number.isFinite('100') is false, so a pinned node with string
+    // coords (e.g. from JSON) would otherwise collapse to (0,0).
+    const nx = Number(n.x), ny = Number(n.y);
     nodes.push({
       id,
       label: String(n.name ?? n.label ?? id),
       kind,
       layer: n.layer != null ? String(n.layer) : null,
-      x: Number.isFinite(n.x) ? n.x : 0,
-      y: Number.isFinite(n.y) ? n.y : 0,
+      x: Number.isFinite(nx) ? nx : 0,
+      y: Number.isFinite(ny) ? ny : 0,
       pinned: !!n.pinned,
       ref: { purpose: n.purpose ?? null, files: Array.isArray(n.files) ? n.files : [] },
     });

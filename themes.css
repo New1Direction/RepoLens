@@ -501,3 +501,15 @@
 .stack-canvas .rl-kind-gap rect { fill: #fbeae6; stroke: #b3372f; stroke-dasharray: 5 3; }
 .stack-canvas .rl-kind-gap text { fill: #8a2f25; }
 .stack-canvas .rl-integrates { stroke: #3b6ea5; stroke-width: 1.8; }
+
+/* ── Onboarding coachmark ── */
+.cm-veil { position: fixed; inset: 0; z-index: 9000; background: color-mix(in srgb, var(--text, #000) 55%, transparent); }
+.cm-spotlight { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px color-mix(in srgb, var(--text,#000) 55%, transparent), 0 0 0 2px var(--accent, #c2691c); transition: all .2s var(--ease-out, ease); pointer-events: none; }
+.cm-card { position: fixed; z-index: 9001; width: 320px; max-width: 92vw; background: var(--surface, #fffdf6); color: var(--text, #211c14); border: 1px solid var(--border, #b9a273); border-radius: 12px; padding: 14px 16px; box-shadow: 0 12px 30px rgba(0,0,0,.3); }
+.cm-vee { width: 56px; height: 56px; float: right; margin: 0 0 6px 10px; }
+.cm-text { margin: 2px 0 12px; font-size: 14.5px; line-height: 1.5; }
+.cm-ctl { display: flex; gap: 8px; align-items: center; }
+.cm-ctl button { padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; border: 1px solid var(--border, #b9a273); background: var(--surface, #fffdf6); color: var(--text); }
+.cm-ctl .cm-skip { margin-right: auto; border: none; background: transparent; color: var(--text-sub, #6b5a36); }
+.cm-badge-demo { font: 700 9px/1 ui-monospace, monospace; letter-spacing: .1em; color: #fff; background: var(--accent, #c2691c); border-radius: 4px; padding: 2px 5px; margin-left: 6px; vertical-align: middle; }
+@media (prefers-reduced-motion: reduce) { .cm-spotlight { transition: none; } }

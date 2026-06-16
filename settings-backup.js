@@ -27,6 +27,11 @@ export const SAFE_SETTING_KEYS = [
   'librarySort',
   'canvasEnabled',
   'canvasTourAutoplay',
+  // Onboarding flags — backed up together so a settings restore never lands in a
+  // half-onboarded state. All booleans, no secrets.
+  'onboardingSeen',
+  'milestoneTourSeen',
+  'milestoneSnoozeAt10',
 ];
 
 const pickSafe = (src) => {

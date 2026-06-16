@@ -64,8 +64,10 @@ export function snapshotTrend(snaps) {
   const series = list.map((s) => ({ ts: s.ts, health: s.health, fit: s.fit, stars: s.stars }));
   const healthDelta =
     first.health != null && latest.health != null ? latest.health - first.health : null;
-  const firstFlags = new Set(first.flags || []);
-  const latestFlags = new Set(latest.flags || []);
+  // Coerce defensively: a corrupt/hostile backup can pass the envelope-only
+  // validateBackup with a non-array `flags` (e.g. flags:5), and `new Set(5)` throws.
+  const firstFlags = new Set(Array.isArray(first.flags) ? first.flags : []);
+  const latestFlags = new Set(Array.isArray(latest.flags) ? latest.flags : []);
   return {
     count: list.length,
     series,

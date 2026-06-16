@@ -31,6 +31,23 @@ describe('toCanvasSvg', () => {
     expect(svg).not.toContain('onload');
     expect(svg).not.toContain('<script>bad');
   });
+
+  // M-1: the engine records a wider auto-width on `_w`; the exporter must use it for
+  // the rect width and the edge source-x so wide cards don't clip / detach their edges.
+  it('uses the node auto-width (_w) for the rect width and edge source endpoint', () => {
+    const wide = {
+      nodes: [
+        { id: 'a', label: 'A very wide label', kind: 'module', layer: null, x: 0, y: 0, _w: 210, pinned: false, ref: {} },
+        { id: 'b', label: 'B', kind: 'module', layer: null, x: 400, y: 0, pinned: false, ref: {} },
+      ],
+      edges: [{ id: 'e1', from: 'a', to: 'b', rel: 'depends-on', note: null, userDrawn: false }],
+      annotations: [],
+    };
+    const svg = toCanvasSvg(wide);
+    expect(svg).toContain('width="210"'); // rect width honors _w, not the 132 constant
+    // edge starts at the right edge of node a: x = 0 + _w(210), not 0 + NW(132)
+    expect(svg).toContain('d="M210,');
+  });
 });
 
 describe('toExcalidraw', () => {

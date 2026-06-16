@@ -7,6 +7,15 @@ This project follows [Semantic Versioning](https://semver.org/) and groups chang
 by theme. Dates are when the release landed on `main` — 1.1.0 through 1.6.0 shipped
 the same day, as a rapid burst of improvements, so they share a date.
 
+## [Unreleased]
+
+### Added
+
+- **Vee-guided first-run walkthrough.** New users are met by Vee on their first Library open; the coachmark steps through a seeded demo repo (Library card → Verdict tab → Blueprint canvas) with plain narration and a spotlight on each target element. Implemented in `onboarding.js` / `coachmark.js`; copy lives in `onboarding-copy.js`.
+- **Milestone "power tour"** offered after approximately five real scans: a second coachmark sequence introducing the cross-library tools — Ask, Corkboard (Alternatives / Synergies), multi-select Compare, Radar / auto-organize, and Discover.
+
+---
+
 ## [3.1.0] — 2026-06-16 · _Interactive Canvas (Blueprint · Guided Tour · Corkboard · Stack Studio)_
 
 ### Added

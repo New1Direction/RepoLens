@@ -25,6 +25,9 @@ export function libraryRow(payload) {
   return {
     repoId,
     name: repoId.split('/').pop() || repoId,
+    // Carry the demo flag through so isDemo(row) stays true after a reload turns the
+    // seeded demo payload back into a row (used for stats exclusion + teardown).
+    __demo__: p.__demo__ === true,
     platform: p.platform || '',
     fit,
     fitDelta,

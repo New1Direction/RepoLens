@@ -18,20 +18,23 @@ export function toCanvasSvg(scene) {
   const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
   const minX = Math.min(0, ...nodes.map((n) => num(n.x))) - 20;
   const minY = Math.min(0, ...nodes.map((n) => num(n.y))) - 20;
-  const maxX = Math.max(...nodes.map((n) => num(n.x) + NW), 200) + 20;
+  const maxX = Math.max(...nodes.map((n) => num(n.x) + (num(n._w) || NW)), 200) + 20;
   const maxY = Math.max(...nodes.map((n) => num(n.y) + NH), 200) + 60;
 
   const edgeSvg = edges.map((e) => {
     const a = pos[e.from], b = pos[e.to];
     if (!a || !b) return '';
-    const x1 = num(a.x) + NW, y1 = num(a.y) + NH / 2, x2 = num(b.x), y2 = num(b.y) + NH / 2, mx = (x1 + x2) / 2;
+    // Start the edge at the source node's real right edge (auto-width `_w`), not the
+    // fixed constant, so edges on wide cards stay attached.
+    const aw = num(a._w) || NW;
+    const x1 = num(a.x) + aw, y1 = num(a.y) + NH / 2, x2 = num(b.x), y2 = num(b.y) + NH / 2, mx = (x1 + x2) / 2;
     return `<path class="ce-edge ce-${esc(e.rel)}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none"/>`;
   }).join('');
 
   const nodeSvg = nodes.map((n) => {
-    const x = num(n.x), y = num(n.y);
-    return `<g class="ce-node ce-kind-${esc(n.kind)}"><rect x="${x}" y="${y}" width="${NW}" height="${NH}" rx="8"/>` +
-      `<text x="${x + NW / 2}" y="${y + NH / 2}" text-anchor="middle" dominant-baseline="central">${esc(n.label)}</text></g>`;
+    const x = num(n.x), y = num(n.y), w = num(n._w) || NW;
+    return `<g class="ce-node ce-kind-${esc(n.kind)}"><rect x="${x}" y="${y}" width="${w}" height="${NH}" rx="8"/>` +
+      `<text x="${x + w / 2}" y="${y + NH / 2}" text-anchor="middle" dominant-baseline="central">${esc(n.label)}</text></g>`;
   }).join('');
 
   const annSvg = ann.map((a) => {
@@ -55,14 +58,14 @@ export function toExcalidraw(scene) {
 
   for (const n of scene.nodes || []) {
     const rid = `rect-${n.id}`, tid = `txt-${n.id}`;
-    const x = num(n.x), y = num(n.y);
+    const x = num(n.x), y = num(n.y), w = num(n._w) || NW;
     elements.push(base(rid, {
-      type: 'rectangle', x, y, width: 132, height: 44,
+      type: 'rectangle', x, y, width: w, height: 44,
       backgroundColor: n.kind === 'subsystem' ? '#c2691c' : '#fffdf6',
       boundElements: [{ type: 'text', id: tid }],
     }));
     elements.push(base(tid, {
-      type: 'text', x: x + 8, y: y + 14, width: 116, height: 20, text: String(n.label),
+      type: 'text', x: x + 8, y: y + 14, width: w - 16, height: 20, text: String(n.label),
       fontSize: 16, fontFamily: 1, textAlign: 'center', verticalAlign: 'middle', containerId: rid,
       originalText: String(n.label), lineHeight: 1.25,
     }));
@@ -72,7 +75,7 @@ export function toExcalidraw(scene) {
   for (const e of scene.edges || []) {
     const a = pos[e.from], b = pos[e.to];
     if (!a || !b) continue;
-    const x1 = num(a.x) + 132, y1 = num(a.y) + 22, x2 = num(b.x), y2 = num(b.y) + 22;
+    const x1 = num(a.x) + (num(a._w) || NW), y1 = num(a.y) + 22, x2 = num(b.x), y2 = num(b.y) + 22;
     elements.push(base(`arrow-${e.id}`, {
       type: 'arrow', x: x1, y: y1, width: x2 - x1, height: y2 - y1,
       points: [[0, 0], [x2 - x1, y2 - y1]],

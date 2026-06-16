@@ -3,7 +3,10 @@
 // show), and each card manages its repo: click to reopen the saved analysis, hover for
 // re-scan / source / remove actions.
 
-import { scrollPoints, deleteRepo, exportStores, importStores, clearLibrary, listCollections, saveCollection, deleteCollection, listDecisions, saveDecision, listAllSnapshots, getLibraryGraph, getScene, saveScene } from './store.js';
+import { scrollPoints, deleteRepo, deleteSnapshots, exportStores, importStores, clearLibrary, listCollections, saveCollection, deleteCollection, listDecisions, saveDecision, listAllSnapshots, getLibraryGraph, getScene, saveScene, saveRepo, deleteScene } from './store.js';
+import { introStageA, shouldOfferMilestone, milestoneSteps, COPY } from './onboarding.js';
+import { startCoachmark } from './coachmark.js';
+import { DEMO_REPO, demoScene, isDemo } from './demo-repo.js';
 import { buildLibraryScene } from './library-scene.js';
 import { layoutCorkboard } from './canvas-layout.js';
 import { mountCanvas } from './canvas-engine.js';
@@ -188,6 +191,7 @@ function card(r, i = 0) {
     <div class="lc-top">
       <input type="checkbox" class="lc-check"${sel ? ' checked' : ''} aria-label="Select ${esc(r.name)} for removal" title="Select for bulk removal">
       <span class="lc-name">${hilite(r.name, hq)}</span>
+      ${isDemo(r) ? '<span class="cm-badge-demo" title="A sample repo Vee seeded for the tour">DEMO</span>' : ''}
       ${owner ? `<span class="lc-owner">${hilite(owner, hq)}</span>` : ''}
       ${platformBadge}
       <span class="lc-chip fit-${r.fit.level}"${r.fit.why ? ` title="${esc(r.fit.why)}"` : ''}>${esc(r.fit.label)}</span>
@@ -839,11 +843,13 @@ async function bulkDecide(decision) {
 function renderStats() {
   const host = document.getElementById('stats');
   if (!host) return;
-  const s = libraryStats(allRows);
+  // The seeded demo repo is a tour prop, not part of the user's real library.
+  const realRows = allRows.filter((r) => !isDemo(r));
+  const s = libraryStats(realRows);
   if (!s.total) { host.classList.add('hidden'); host.innerHTML = ''; return; }
   host.classList.remove('hidden');
   const pill = (level, n) => (n ? html`<span class="ls-pill ${level}">${n} ${level}</span>` : '');
-  const staleCount = allRows.filter((r) => {
+  const staleCount = realRows.filter((r) => {
     if (!r.savedAt) return false;
     return (Date.now() - new Date(r.savedAt).getTime()) > 30 * 86_400_000;
   }).length;
@@ -955,7 +961,7 @@ async function exportLibrary() {
   try {
     setStatus('Preparing backup…');
     const [stores, cached] = await Promise.all([exportStores(), listCached().catch(() => [])]);
-    const backup = buildBackup({ repos: stores.repos, nodes: stores.nodes, edges: stores.edges, cache: cached, collections: stores.collections, decisions: stores.decisions, snapshots: stores.snapshots });
+    const backup = buildBackup({ repos: stores.repos, nodes: stores.nodes, edges: stores.edges, cache: cached, collections: stores.collections, decisions: stores.decisions, snapshots: stores.snapshots, scenes: stores.scenes });
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1340,7 +1346,9 @@ async function renderCorkboard() {
     const g = ev.target.closest('[data-node]');
     if (!g) return;
     const id = g.dataset.node;
-    if (id && id.includes('/')) openRow(id); // repo node ids are "owner/name"
+    // Open only true repo nodes. Detect by the engine's kind class — idea nodes use
+    // their title as id and titles often contain '/', so id-shape was a false positive.
+    if (id && g.classList.contains('rl-kind-repo')) openRow(id);
   });
 }
 
@@ -2452,6 +2460,7 @@ function initLibraryPalette() {
     } },
     { name: 'Select mode', description: 'Select repos for bulk actions', action: () => setSelectionMode(!selectionMode) },
     { section: 'Vee', name: '✦ Auto-decide all undecided (Vee)', description: 'Apply Vee\'s fit-based suggestion to every undecided rated repo', action: () => applyVeeSuggestions() },
+    { name: 'Take the tour', description: 'Replay the Vee walkthrough', action: () => startIntro() },
     { name: 'Open Settings', action: () => chrome.runtime.openOptionsPage() },
   ];
 
@@ -2475,6 +2484,121 @@ function initLibraryPalette() {
   document.getElementById('open-palette')?.addEventListener('click', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
   });
+}
+
+// ─── Vee onboarding: first-run intro + milestone offer ────────────────────────
+// The tour needs the demo repo to exist as a real card, so we seed it, mark the
+// run pending, and reload — init then loads the demo as an ordinary row and
+// checkOnboarding() resumes the coachmark. (See the empty-state branch in init.)
+const INTRO_PENDING = 'rl_intro_pending';
+
+async function seedDemo() {
+  // Never clobber a real scan that happens to share the demo's id (honojs/hono).
+  if (allRows.some((r) => r.repoId === DEMO_REPO.repoId && !isDemo(r))) return false;
+  try {
+    await saveRepo(DEMO_REPO);
+    await saveScene(demoScene());
+    return true;
+  } catch {
+    return false; // store failure → caller shows the normal empty state instead of a dead blank page
+  }
+}
+
+// Explicit replay (empty-state chip / palette): seed + reload into the tour.
+// seedDemo() no-ops if a real honojs/hono exists or the store fails; either way
+// we reload — the tour runs against whatever grid is present.
+async function startIntro() {
+  if (sessionStorage.getItem(INTRO_PENDING)) return; // a run is already queued
+  await seedDemo();
+  sessionStorage.setItem(INTRO_PENDING, '1');
+  location.reload();
+}
+
+function runIntroTour() {
+  startCoachmark({
+    steps: introStageA(),
+    copy: COPY,
+    onExit: async () => {
+      // Stage B picks up in the output tab (Task 7) — hand it the demo + a marker.
+      try { await chrome.storage.local.set({ onboardingSeen: true, onboardingStage: 'verdict' }); }
+      catch { /* storage best-effort */ }
+      // openCachedAnalysis writes the demo payload into chrome.storage.session and opens
+      // output-tab.html?key=… (the path Stage B reads). openRow would miss — the demo lives
+      // in the IndexedDB repos/scenes stores, not the listCached() cache that backs cacheByRepo.
+      await openCachedAnalysis(DEMO_REPO);
+    },
+  });
+}
+
+// A self-contained 3-way prompt (Show me / Maybe later / Don't ask) for the
+// milestone tour. Reuses the coachmark veil/card classes; removes itself on choice.
+function offerMilestone(realCount) {
+  const veil = document.createElement('div'); veil.className = 'cm-veil';
+  const cardEl = document.createElement('div'); cardEl.className = 'cm-card';
+  cardEl.setAttribute('role', 'dialog');
+  cardEl.setAttribute('aria-modal', 'true');
+  cardEl.setAttribute('aria-label', 'Take the milestone tour?');
+  const textEl = document.createElement('p'); textEl.className = 'cm-text';
+  textEl.textContent = (COPY.milestoneOffer || '').replace('{N}', String(realCount));
+  const ctl = document.createElement('div'); ctl.className = 'cm-ctl';
+  const show = document.createElement('button'); show.textContent = 'Show me';
+  const later = document.createElement('button'); later.textContent = 'Maybe later';
+  const never = document.createElement('button'); never.textContent = "Don't ask"; never.className = 'cm-skip';
+  ctl.append(never, later, show);
+  cardEl.append(textEl, ctl);
+  veil.append(cardEl);
+  // Remember where focus was so we can hand it back on close (a11y: no focus loss).
+  const prevFocus = document.activeElement;
+  const focusables = [never, later, show]; // DOM/tab order
+  const persist = (patch) => chrome.storage.local.set(patch).catch(() => {});
+  const onKeydown = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); later.click(); return; }
+    if (e.key !== 'Tab') return;
+    // Trap Tab/Shift+Tab so focus cycles the three buttons (wrap first↔last).
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  const close = () => {
+    document.removeEventListener('keydown', onKeydown);
+    veil.remove();
+    if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus(); // restore focus
+  };
+  show.onclick = () => { close(); persist({ milestoneTourSeen: true }); startCoachmark({ steps: milestoneSteps(), copy: COPY }); };
+  later.onclick = () => { close(); persist({ milestoneSnoozeAt10: true }); }; // Escape maps here (snooze)
+  never.onclick = () => { close(); persist({ milestoneTourSeen: true }); };
+  document.addEventListener('keydown', onKeydown);
+  document.body.append(veil);
+  show.focus(); // move focus to the primary action on mount
+}
+
+// Run after the grid is rendered (init's non-empty path). Resumes a pending intro
+// first, otherwise gates the milestone offer on real (non-demo) repo count.
+async function checkOnboarding() {
+  if (sessionStorage.getItem(INTRO_PENDING)) {
+    sessionStorage.removeItem(INTRO_PENDING);
+    runIntroTour();
+    return;
+  }
+  let prefs = {};
+  try { prefs = await chrome.storage.local.get(['onboardingSeen', 'milestoneTourSeen', 'milestoneSnoozeAt10']); }
+  catch { return; }
+  const real = allRows.filter((r) => !isDemo(r));
+  // A returning user who never saw the intro: mark it seen silently (no demo seed).
+  if (!prefs.onboardingSeen) {
+    try { await chrome.storage.local.set({ onboardingSeen: true }); } catch { /* best-effort */ }
+  }
+  // Snooze: "Maybe later" defers the offer until the library reaches ≥10 real repos.
+  let snoozed = !!prefs.milestoneSnoozeAt10;
+  if (snoozed && real.length >= 10) {
+    snoozed = false;
+    try { await chrome.storage.local.set({ milestoneSnoozeAt10: false }); } catch { /* best-effort */ }
+  }
+  if (snoozed) return;
+  if (shouldOfferMilestone({ realCount: real.length, milestoneTourSeen: prefs.milestoneTourSeen, onboardingSeen: true })) {
+    offerMilestone(real.length);
+  }
 }
 
 async function init() {
@@ -2552,13 +2676,36 @@ async function init() {
   }
 
   if (!allRows.length) {
+    // Brand-new user, no run queued: seed the demo and reload so the demo loads as
+    // a normal card (init then skips this branch and checkOnboarding resumes the tour).
+    const { onboardingSeen } = await chrome.storage.local.get('onboardingSeen').catch(() => ({}));
+    if (!onboardingSeen && !sessionStorage.getItem(INTRO_PENDING)) {
+      // Only queue the tour if the demo actually seeded; otherwise (real honojs/hono
+      // present or store failed) fall through to the normal empty state below.
+      if (await seedDemo()) {
+        sessionStorage.setItem(INTRO_PENDING, '1');
+        location.reload();
+        return;
+      }
+    }
     // veeSvg() and EMPTY_GLYPH are static, code-owned strings — safe for the
     // STATIC-only showEmpty (no user data ever reaches innerHTML here).
     const vee = mascotOn ? `<div class="vee is-empty" aria-hidden="true" style="margin-bottom:14px">${veeSvg()}</div>` : EMPTY_GLYPH;
     showEmpty(
-      `${vee}<h2>No repos yet</h2><p>Open any <b>GitHub / GitLab / npm / PyPI</b> page and click the RepoLens icon —<br>every scan lands here automatically.</p>`
+      `${vee}<h2>No repos yet</h2><p>Open any <b>GitHub / GitLab / npm / PyPI</b> page and click the RepoLens icon —<br>every scan lands here automatically.</p><button id="lib-tour-chip" class="lib-tour-chip" type="button">✦ New here? Take the tour</button>`
     );
+    document.getElementById('lib-tour-chip')?.addEventListener('click', startIntro);
     return;
+  }
+  // Returning user: sweep any stray demo rows left behind by an interrupted tour.
+  if (allRows.some((r) => isDemo(r))) {
+    const { onboardingSeen } = await chrome.storage.local.get('onboardingSeen').catch(() => ({}));
+    if (onboardingSeen && !sessionStorage.getItem(INTRO_PENDING)) {
+      for (const r of allRows) if (isDemo(r)) { await deleteRepo(r.repoId); await deleteSnapshots(r.repoId); }
+      try { await deleteScene(demoScene().id); } catch { /* scene may not exist */ }
+      allRows = allRows.filter((r) => !isDemo(r));
+      if (!allRows.length) { location.reload(); return; } // back to the clean empty state
+    }
   }
   renderCaps();
   renderCollections();
@@ -2672,6 +2819,9 @@ async function init() {
       render();
     });
   }
+
+  // Vee onboarding: resume a pending intro, or offer the milestone tour.
+  await checkOnboarding();
 }
 
 init();

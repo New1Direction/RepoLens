@@ -75,6 +75,19 @@ describe('snapshotTrend', () => {
     expect(t.daysSpan).toBe(10);
     expect(t.series).toHaveLength(2);
   });
+  // HIGH-2: a corrupt/hostile backup can pass the envelope-only validateBackup with
+  // a non-array `flags` (number, string, null). snapshotTrend must coerce, not throw.
+  it('does not throw when flags is a non-array value, behaving as if empty', () => {
+    for (const bad of [5, 'No tests', null, undefined, {}]) {
+      const corrupt = [
+        { ts: '2026-06-01T00:00:00.000Z', health: 70, fit: 'care', stars: 0, flags: bad },
+        { ts: '2026-06-11T00:00:00.000Z', health: 80, fit: 'strong', stars: 0, flags: bad },
+      ];
+      const t = snapshotTrend(corrupt);
+      expect(t.flagsResolved).toEqual([]);
+      expect(t.flagsNew).toEqual([]);
+    }
+  });
 });
 
 describe('sparkline', () => {

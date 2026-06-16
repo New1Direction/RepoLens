@@ -1,0 +1,408 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RepoLens — Implementation Plan</title><style>:root{--paper:#fbf6ea;--card:#fffdf6;--ink:#211c14;--sub:#5a4f3e;--rule:#e2d6ba;--rule2:#c9b88f;--accent:#c2691c}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}.wrap{max-width:880px;margin:0 auto;padding:44px 28px 96px}h1{font:700 32px/1.15 Georgia,serif;margin:6px 0 8px}h2{font:700 22px/1.2 Georgia,serif;margin:34px 0 8px;padding-top:16px;border-top:2px solid var(--rule)}h3{font-size:16px;margin:22px 0 6px}p,li{margin:8px 0}strong{color:var(--ink)}em{color:var(--sub)}a{color:var(--accent)}blockquote{margin:14px 0;padding:10px 16px;background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);border-radius:8px;color:var(--sub)}code{font:13.5px ui-monospace,monospace;background:#f1e7cf;border:1px solid var(--rule);border-radius:5px;padding:1px 5px;color:#6b4a18}pre{background:#1c1814;color:#eadfca;border-radius:10px;padding:14px 16px;overflow:auto;font:13px/1.55 ui-monospace,monospace}pre code{background:none;border:0;padding:0;color:inherit}table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}th,td{text-align:left;vertical-align:top;padding:8px 11px;border:1px solid var(--rule)}th{background:#f1e7cf}hr{border:0;border-top:2px solid var(--rule);margin:30px 0}ul,ol{padding-left:22px}</style></head><body><div class="wrap"><h1>Vee Onboarding Walkthrough — Implementation Plan</h1>
+<blockquote><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use <code>- [ ]</code>.</blockquote>
+<p><strong>Goal:</strong> Two Vee-guided tours — a first-run seeded-demo intro (Verdict → Blueprint → Corkboard) and a milestone "power" tour at ≥5 real repos — that make RepoLens welcoming, with narration in Vee's dry, anti-slop voice.</p>
+<p><strong>Architecture:</strong> A reusable DOM <strong>coachmark engine</strong> (veil + spotlight + element-anchored card + Vee) driven by step lists in <code>onboarding.js</code>; a seeded <strong>demo repo</strong> fixture so the intro shows real surfaces; flags in <code>chrome.storage.local</code>. All copy lives in one <strong><code>onboarding-copy.js</code> deck</strong> guarded by a machine-checked <strong>anti-slop test</strong>. Zero backend, zero telemetry, MV3-safe, theme-token-based.</p>
+<p><strong>Tech Stack:</strong> Vanilla ES modules, no deps, Vitest, IndexedDB (<code>store.js</code>), reuses <code>mascot.js</code> (Vee), <code>scene.js</code>/<code>validateScene</code>, the canvas tour's card look.</p>
+<p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-06-16-vee-onboarding-design.{md,html}</code>. <strong>Branch:</strong> <code>feat/vee-onboarding</code> (off the canvas branch; spec already committed).</p>
+<hr>
+<h2>Anti-slop ruleset (used by Task 2's test)</h2>
+<p>Derived from <code>hexiecs/talk-normal</code>, <code>realrossmanngroup/no_ai_slop_writing_rules</code>, <code>stephenturner/skill-deslop</code>. Every Vee line must pass:</p>
+<ul><li><strong>No banned vocab</strong> (case-insensitive): <code>unlock, supercharge, elevate, leverage, harness, streamline, empower, revolutionize, showcase, enhance, foster, facilitate, dive in, delve, seamless, effortless, robust, comprehensive, powerful, cutting-edge, game-changer, game-changing, transformative, remarkable, crucial, intricate, meticulous, landscape, tapestry, ecosystem, synergy, supercharge, get ready, the fun stuff, that's it, you're all set, easy, right</code>.</li><li><strong>No em dash</strong> (<code>—</code>) — the #1 AI tell; use periods/commas.</li><li><strong>≤ 1 <code>!</code></strong> across the whole deck.</li><li><strong>The Vee formula:</strong> name a specific thing → say what it means in one adjective-free clause → stop.</li></ul>
+<h2>File structure</h2>
+<table><thead><tr><th>File</th><th>Responsibility</th><th>New/Modify</th></tr></thead><tbody><tr><td><code>onboarding-copy.js</code></td><td>The single copy deck: every Vee line, in-voice + de-slopped. Pure data.</td><td>New</td></tr><tr><td><code>demo-repo.js</code></td><td><code>honojs/hono</code> fixture (analysis + atoms/lineage + scene) tagged <code>__demo__</code>; <code>seedDemo</code>/<code>clearDemo</code>/<code>isDemo</code>.</td><td>New</td></tr><tr><td><code>onboarding.js</code></td><td>Step lists (intro Stage-A/B + milestone) built from the deck; flag/stage state machine; triggers <code>maybeStartLibraryOnboarding</code>/<code>maybeContinueOnboarding</code>/<code>maybeOfferMilestoneTour</code>/<code>startOnboarding</code>.</td><td>New</td></tr><tr><td><code>coachmark.js</code></td><td>DOM coachmark: pure <code>placeCard()</code> geometry + <code>startCoachmark({steps,onExit})</code> (veil/spotlight/card/Vee/nav).</td><td>New</td></tr><tr><td><code>themes.css</code></td><td><code>.cm-veil</code>/<code>.cm-spotlight</code>/<code>.cm-card</code>/<code>.cm-badge-demo</code> (token-based, reduced-motion).</td><td>Modify</td></tr><tr><td><code>library.js</code></td><td>Wire intro + milestone triggers after init; empty-state chip; ⌘K command; exclude <code>__demo__</code> from stats.</td><td>Modify</td></tr><tr><td><code>output-tab.js</code></td><td><code>maybeContinueOnboarding()</code> on init (Stage B).</td><td>Modify</td></tr><tr><td><code>options.{js,html}</code></td><td>"Replay onboarding" button.</td><td>Modify</td></tr><tr><td><code>settings-backup.js</code></td><td>Allowlist <code>onboardingSeen</code>, <code>milestoneTourSeen</code>.</td><td>Modify</td></tr><tr><td><code>store.js</code>/<code>backup.js</code></td><td>Exclude <code>__demo__</code> from stats + export/backup.</td><td>Modify</td></tr><tr><td><code>CHANGELOG.md</code>/<code>README.md</code></td><td>Note the walkthrough.</td><td>Modify</td></tr></tbody></table>
+<p>Shared shapes: copy line = <code>string</code>; step = <code>{ target:string|null, copyKey:string, mascotState:string, before?:()=&gt;Promise&lt;void&gt; }</code>; flags <code>onboardingSeen</code>/<code>milestoneTourSeen</code>/<code>onboardingStage</code> in <code>chrome.storage.local</code>.</p>
+<hr>
+<h3>Task 1: Demo-repo fixture (<code>demo-repo.js</code>)</h3>
+<p><strong>Files:</strong> Create <code>demo-repo.js</code>, <code>tests/demo-repo.test.js</code>.</p>
+<ul><li>☐ <strong>Step 1 — failing test:</strong></li></ul>
+<pre><code>// tests/demo-repo.test.js
+import { describe, it, expect } from 'vitest';
+import { DEMO_REPO, demoScene, isDemo } from '../demo-repo.js';
+import { validateScene } from '../scene.js';
+
+describe('demo fixture', () =&gt; {
+  it('is a valid analysis payload tagged __demo__', () =&gt; {
+    expect(DEMO_REPO.repoId).toBe('honojs/hono');
+    expect(DEMO_REPO.__demo__).toBe(true);
+    expect(typeof DEMO_REPO.eli5).toBe('string');
+    expect(DEMO_REPO.health &amp;&amp; typeof DEMO_REPO.health.score).toBe('number');
+    expect(Array.isArray(DEMO_REPO.deepDive.atoms)).toBe(true);
+    expect(DEMO_REPO.deepDive.atoms.length).toBeGreaterThanOrEqual(4);
+    expect(Array.isArray(DEMO_REPO.deepDive.lineage.links)).toBe(true);
+  });
+  it('builds a valid blueprint scene', () =&gt; {
+    const s = demoScene();
+    expect(validateScene(s).ok).toBe(true);
+    expect(s.nodes.length).toBe(DEMO_REPO.deepDive.atoms.length);
+  });
+  it('isDemo detects the demo and nothing else', () =&gt; {
+    expect(isDemo(DEMO_REPO)).toBe(true);
+    expect(isDemo({ repoId: 'a/b' })).toBe(false);
+  });
+});</code></pre>
+<ul><li>☐ <strong>Step 2 — run, expect FAIL:</strong> <code>npx vitest run tests/demo-repo.test.js</code></li></ul>
+<ul><li>☐ <strong>Step 3 — implement <code>demo-repo.js</code>:</strong></li></ul>
+<pre><code>// demo-repo.js
+// A pre-baked, clearly-marked DEMO scan (honojs/hono) so the first-run tour can
+// show real surfaces. Tagged __demo__ so it's excluded from stats/export and torn down.
+import { buildBlueprintScene } from './blueprint-adapter.js';
+
+export const DEMO_REPO = {
+  repoId: 'honojs/hono',
+  __demo__: true,
+  platform: 'github', language: 'TypeScript', license: 'MIT', stars: 21000,
+  category: 'Web framework', tags: ['edge', 'router'],
+  description: 'Small, fast web framework for the edges.',
+  saved_at: '2026-01-01T00:00:00.000Z',
+  eli5: 'A sample read: a tiny web framework that runs on edge runtimes using web-standard requests.',
+  fit: 'strong',
+  health: { score: 92 },
+  pros: ['Tiny and fast', 'Runs on most runtimes', 'Typed routing'],
+  cons: ['Smaller ecosystem than Express'],
+  red_flags: [],
+  capabilities: ['routing', 'middleware', 'edge'],
+  deepDive: {
+    atoms: [
+      { id: 'app', name: 'Hono app', kind: 'entrypoint', purpose: 'Creates the app and registers routes.' },
+      { id: 'router', name: 'router', kind: 'subsystem', purpose: 'Matches a request to a handler.' },
+      { id: 'context', name: 'Context', kind: 'subsystem', purpose: 'Wraps request and response per call.' },
+      { id: 'middleware', name: 'middleware', kind: 'module', purpose: 'Runs before/after handlers.' },
+      { id: 'handler', name: 'handler', kind: 'module', purpose: 'Your route logic.' },
+      { id: 'adapter', name: 'runtime adapter', kind: 'module', purpose: 'Binds to a runtime (Workers, Deno, Node).' },
+    ],
+    lineage: {
+      links: [
+        { from: 'app', to: 'router', relation: 'depends-on' },
+        { from: 'router', to: 'context', relation: 'triggers' },
+        { from: 'context', to: 'middleware', relation: 'triggers' },
+        { from: 'middleware', to: 'handler', relation: 'triggers' },
+        { from: 'app', to: 'adapter', relation: 'depends-on' },
+      ],
+      roots: ['app'], leaves: ['handler'],
+    },
+  },
+};
+
+/** The blueprint scene for the demo (so the Canvas tab renders real content). */
+export function demoScene() {
+  return buildBlueprintScene({ deepDive: DEMO_REPO.deepDive, repoId: DEMO_REPO.repoId, title: DEMO_REPO.repoId });
+}
+
+/** True only for the seeded demo row. */
+export function isDemo(repo) {
+  return !!(repo &amp;&amp; (repo.__demo__ === true || repo.repoId === DEMO_REPO.repoId &amp;&amp; repo.__demo__));
+}</code></pre>
+<ul><li>☐ <strong>Step 4 — run, expect PASS:</strong> <code>npx vitest run tests/demo-repo.test.js</code></li><li>☐ <strong>Step 5 — commit:</strong> <code>git add demo-repo.js tests/demo-repo.test.js &amp;&amp; git commit -m "feat(onboarding): honojs/hono DEMO fixture + demoScene/isDemo"</code></li></ul>
+<hr>
+<h3>Task 2: Copy deck + the anti-slop test (<code>onboarding-copy.js</code>)</h3>
+<p><strong>Files:</strong> Create <code>onboarding-copy.js</code>, <code>tests/onboarding-copy.test.js</code>. <strong>This test is the de-slop gate.</strong></p>
+<ul><li>☐ <strong>Step 1 — write the anti-slop test FIRST:</strong></li></ul>
+<pre><code>// tests/onboarding-copy.test.js
+import { describe, it, expect } from 'vitest';
+import { COPY } from '../onboarding-copy.js';
+
+const BANNED = ['unlock','supercharge','elevate','leverage','harness','streamline','empower','revolutionize','showcase','enhance','foster','facilitate','dive in','delve','seamless','effortless','robust','comprehensive','powerful','cutting-edge','game-changer','game-changing','transformative','remarkable','crucial','intricate','meticulous','landscape','tapestry','ecosystem','synergy','get ready','the fun stuff',"that's it","you're all set"];
+
+const lines = Object.entries(COPY); // [key, text]
+
+describe('Vee copy is de-slopped', () =&gt; {
+  it('uses no banned AI-slop vocab', () =&gt; {
+    for (const [k, t] of lines) {
+      const low = String(t).toLowerCase();
+      for (const b of BANNED) expect(low.includes(b), `"${k}": banned "${b}" in: ${t}`).toBe(false);
+    }
+  });
+  it('uses no em dashes (the #1 AI tell)', () =&gt; {
+    for (const [k, t] of lines) expect(String(t).includes('—'), `"${k}" has an em dash`).toBe(false);
+  });
+  it('keeps exclamation marks to at most one across the whole deck', () =&gt; {
+    const total = lines.reduce((n, [, t]) =&gt; n + (String(t).match(/!/g) || []).length, 0);
+    expect(total).toBeLessThanOrEqual(1);
+  });
+  it('every line is short (≤ 140 chars) and non-empty', () =&gt; {
+    for (const [k, t] of lines) { expect(String(t).length, k).toBeGreaterThan(0); expect(String(t).length, k).toBeLessThanOrEqual(140); }
+  });
+});</code></pre>
+<ul><li>☐ <strong>Step 2 — run, expect FAIL:</strong> <code>npx vitest run tests/onboarding-copy.test.js</code></li></ul>
+<ul><li>☐ <strong>Step 3 — implement <code>onboarding-copy.js</code></strong> (every line in Vee's voice; <code>{N}</code> is interpolated at render):</li></ul>
+<pre><code>// onboarding-copy.js
+// Vee's narration, in one place. Calm, candid, dry: name a specific thing, say what
+// it means in one plain clause, stop. No hype, no em dashes, no exclamation spam.
+export const COPY = {
+  introGreet: "I'm Vee. I read the source so you don't have to. Two minutes?",
+  introCard: 'Every repo you scan lands here. Fit, health, and the notes you take.',
+  introCorkboard: 'Your whole library as a board. The lines show how repos relate.',
+  introSearch: 'Search by name, or ask the library a question in plain words.',
+  introOpen: 'One click opens the full read on a repo.',
+  verdict: "The honest answer on whether to use it, before the README's pitch.",
+  blueprint: "How it's built, as a map you can drag. The tour button walks you through it.",
+  farewell: 'That covers it. Everything stays in your browser, nothing phones home.',
+  // milestone "power" tour
+  milestoneOffer: "{N} scans in. Your library's deep enough now for the tools that compare and connect repos. Want a look?",
+  milestoneAsk: "Ask across everything you've scanned, in plain words.",
+  milestoneCorkboard: 'See how your repos relate. Run Alternatives or Synergies to draw more lines.',
+  milestoneCompare: 'Select a few, then compare them side by side or wire them into a stack.',
+  milestoneOrganize: 'Sort a real library: the radar, auto-organize, and collections.',
+  milestoneDiscover: "Find new repos from the ones you've adopted.",
+};</code></pre>
+<ul><li>☐ <strong>Step 4 — run, expect PASS:</strong> <code>npx vitest run tests/onboarding-copy.test.js</code></li><li>☐ <strong>Step 5 — commit:</strong> <code>git add onboarding-copy.js tests/onboarding-copy.test.js &amp;&amp; git commit -m "feat(onboarding): Vee copy deck + machine-checked anti-slop test"</code></li></ul>
+<hr>
+<h3>Task 3: Tour logic (<code>onboarding.js</code>)</h3>
+<p><strong>Files:</strong> Create <code>onboarding.js</code>, <code>tests/onboarding.test.js</code>. Pure parts (step builders, milestone threshold, stage machine) are tested; the trigger functions that touch <code>chrome.storage</code>/DOM are thin and verified live.</p>
+<ul><li>☐ <strong>Step 1 — failing test:</strong></li></ul>
+<pre><code>// tests/onboarding.test.js
+import { describe, it, expect } from 'vitest';
+import { introStageA, introStageB, milestoneSteps, shouldOfferMilestone, MILESTONE_AT } from '../onboarding.js';
+
+describe('onboarding step lists', () =&gt; {
+  it('intro stages are non-empty, reference real copy keys + selectors', () =&gt; {
+    for (const list of [introStageA(), introStageB(), milestoneSteps()]) {
+      expect(list.length).toBeGreaterThan(0);
+      for (const s of list) { expect(typeof s.copyKey).toBe('string'); expect('target' in s).toBe(true); }
+    }
+  });
+  it('milestone offers at the threshold, not before, and not once seen', () =&gt; {
+    expect(shouldOfferMilestone({ realCount: MILESTONE_AT, milestoneTourSeen: false, onboardingSeen: true })).toBe(true);
+    expect(shouldOfferMilestone({ realCount: MILESTONE_AT - 1, milestoneTourSeen: false, onboardingSeen: true })).toBe(false);
+    expect(shouldOfferMilestone({ realCount: MILESTONE_AT + 9, milestoneTourSeen: true, onboardingSeen: true })).toBe(false);
+    expect(shouldOfferMilestone({ realCount: MILESTONE_AT, milestoneTourSeen: false, onboardingSeen: false })).toBe(false);
+  });
+});</code></pre>
+<ul><li>☐ <strong>Step 2 — run, expect FAIL:</strong> <code>npx vitest run tests/onboarding.test.js</code></li></ul>
+<ul><li>☐ <strong>Step 3 — implement <code>onboarding.js</code></strong> (pure builders + gate exported; trigger wrappers below them). Selectors target real Library/output anchors; adapt the exact selectors to the live DOM when wiring (Tasks 6–7), but these are the intended anchors:</li></ul>
+<pre><code>// onboarding.js
+import { COPY } from './onboarding-copy.js';
+
+export const MILESTONE_AT = 5;
+
+// Each step: { target (CSS selector or null=center), copyKey, mascotState, before? }
+export function introStageA() {
+  return [
+    { target: null, copyKey: 'introGreet', mascotState: 'idle' },
+    { target: '[data-node-demo], #grid .lib-card', copyKey: 'introCard', mascotState: 'idle' },
+    { target: '#lib-btn-corkboard', copyKey: 'introCorkboard', mascotState: 'thinking' },
+    { target: '#search', copyKey: 'introSearch', mascotState: 'idle' },
+    { target: '#grid .lib-card', copyKey: 'introOpen', mascotState: 'idle' },
+  ];
+}
+export function introStageB() {
+  return [
+    { target: '.v-fit, .lc-chip', copyKey: 'verdict', mascotState: 'strong' },
+    { target: '[data-tab="27"]', copyKey: 'blueprint', mascotState: 'thinking' },
+    { target: null, copyKey: 'farewell', mascotState: 'idle' },
+  ];
+}
+export function milestoneSteps() {
+  return [
+    { target: '#lib-ask-input', copyKey: 'milestoneAsk', mascotState: 'idle' },
+    { target: '#lib-btn-corkboard', copyKey: 'milestoneCorkboard', mascotState: 'thinking' },
+    { target: '#lib-btn-select, [data-act="select"]', copyKey: 'milestoneCompare', mascotState: 'idle' },
+    { target: '#lib-btn-radar', copyKey: 'milestoneOrganize', mascotState: 'idle' },
+    { target: '#lib-btn-discover', copyKey: 'milestoneDiscover', mascotState: 'idle' },
+  ];
+}
+
+/** Pure gate for the milestone offer. */
+export function shouldOfferMilestone({ realCount, milestoneTourSeen, onboardingSeen }) {
+  return !!onboardingSeen &amp;&amp; !milestoneTourSeen &amp;&amp; realCount &gt;= MILESTONE_AT;
+}
+
+export { COPY };</code></pre>
+<p>(The trigger wrappers <code>maybeStartLibraryOnboarding</code>/<code>maybeContinueOnboarding</code>/<code>maybeOfferMilestoneTour</code>/<code>startOnboarding</code> are added in Tasks 6–7 where they read <code>chrome.storage</code> and call <code>startCoachmark</code> — kept out of this pure module's tested surface, or added here as thin async fns that import <code>coachmark.js</code> + <code>demo-repo.js</code>. Implementer's choice; keep the tested exports above pure.)</p>
+<ul><li>☐ <strong>Step 4 — run, expect PASS + full suite:</strong> <code>npx vitest run tests/onboarding.test.js</code> then <code>npx vitest run</code></li><li>☐ <strong>Step 5 — commit:</strong> <code>git add onboarding.js tests/onboarding.test.js &amp;&amp; git commit -m "feat(onboarding): step lists + milestone gate (pure)"</code></li></ul>
+<hr>
+<h3>Task 4: Coachmark engine (<code>coachmark.js</code>)</h3>
+<p><strong>Files:</strong> Create <code>coachmark.js</code>, <code>tests/coachmark.test.js</code>. Pure <code>placeCard</code> geometry is unit-tested; the DOM mount (veil/spotlight/card/Vee/nav) is concrete + verified live.</p>
+<ul><li>☐ <strong>Step 1 — failing test (pure geometry):</strong></li></ul>
+<pre><code>// tests/coachmark.test.js
+import { describe, it, expect } from 'vitest';
+import { placeCard } from '../coachmark.js';
+
+const VP = { w: 1000, h: 700 };
+const CARD = { w: 320, h: 150 };
+
+describe('placeCard', () =&gt; {
+  it('places the card BELOW a target near the top', () =&gt; {
+    const p = placeCard({ x: 400, y: 40, width: 120, height: 36 }, CARD, VP);
+    expect(p.side).toBe('below');
+    expect(p.top).toBeGreaterThan(40 + 36);
+  });
+  it('places the card ABOVE a target near the bottom', () =&gt; {
+    const p = placeCard({ x: 400, y: 650, width: 120, height: 36 }, CARD, VP);
+    expect(p.side).toBe('above');
+    expect(p.top + CARD.h).toBeLessThanOrEqual(650);
+  });
+  it('keeps the card within the viewport horizontally', () =&gt; {
+    const p = placeCard({ x: 980, y: 300, width: 40, height: 36 }, CARD, VP);
+    expect(p.left).toBeGreaterThanOrEqual(8);
+    expect(p.left + CARD.w).toBeLessThanOrEqual(VP.w - 8);
+  });
+  it('centers when target is null', () =&gt; {
+    const p = placeCard(null, CARD, VP);
+    expect(p.side).toBe('center');
+    expect(Math.round(p.left)).toBe(Math.round((VP.w - CARD.w) / 2));
+  });
+});</code></pre>
+<ul><li>☐ <strong>Step 2 — run, expect FAIL:</strong> <code>npx vitest run tests/coachmark.test.js</code></li></ul>
+<ul><li>☐ <strong>Step 3 — implement <code>coachmark.js</code>:</strong></li></ul>
+<pre><code>// coachmark.js
+// DOM coachmark tour: a dimming veil, a spotlight around a target element, a card
+// (with Vee) anchored beside it, Back/Next/Skip + keyboard. No deps, MV3-safe.
+import { renderMascot, setMascotState } from './mascot.js';
+
+const GAP = 12, MARGIN = 8;
+
+/** Pure: where to put the card relative to a target rect (or center if null). */
+export function placeCard(rect, card, vp) {
+  if (!rect) return { side: 'center', left: (vp.w - card.w) / 2, top: (vp.h - card.h) / 2 };
+  const below = rect.y + rect.height + GAP, above = rect.y - GAP - card.h;
+  const side = (below + card.h &lt;= vp.h) ? 'below' : (above &gt;= 0 ? 'above' : 'below');
+  const top = side === 'below' ? below : above;
+  let left = rect.x + rect.width / 2 - card.w / 2;
+  left = Math.max(MARGIN, Math.min(left, vp.w - card.w - MARGIN));
+  return { side, left, top: Math.max(MARGIN, Math.min(top, vp.h - card.h - MARGIN)) };
+}
+
+/**
+ * @param {{steps:Array, copy:object, autoplay?:boolean, onExit?:fn}} args
+ *   step = { target:selector|null, copyKey, mascotState, before? }
+ * @returns {{ next, prev, exit }}
+ */
+export function startCoachmark({ steps, copy, onExit }) {
+  let i = 0;
+  const reduce = typeof matchMedia !== 'undefined' &amp;&amp; matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const veil = document.createElement('div'); veil.className = 'cm-veil';
+  const spot = document.createElement('div'); spot.className = 'cm-spotlight';
+  const card = document.createElement('div'); card.className = 'cm-card';
+  const veeSlot = document.createElement('div'); veeSlot.className = 'cm-vee';
+  const vee = renderMascot(veeSlot);
+  const text = document.createElement('p'); text.className = 'cm-text';
+  const ctl = document.createElement('div'); ctl.className = 'cm-ctl';
+  const back = document.createElement('button'); back.textContent = 'Back';
+  const next = document.createElement('button'); next.textContent = 'Next';
+  const skip = document.createElement('button'); skip.textContent = 'Skip'; skip.className = 'cm-skip';
+  ctl.append(skip, back, next);
+  card.append(veeSlot, text, ctl);
+  veil.append(spot); document.body.append(veil, card);
+
+  async function render() {
+    const s = steps[i];
+    if (s.before) { try { await s.before(); } catch { /* step action best-effort */ } }
+    setMascotState(vee, s.mascotState || 'idle');
+    text.textContent = copy[s.copyKey] || '';
+    back.disabled = i === 0;
+    next.textContent = i === steps.length - 1 ? 'Done' : 'Next';
+    const el = s.target ? document.querySelector(s.target) : null;
+    const vp = { w: innerWidth, h: innerHeight };
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+      const r = el.getBoundingClientRect();
+      spot.style.cssText = `display:block;left:${r.x - 6}px;top:${r.y - 6}px;width:${r.width + 12}px;height:${r.height + 12}px`;
+      const p = placeCard({ x: r.x, y: r.y, width: r.width, height: r.height }, { w: card.offsetWidth || 320, h: card.offsetHeight || 150 }, vp);
+      card.style.left = p.left + 'px'; card.style.top = p.top + 'px';
+    } else {
+      spot.style.display = 'none';
+      const p = placeCard(null, { w: card.offsetWidth || 320, h: card.offsetHeight || 150 }, vp);
+      card.style.left = p.left + 'px'; card.style.top = p.top + 'px';
+    }
+  }
+  function go(n) { i = Math.max(0, Math.min(steps.length - 1, n)); render(); }
+  function step(d) { (i + d &gt;= steps.length) ? exit() : go(i + d); }
+  function exit() { veil.remove(); card.remove(); removeEventListener('keydown', onKey); onExit &amp;&amp; onExit(); }
+  const onKey = (e) =&gt; { if (e.key === 'Escape') exit(); else if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); };
+  back.onclick = () =&gt; step(-1); next.onclick = () =&gt; step(1); skip.onclick = exit;
+  addEventListener('keydown', onKey);
+  render();
+  return { next: () =&gt; step(1), prev: () =&gt; step(-1), exit };
+}</code></pre>
+<ul><li>☐ <strong>Step 4 — run, expect PASS:</strong> <code>npx vitest run tests/coachmark.test.js</code> then <code>npx vitest run</code></li><li>☐ <strong>Step 5 — commit:</strong> <code>git add coachmark.js tests/coachmark.test.js &amp;&amp; git commit -m "feat(onboarding): coachmark engine (pure placeCard + veil/spotlight/card/Vee)"</code></li></ul>
+<hr>
+<h3>Task 5: Coachmark styles (<code>themes.css</code>)</h3>
+<p><strong>Files:</strong> Modify <code>themes.css</code> (append, token-based, reduced-motion-guarded).</p>
+<ul><li>☐ <strong>Step 1 — append:</strong></li></ul>
+<pre><code>/* ── Onboarding coachmark ── */
+.cm-veil { position: fixed; inset: 0; z-index: 9000; background: color-mix(in srgb, var(--text, #000) 55%, transparent); }
+.cm-spotlight { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px color-mix(in srgb, var(--text,#000) 55%, transparent), 0 0 0 2px var(--accent, #c2691c); transition: all .2s var(--ease-out, ease); pointer-events: none; }
+.cm-card { position: fixed; z-index: 9001; width: 320px; max-width: 92vw; background: var(--surface, #fffdf6); color: var(--text, #211c14); border: 1px solid var(--border, #b9a273); border-radius: 12px; padding: 14px 16px; box-shadow: 0 12px 30px rgba(0,0,0,.3); }
+.cm-vee { width: 56px; height: 56px; float: right; margin: 0 0 6px 10px; }
+.cm-text { margin: 2px 0 12px; font-size: 14.5px; line-height: 1.5; }
+.cm-ctl { display: flex; gap: 8px; align-items: center; }
+.cm-ctl button { padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; border: 1px solid var(--border, #b9a273); background: var(--surface, #fffdf6); color: var(--text); }
+.cm-ctl .cm-skip { margin-right: auto; border: none; background: transparent; color: var(--text-sub, #6b5a36); }
+.cm-badge-demo { font: 700 9px/1 ui-monospace, monospace; letter-spacing: .1em; color: #fff; background: var(--accent, #c2691c); border-radius: 4px; padding: 2px 5px; margin-left: 6px; vertical-align: middle; }
+@media (prefers-reduced-motion: reduce) { .cm-spotlight { transition: none; } }</code></pre>
+<ul><li>☐ <strong>Step 2 — verify</strong> braces balanced (<code>node -e</code> brace count) + <code>npx vitest run</code> green.</li><li>☐ <strong>Step 3 — commit:</strong> <code>git add themes.css &amp;&amp; git commit -m "feat(onboarding): coachmark styles (token-based, reduced-motion)"</code></li></ul>
+<hr>
+<h3>Task 6: Wire the Library (intro trigger, milestone offer, replay chip, ⌘K, demo seed/teardown)</h3>
+<p><strong>Files:</strong> Modify <code>library.html</code>, <code>library.js</code>. DOM glue — verified live (no unit test). <strong>Read <code>library.js</code> init/render, the <code>chrome.storage.local</code> usage (the <code>guideSeen</code> pattern), <code>allRows</code>, the stats render, the ⌘K palette command list, and <code>openRow</code> before editing.</strong></p>
+<ul><li>☐ <strong>Step 1 — add the demo badge + empty-state chip in <code>library.html</code></strong> (the chip lives in the empty-state markup library.js renders, so add it in the <code>#empty</code> template inside <code>library.js</code> instead — see Step 2). In <code>library.html</code> no structural change is required beyond confirming <code>#empty</code> exists.</li></ul>
+<ul><li>☐ <strong>Step 2 — <code>library.js</code>:</strong> import and wire. Add near the other imports:</li></ul>
+<pre><code>import { introStageA, shouldOfferMilestone, milestoneSteps, COPY } from './onboarding.js';
+import { startCoachmark } from './coachmark.js';
+import { DEMO_REPO, demoScene, isDemo } from './demo-repo.js';
+import { saveRepo, deleteRepo, saveScene } from './store.js';</code></pre>
+<p>After <code>init()</code> + first <code>render()</code>, add:</p>
+<pre><code>async function checkOnboarding() {
+  const { onboardingSeen, milestoneTourSeen } = await chrome.storage.local.get(['onboardingSeen','milestoneTourSeen']);
+  const real = (allRows || []).filter((r) =&gt; !isDemo(r));
+  if (!onboardingSeen) {
+    if (real.length === 0) return startIntro();         // brand-new → run intro
+    await chrome.storage.local.set({ onboardingSeen: true }); // returning user, skip
+  }
+  if (shouldOfferMilestone({ realCount: real.length, milestoneTourSeen: !!milestoneTourSeen, onboardingSeen: true })) {
+    offerMilestone(real.length);
+  }
+}
+async function startIntro() {
+  await saveRepo(DEMO_REPO); await saveScene(demoScene());   // seed demo (real surfaces)
+  await refreshRows(); render();                              // re-render so the demo card shows
+  startCoachmark({
+    steps: introStageA(), copy: COPY,
+    onExit: async () =&gt; { await chrome.storage.local.set({ onboardingStage: 'verdict' }); openRow(DEMO_REPO.repoId); },
+  });
+}
+function offerMilestone(n) {
+  startCoachmark({
+    steps: [{ target: null, copyKey: 'milestoneOffer', mascotState: 'idle' }],
+    copy: { ...COPY, milestoneOffer: COPY.milestoneOffer.replace('{N}', n) },
+    onExit: async () =&gt; { /* offer card's Next leads into the tour */ startCoachmark({ steps: milestoneSteps(), copy: COPY, onExit: () =&gt; chrome.storage.local.set({ milestoneTourSeen: true }) }); },
+  });
+}</code></pre>
+<blockquote>Adapt: the demo teardown — on intro completion (Stage B's farewell) clear the demo; on any Library load when <code>onboardingSeen</code> is true, sweep stray demos: <code>for (const r of allRows) if (isDemo(r)) await deleteRepo(r.repoId)</code>. Make <code>offerMilestone</code> a 3-button prompt (Show me / Maybe later / Don't ask) rather than auto-running — wire "Maybe later" to re-offer at ≥10, "Don't ask"/complete → set <code>milestoneTourSeen</code>. Exclude <code>isDemo</code> rows from the stats counts in the stats render. Add a "Take the tour" command to the ⌘K palette and a "👋 New here? Take the tour" chip to the <code>#empty</code> template, both calling <code>startIntro()</code>.</blockquote>
+<ul><li>☐ <strong>Step 3 — verify:</strong> <code>node --check library.js</code>; <code>npx vitest run</code> (all green); reload the extension, confirm the intro fires on an empty library and the demo card appears.</li><li>☐ <strong>Step 4 — commit:</strong> <code>git add library.html library.js &amp;&amp; git commit -m "feat(onboarding): Library intro trigger + milestone offer + replay + demo seed/teardown"</code></li></ul>
+<hr>
+<h3>Task 7: Wire Stage B in output-tab (<code>output-tab.js</code>)</h3>
+<p><strong>Files:</strong> Modify <code>output-tab.js</code>. DOM glue — verified live. <strong>Read how output-tab gets its data + the Canvas tab (Task-14 of the canvas plan: <code>data-tab="27"</code>, <code>renderCanvas</code>).</strong></p>
+<ul><li>☐ <strong>Step 1 — <code>output-tab.js</code>:</strong> import + call on init:</li></ul>
+<pre><code>import { introStageB, COPY } from './onboarding.js';
+import { startCoachmark } from './coachmark.js';
+import { clearDemoEverywhere } from './demo-repo.js'; // small helper: delete demo repo + scene</code></pre>
+<p>After the page renders a repo, add:</p>
+<pre><code>async function maybeContinueOnboarding(d) {
+  const { onboardingStage } = await chrome.storage.local.get('onboardingStage');
+  if (onboardingStage !== 'verdict') return;
+  await chrome.storage.local.remove('onboardingStage');
+  startCoachmark({
+    steps: introStageB(), copy: COPY,
+    onExit: async () =&gt; {
+      await clearDemoEverywhere();                        // remove the seeded demo
+      await chrome.storage.local.set({ onboardingSeen: true });
+    },
+  });
+}</code></pre>
+<blockquote><code>introStageB()</code> step 2 has <code>before: () =&gt; show(27)</code> to open the Canvas tab before spotlighting the Blueprint — add that <code>before</code> hook in <code>onboarding.js</code>'s <code>introStageB</code> (it can call the page's tab-switch). Add <code>clearDemoEverywhere()</code> to <code>demo-repo.js</code> (deletes the demo repo via <code>deleteRepo</code> + its scene via <code>deleteScene</code>). Guard each step's target so it no-ops if absent.</blockquote>
+<ul><li>☐ <strong>Step 2 — verify:</strong> <code>node --check output-tab.js</code>; <code>npx vitest run</code>; reload + run the intro through to Stage B.</li><li>☐ <strong>Step 3 — commit:</strong> <code>git add output-tab.js demo-repo.js &amp;&amp; git commit -m "feat(onboarding): output-tab Stage-B continuation + demo teardown"</code></li></ul>
+<hr>
+<h3>Task 8: Flags allowlist, replay button, demo exclusions</h3>
+<p><strong>Files:</strong> Modify <code>settings-backup.js</code>, <code>options.{js,html}</code>, <code>store.js</code>, <code>backup.js</code>.</p>
+<ul><li>☐ <strong>Step 1 — <code>settings-backup.js</code>:</strong> add <code>'onboardingSeen'</code>, <code>'milestoneTourSeen'</code> to <code>SAFE_SETTING_KEYS</code>. <code>node --check</code>.</li><li>☐ <strong>Step 2 — <code>options.html</code>/<code>options.js</code>:</strong> add a <strong>"Replay onboarding"</strong> button → <code>chrome.storage.local.set({ onboardingSeen: false, milestoneTourSeen: false }); chrome.tabs.create({ url: chrome.runtime.getURL('library.html') });</code></li><li>☐ <strong>Step 3 — <code>store.js</code>/<code>backup.js</code>:</strong> exclude <code>__demo__</code> rows from <code>exportStores</code>/<code>buildBackup</code> and from any library-stats count (filter <code>!isDemo(r)</code> / <code>!r.payload?.__demo__</code>). Add a tiny test in <code>tests/backup-scenes.test.js</code> or a new test asserting a <code>__demo__</code> repo is dropped from <code>buildBackup</code>.</li><li>☐ <strong>Step 4 — verify + commit:</strong> <code>npx vitest run</code>; <code>git add -A &amp;&amp; git commit -m "feat(onboarding): allowlist flags, replay button, exclude __demo__ from export/stats"</code></li></ul>
+<hr>
+<h3>Task 9: De-slop voice review + docs + demo harness</h3>
+<p><strong>Files:</strong> <code>onboarding-copy.js</code> (review only), <code>CHANGELOG.md</code>, <code>README.md</code>, <code>onboarding-demo.html</code> (new, standalone).</p>
+<ul><li>☐ <strong>Step 1 — copy-reviewer gate:</strong> dispatch a code/copy reviewer over <code>onboarding-copy.js</code> with the anti-slop ruleset (banned vocab, em dash, exclamation cap, the Vee formula). Apply any fixes; the <code>tests/onboarding-copy.test.js</code> machine-check must still pass. (This is the human-judgment layer the test can't cover: does each line sound like a dry senior engineer, not a brochure?)</li><li>☐ <strong>Step 2 — <code>onboarding-demo.html</code>:</strong> a standalone page that mounts <code>coachmark.js</code> over a few fake target elements with the real <code>COPY</code>, so the look can be screenshotted without the extension context (mirrors <code>canvas-demo.html</code>).</li><li>☐ <strong>Step 3 — docs:</strong> CHANGELOG entry + README "What you get" note: a Vee-guided first-run tour + a milestone power tour. Commit.</li></ul>
+<hr>
+<h2>Final verification</h2>
+<ul><li>☐ <code>npx vitest run</code> — all green (new: demo-repo, onboarding-copy [the anti-slop gate], onboarding, coachmark).</li><li>☐ <code>node --check</code> on every new/changed <code>.js</code>.</li><li>☐ <strong>Live smoke:</strong> fresh profile → open Library → intro fires, demo seeds, Vee walks Stage A → opens demo → Stage B (Verdict + Blueprint) → demo cleared, <code>onboardingSeen</code> set. Scan 5 real repos → milestone offer appears. Replay from chip / ⌘K / Settings. Reduced-motion + a couple themes. Screenshot via <code>onboarding-demo.html</code>.</li></ul>
+<h2>Out of scope</h2>
+<ul><li>Telemetry of any kind. Branching tours by persona. Voiced/audio Vee.</li></ul>
+</div></body></html>
