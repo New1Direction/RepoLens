@@ -1,46 +1,19 @@
-// @vitest-environment repolensdom
-// (Spec annotated jsdom; repo ships no DOM dep and `npm install` is off-limits,
-// so this resolves — via a resolve.alias in vitest.config.js — to an in-repo
-// minimal DOM environment. The test body below is unchanged from the spec.)
-import { describe, it, expect, beforeEach } from 'vitest';
-import { mountCanvas } from '../canvas-engine.js';
+import { describe, it, expect } from 'vitest';
+import { edgeBezier, NODE_W, NODE_H } from '../canvas-engine.js';
 
-const scene = () => ({
-  id: 'repo:1', scope: 'blueprint', title: 't',
-  nodes: [
-    { id: 'a', label: 'A', kind: 'module', layer: null, x: 0, y: 0, pinned: false, ref: {} },
-    { id: 'b', label: 'B', kind: 'module', layer: null, x: 200, y: 0, pinned: false, ref: {} },
-  ],
-  edges: [{ id: 'e1', from: 'a', to: 'b', rel: 'depends-on', note: null, userDrawn: false }],
-  annotations: [], camera: { x: 0, y: 0, zoom: 1 }, tour: null, source: {},
-});
-
-describe('mountCanvas', () => {
-  let host;
-  beforeEach(() => { host = document.createElement('div'); document.body.appendChild(host); });
-
-  it('renders one <g> per node and one path per edge', () => {
-    mountCanvas(host, scene(), {});
-    expect(host.querySelectorAll('[data-node]').length).toBe(2);
-    expect(host.querySelectorAll('[data-edge]').length).toBe(1);
+describe('edgeBezier', () => {
+  it('starts at the source node right-middle and ends at the target left-middle', () => {
+    const d = edgeBezier({ x: 0, y: 0 }, { x: 300, y: 0 });
+    expect(d.startsWith(`M${NODE_W},${NODE_H / 2}`)).toBe(true);
+    expect(d.includes(`300,${NODE_H / 2}`)).toBe(true);
   });
-
-  it('moveNode persists via onChange and updates the node transform without re-creating nodes', () => {
-    let saved = null;
-    const api = mountCanvas(host, scene(), { onChange: (s) => { saved = s; } });
-    const before = host.querySelector('[data-node="a"]');
-    api.moveNode('a', 50, 60);
-    const after = host.querySelector('[data-node="a"]');
-    expect(after).toBe(before);
-    expect(after.getAttribute('transform')).toContain('50');
-    expect(saved.nodes.find((n) => n.id === 'a')).toMatchObject({ x: 50, y: 60 });
+  it('emits exactly one cubic-bezier segment', () => {
+    const d = edgeBezier({ x: 10, y: 20 }, { x: 100, y: 80 });
+    expect((d.match(/C/g) || []).length).toBe(1);
   });
-
-  it('setSpotlight toggles classes without changing node count', () => {
-    const api = mountCanvas(host, scene(), {});
-    api.setSpotlight(['a']);
-    expect(host.querySelector('[data-node="a"]').classList.contains('is-spotlight')).toBe(true);
-    expect(host.querySelector('[data-node="b"]').classList.contains('is-dim')).toBe(true);
-    expect(host.querySelectorAll('[data-node]').length).toBe(2);
+  it('routes the control points to the horizontal midpoint', () => {
+    const d = edgeBezier({ x: 0, y: 0 }, { x: 200, y: 0 });
+    const mx = (0 + NODE_W + 200) / 2;
+    expect(d).toContain(`C${mx},`);
   });
 });

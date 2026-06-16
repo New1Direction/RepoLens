@@ -5,8 +5,21 @@
 import { escapeHtml as esc } from './safe-html.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
-const NW = 132, NH = 44;
+export const NODE_W = 132, NODE_H = 44;
 const el = (name, attrs = {}) => { const e = document.createElementNS(SVGNS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+
+/**
+ * Pure: cubic-bezier path string from source node's right-middle to target node's left-middle.
+ * a, b are node objects with {x, y} top-left coordinates.
+ * @param {{ x: number, y: number }} a
+ * @param {{ x: number, y: number }} b
+ * @returns {string}
+ */
+export function edgeBezier(a, b) {
+  const sx = a.x + NODE_W, sy = a.y + NODE_H / 2;
+  const tx = b.x, ty = b.y + NODE_H / 2, mx = (sx + tx) / 2;
+  return `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
+}
 
 /**
  * Mount an interactive canvas into `host`.
@@ -45,11 +58,8 @@ export function mountCanvas(host, inputScene, { onChange } = {}) {
   const edgeEls = new Map();
 
   const byId = (id) => scene.nodes.find((n) => n.id === id);
-  function nodeAnchor(n, side) { return side === 'out' ? { x: n.x + NW, y: n.y + NH / 2 } : { x: n.x, y: n.y + NH / 2 }; }
   function edgePath(e) {
-    const a = byId(e.from), b = byId(e.to); if (!a || !b) return '';
-    const s = nodeAnchor(a, 'out'), t = nodeAnchor(b, 'in'), mx = (s.x + t.x) / 2;
-    return `M${s.x},${s.y} C${mx},${s.y} ${mx},${t.y} ${t.x},${t.y}`;
+    return (byId(e.from) && byId(e.to)) ? edgeBezier(byId(e.from), byId(e.to)) : '';
   }
 
   for (const e of scene.edges) {
@@ -61,8 +71,8 @@ export function mountCanvas(host, inputScene, { onChange } = {}) {
     const g = el('g', { class: `rl-node rl-kind-${n.kind}`, transform: `translate(${n.x},${n.y})`, tabindex: '0' });
     g.dataset.node = n.id;
     if (n.ref && n.ref.root) g.classList.add('is-root');
-    const rect = el('rect', { width: NW, height: NH, rx: 8 });
-    const text = el('text', { x: NW / 2, y: NH / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central' });
+    const rect = el('rect', { width: NODE_W, height: NODE_H, rx: 8 });
+    const text = el('text', { x: NODE_W / 2, y: NODE_H / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central' });
     text.textContent = n.label;
     g.append(rect, text);
     nodeLayer.append(g); nodeEls.set(n.id, g);

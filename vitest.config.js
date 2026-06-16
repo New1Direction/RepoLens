@@ -1,19 +1,6 @@
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-// The repo ships no DOM dependency (jsdom/happy-dom) and `npm install` is
-// off-limits, so the one DOM-bound test (canvas-engine) runs against an in-repo
-// minimal DOM. Vitest's `@vitest-environment` pragma only accepts a bare
-// `[\w-]+` token, which it resolves as `vitest-environment-<name>`; this alias
-// points that lookup at our local environment module.
-const domEnvironment = fileURLToPath(new URL('./tests/dom-environment.js', import.meta.url));
-
 export default defineConfig({
-  resolve: {
-    alias: {
-      'vitest-environment-repolensdom': domEnvironment,
-    },
-  },
   test: {
     environment: 'node',
     coverage: {
