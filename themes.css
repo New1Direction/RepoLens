@@ -468,3 +468,21 @@
 .rl-tour-lesson { font-size: 11px; color: var(--text-sub, #5a4f3e); background: var(--border, #f3ead6); border-radius: 6px; padding: 6px 9px; margin-top: 8px; }
 .rl-tour-ctl { display: flex; gap: 8px; margin-top: 11px; }
 .rl-tour-ctl button { padding: 5px 11px; border-radius: 7px; font-size: 12px; cursor: pointer; }
+
+/* ── Corkboard (library board) ── */
+.corkboard-panel { position: relative; height: 70vh; min-height: 460px; border: 1px solid var(--border, #b9a273); border-radius: 14px; overflow: hidden; background: #c9a86a; background-image: radial-gradient(circle, rgba(120,90,40,.28) 1px, transparent 1px); background-size: 12px 12px; }
+.corkboard-panel.hidden, #grid.hidden, #radar-panel.hidden { display: none; }
+.corkboard-panel .rl-canvas { background: transparent; height: 100%; }
+.corkboard-panel .rl-kind-repo rect { fill: #f4e8cb; stroke: #9a8358; }
+.corkboard-panel .rl-kind-idea rect { fill: #fff7e6; stroke: #c2691c; stroke-dasharray: 5 3; }
+.corkboard-panel .rl-fit-strong rect { stroke: #2f7d34; stroke-width: 2.5; }
+.corkboard-panel .rl-fit-solid  rect { stroke: #3b6ea5; stroke-width: 2; }
+.corkboard-panel .rl-fit-care   rect { stroke: #c2691c; stroke-width: 2; }
+.corkboard-panel .rl-fit-risky  rect { stroke: #b3372f; stroke-width: 2.5; }
+.corkboard-panel .rl-node text { fill: #211c14; }
+.corkboard-panel .rl-edge { stroke-width: 1.8; opacity: .85; }
+.corkboard-panel .rl-ALTERNATIVE_TO { stroke: #3b6ea5; }
+.corkboard-panel .rl-SYNERGIZES_WITH { stroke: #2f7d34; }
+.corkboard-panel .rl-COMPARED_TO { stroke: #b3372f; }
+.corkboard-panel .rl-COMBINES { stroke: #c2691c; stroke-dasharray: 5 4; }
+.corkboard-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; color: #4a3f28; font: 13px ui-monospace, monospace; padding: 24px; }
