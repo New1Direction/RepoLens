@@ -28,4 +28,10 @@ export default [
     files: ['tests/**/*.js'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
+  {
+    // CLI tooling (e.g. the HTML parse gate) reports via stdout/stderr by design.
+    files: ['tools/**/*.{js,mjs}'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { 'no-console': 'off' },
+  },
 ];
