@@ -3,7 +3,10 @@
 // show), and each card manages its repo: click to reopen the saved analysis, hover for
 // re-scan / source / remove actions.
 
-import { scrollPoints, deleteRepo, exportStores, importStores, clearLibrary, listCollections, saveCollection, deleteCollection, listDecisions, saveDecision, listAllSnapshots } from './store.js';
+import { scrollPoints, deleteRepo, exportStores, importStores, clearLibrary, listCollections, saveCollection, deleteCollection, listDecisions, saveDecision, listAllSnapshots, getLibraryGraph, getScene, saveScene } from './store.js';
+import { buildLibraryScene } from './library-scene.js';
+import { layoutCorkboard } from './canvas-layout.js';
+import { mountCanvas } from './canvas-engine.js';
 import { rankRepos } from './store/search.js';
 import { DECISION_META } from './decision-log.js';
 import { makeCollection, validateCollectionName, addRepoToCollection, toggleRepoInCollection, collectionContains, sortedCollections, repoCollections, removeRepoFromCollection, nextColor, COLLECTION_COLORS } from './collections.js';
@@ -1109,6 +1112,9 @@ function toggleRadarView() {
   btn?.classList.toggle('on', state.view === 'radar');
   document.getElementById('radar-panel')?.classList.toggle('hidden', state.view !== 'radar');
   document.getElementById('grid')?.classList.toggle('hidden', state.view === 'radar');
+  // Ensure the Corkboard view is closed when the Radar opens.
+  document.getElementById('corkboard-panel')?.classList.add('hidden');
+  document.getElementById('lib-btn-corkboard')?.classList.remove('on');
   if (state.view === 'radar') renderRadar(); else render();
 }
 
@@ -1179,6 +1185,64 @@ function radarToMarkdown(byDecision) {
     lines.push('');
   }
   return lines.join('\n').trim();
+}
+
+// ─── Corkboard view ──────────────────────────────────────────────────────────
+// A red-string board of the library: the nodes/edges graph laid out on an
+// interactive canvas. Mirrors the Radar view-toggle pattern (state.view).
+
+function toggleCorkboardView() {
+  state.view = state.view === 'corkboard' ? 'list' : 'corkboard';
+  const on = state.view === 'corkboard';
+  document.getElementById('lib-btn-corkboard')?.classList.toggle('on', on);
+  document.getElementById('corkboard-panel')?.classList.toggle('hidden', !on);
+  document.getElementById('grid')?.classList.toggle('hidden', on);
+  // Ensure the Radar view is closed when the Corkboard opens.
+  document.getElementById('radar-panel')?.classList.add('hidden');
+  document.getElementById('lib-btn-radar')?.classList.remove('on');
+  if (on) renderCorkboard(); else render();
+}
+
+let cbApi = null;
+async function renderCorkboard() {
+  const panel = document.getElementById('corkboard-panel');
+  if (!panel) return;
+  const graph = await getLibraryGraph();
+  if (!graph.nodes.length) {
+    if (cbApi) { cbApi.destroy(); cbApi = null; }
+    panel.innerHTML = '<div class="corkboard-empty">Scan a few repos — and run Alternatives / Synergies / Versus — to grow your board.</div>';
+    return;
+  }
+  // Repo metadata (fit level + health) from the loaded rows. `r.fit.level` is the
+  // semantic fit key (strong/solid/care/risky); `r.health` is a 0–100 number.
+  const repos = (allRows || []).map((r) => ({
+    repoId: r.repoId,
+    fit: (r.fit && r.fit.level) || null,
+    health: Number.isFinite(r.health) ? { score: r.health } : null,
+    decision: decisionMap.get(r.repoId)?.decision || null,
+  }));
+  // Collection filter: when a board is active, restrict to its repoIds.
+  let only = null;
+  if (state.collection) {
+    only = collections.find((c) => c.id === state.collection)?.repoIds || null;
+  }
+  const built = buildLibraryScene({ graph, repos, only });
+  // Reuse a saved arrangement: keep saved positions, seed-layout the rest.
+  const saved = await getScene('library');
+  const savedPos = saved ? Object.fromEntries((saved.nodes || []).map((n) => [n.id, n])) : {};
+  const seeded = layoutCorkboard(built.nodes, built.edges);
+  built.nodes = seeded.map((n) => (savedPos[n.id]
+    ? { ...n, x: savedPos[n.id].x, y: savedPos[n.id].y, pinned: !!savedPos[n.id].pinned }
+    : n));
+  panel.innerHTML = '';
+  if (cbApi) cbApi.destroy();
+  cbApi = mountCanvas(panel, built, { onChange: (s) => saveScene(s).catch(() => {}) });
+  panel.querySelector('svg')?.addEventListener('dblclick', (ev) => {
+    const g = ev.target.closest('[data-node]');
+    if (!g) return;
+    const id = g.dataset.node;
+    if (id && id.includes('/')) openRow(id); // repo node ids are "owner/name"
+  });
 }
 
 // ─── Decision filter ─────────────────────────────────────────────────────────
@@ -2254,7 +2318,8 @@ function initLibraryPalette() {
       render();
     } },
     { section: 'View', name: 'Tech Radar', description: 'Organize repos by Adopt/Trial/Hold/Reject decision', action: () => { if (state.view !== 'radar') toggleRadarView(); } },
-    { name: 'List view', description: 'Default card grid', action: () => { if (state.view !== 'list') toggleRadarView(); } },
+    { name: 'Corkboard', description: 'A red-string board of your library', action: () => { if (state.view !== 'corkboard') toggleCorkboardView(); } },
+    { name: 'List view', description: 'Default card grid', action: () => { if (state.view === 'radar') toggleRadarView(); else if (state.view === 'corkboard') toggleCorkboardView(); } },
     { section: 'Pins', name: 'Unpin all', description: 'Remove all pinned repos from the top section', action: async () => { pinned.clear(); await chrome.storage.local.set({ repolens_pinned: [] }); render(); } },
     { section: 'Actions', name: 'Auto-organize by language', description: 'Group repos into language collections', action: () => autoOrganize() },
     { name: 'Re-scan all stale (30+ days)', description: 'Open Batch Scan pre-filled with repos not scanned in 30 days', action: () => refreshStale() },
@@ -2311,6 +2376,7 @@ function initLibraryPalette() {
 async function init() {
   document.getElementById('settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
   document.getElementById('lib-btn-radar')?.addEventListener('click', toggleRadarView);
+  document.getElementById('lib-btn-corkboard')?.addEventListener('click', toggleCorkboardView);
   wireToolbar(); // before the empty-state return, so Import works on an empty library
 
   const [points, cachedList, prefs, savedCollections, savedDecisions] = await Promise.all([
