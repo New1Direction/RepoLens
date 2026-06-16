@@ -1,6 +1,9 @@
 // Stack Builder output tab — polls chrome.storage.session for the build result.
 import { initTheme } from './theme.js';
 import { STACK_LAYERS } from './stack-prompt.js';
+import { buildStackScene } from './stack-scene.js';
+import { layoutStack } from './canvas-layout.js';
+import { mountCanvas } from './canvas-engine.js';
 
 initTheme();
 
@@ -9,6 +12,28 @@ const sessionKey = params.get('key');
 const main = document.getElementById('main');
 
 const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// ── Stack Studio: render the result on the interactive canvas (toggle) ──
+let latestResult = null;
+let stackCanvasApi = null;
+function toggleStackCanvas() {
+  const host = document.getElementById('stack-canvas');
+  const btn = document.getElementById('stack-view-canvas');
+  if (!host || !latestResult) return;
+  if (!host.classList.contains('hidden')) {
+    host.classList.add('hidden');
+    if (stackCanvasApi) { stackCanvasApi.destroy(); stackCanvasApi = null; }
+    if (btn) btn.textContent = '▦ View on canvas';
+    return;
+  }
+  const scene = buildStackScene(latestResult, latestResult.title);
+  scene.nodes = layoutStack(scene.nodes, (scene.source && scene.source.order) || []);
+  host.innerHTML = '';
+  host.classList.remove('hidden');
+  stackCanvasApi = mountCanvas(host, scene, {});
+  if (btn) btn.textContent = '▤ Hide canvas';
+}
+document.getElementById('stack-view-canvas')?.addEventListener('click', toggleStackCanvas);
 
 function render(data) {
   if (!data) {
@@ -34,6 +59,8 @@ function render(data) {
   }
 
   document.title = `RepoLens — ${r.title || 'Stack Builder'}`;
+  latestResult = r;
+  document.getElementById('stack-view-canvas')?.removeAttribute('hidden');
 
   const rolesHtml = (r.roles || []).map(role => {
     const layer = STACK_LAYERS.includes(role.layer) ? role.layer : 'tooling';
