@@ -115,6 +115,11 @@ describe('store — graph', () => {
 import { appendScanSnapshot, listSnapshots, listAllSnapshots } from '../store.js';
 
 describe('scan ledger', () => {
+  beforeEach(async () => {
+    await idbClear('snapshots');
+    await idbClear('repos');
+  });
+
   it('saveRepo records a snapshot and re-scan appends a second point', async () => {
     await saveRepo({ repoId: 'led/one', health: 70, stars: 10, red_flags: [] });
     await saveRepo({ repoId: 'led/one', health: 90, stars: 20, red_flags: [] });

@@ -121,6 +121,14 @@ describe('backupFilename', () => {
 describe('backup: snapshots', () => {
   const snapRow = { id: 1, repoId: 'a/b', snaps: [{ ts: '2026-06-01T00:00:00.000Z', health: 80, fit: 'solid', stars: 1, flags: [] }] };
 
+  it('clamps an imported snapshots row to the 30 most-recent entries', () => {
+    const big = { id: 9, repoId: 'big/repo', snaps: Array.from({ length: 50 }, (_, i) => ({ ts: `2026-06-01T00:00:${String(i).padStart(2, '0')}.000Z`, health: i, fit: 'solid', stars: 0, flags: [] })) };
+    const { value } = validateBackup({ format: 'repolens-backup', version: BACKUP_VERSION, snapshots: [big] });
+    expect(value.snapshots[0].snaps).toHaveLength(30);
+    expect(value.snapshots[0].snaps[0].health).toBe(20); // oldest 20 dropped, keeps the most recent 30 (20..49)
+    expect(value.snapshots[0].snaps[29].health).toBe(49);
+  });
+
   it('buildBackup includes snapshots and counts them', () => {
     const b = buildBackup({ snapshots: [snapRow], exportedAt: '2026-06-15T00:00:00.000Z' });
     expect(b.version).toBe(BACKUP_VERSION);

@@ -870,7 +870,7 @@ async function exportLibrary() {
   try {
     setStatus('Preparing backup…');
     const [stores, cached] = await Promise.all([exportStores(), listCached().catch(() => [])]);
-    const backup = buildBackup({ repos: stores.repos, nodes: stores.nodes, edges: stores.edges, cache: cached, collections: stores.collections, snapshots: stores.snapshots });
+    const backup = buildBackup({ repos: stores.repos, nodes: stores.nodes, edges: stores.edges, cache: cached, collections: stores.collections, decisions: stores.decisions, snapshots: stores.snapshots });
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

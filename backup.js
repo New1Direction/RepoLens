@@ -15,6 +15,10 @@ export const BACKUP_VERSION = 2;
 // past these is dropped with a surfaced warning (never silently).
 export const MAX_ROWS = { repos: 5000, nodes: 20000, edges: 50000, cache: 5000, collections: 2000, decisions: 5000, snapshots: 5000 };
 
+// Per-repo snapshot ring-buffer cap (mirrors SNAPSHOT_CAP in snapshots.js); each
+// imported snapshots row is trimmed to its most recent SNAP_CAP entries.
+const SNAP_CAP = 30;
+
 const arr = (x) => (Array.isArray(x) ? x : []);
 const rowHasRepo = (r) => !!(r && r.id != null && r.payload && r.payload.repoId);
 const rowHasId = (r) => !!(r && r.id != null && r.payload != null);
@@ -83,7 +87,7 @@ export function validateBackup(obj) {
     cache: clamp('cache', arr(obj.cache).filter(cacheOk)),
     collections: clamp('collections', arr(obj.collections).filter(collectionOk)),
     decisions: clamp('decisions', arr(obj.decisions).filter(decisionOk)),
-    snapshots: clamp('snapshots', arr(obj.snapshots).filter(snapshotOk)),
+    snapshots: clamp('snapshots', arr(obj.snapshots).filter(snapshotOk).map((r) => ({ ...r, snaps: arr(r.snaps).slice(-SNAP_CAP) }))),
   };
   return { ok: errors.length === 0, errors, warnings, value };
 }
