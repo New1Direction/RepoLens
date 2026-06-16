@@ -28,6 +28,13 @@ import { initPalette } from './palette.js';
 import { toggleRepoInCollection, collectionContains, sortedCollections, COLLECTION_COLORS } from './collections.js';
 import { detectPlatform } from './url-detector.js';
 import { listSnapshots } from './store.js';
+import { hashId } from './scene.js';
+import { buildBlueprintScene } from './blueprint-adapter.js';
+import { mountCanvas } from './canvas-engine.js';
+import { buildTour } from './tour.js';
+import { startTour } from './tour-runner.js';
+import { toCanvasSvg, toExcalidraw } from './canvas-export.js';
+import { getScene, saveScene } from './store.js';
 import { snapshotTrend, sparkline } from './snapshots.js';
 
 // Apply the saved theme ASAP (before render) to minimise flash.
@@ -526,6 +533,57 @@ function renderConnections(d) {
   const host = document.getElementById('t19');
   if (!host || !d?.repoId) return;
   cnDraw(host, d, [d.repoId]);
+}
+
+// ─── Canvas tab — interactive Blueprint built from Deep Dive atoms + lineage ──
+// Mounts lazily on tab open (like Connections) and only once per page: until the
+// Deep Dive has run, it shows a CTA; once atoms exist it builds/loads the scene,
+// wires the engine, a guided tour, and SVG/.excalidraw export.
+async function renderCanvas(d) {
+  const hostWrap = document.querySelector('#t27 .canvas-host');
+  if (!hostWrap || hostWrap.dataset.mounted === '1') return;   // mount once per page
+  const dd = d && d.deepDive;
+  if (!dd || !dd.atoms || !dd.atoms.length) {
+    hostWrap.innerHTML = '<div class="dd-cta">Run <b>Deep Dive</b> first — the Blueprint is built from its atoms &amp; lineage.</div>';
+    return;
+  }
+  const sceneId = 'repo:' + hashId(d.repoId);
+  let scene = await getScene(sceneId);
+  if (!scene) {
+    scene = buildBlueprintScene({ deepDive: dd, repoId: d.repoId, title: d.repoId, scanAt: d.saved_at || null });
+    await saveScene(scene);
+  }
+  hostWrap.dataset.mounted = '1';
+  const api = mountCanvas(hostWrap, scene, { onChange: (s) => saveScene(s).catch(() => {}) });
+
+  const bar = document.createElement('div');
+  bar.className = 'canvas-export-bar';
+  const tourBtn = document.createElement('button'); tourBtn.textContent = '▶ Guided Tour';
+  let activeTour = null;
+  tourBtn.onclick = () => {
+    if (activeTour) activeTour.exit();   // tear down a prior tour first — don't stack cards/listeners on re-launch
+    activeTour = startTour({ host: hostWrap, engine: api, steps: buildTour(api.getScene(), { roots: (dd.lineage && dd.lineage.roots) || [] }), autoplay: false });
+  };
+  const exEx = document.createElement('button'); exEx.textContent = '.excalidraw';
+  exEx.onclick = () => download(`${slugify(d.repoId)}.excalidraw`, 'application/json', toExcalidraw(api.getScene()));
+  const exSvg = document.createElement('button'); exSvg.textContent = 'SVG';
+  exSvg.onclick = () => download(`${slugify(d.repoId)}.svg`, 'image/svg+xml', toCanvasSvg(api.getScene()));
+  bar.append(tourBtn, exEx, exSvg);
+  hostWrap.appendChild(bar);
+
+  const legend = document.createElement('div'); legend.className = 'canvas-legend';
+  for (const [k, lab] of [['entrypoint', 'Entry'], ['subsystem', 'Core'], ['module', 'Module'], ['data', 'Data'], ['concept', 'Concept']]) {
+    const sw = document.createElement('span'); sw.className = `lg lg-${k}`; sw.textContent = lab; legend.appendChild(sw);
+  }
+  hostWrap.appendChild(legend);
+}
+
+// Anchor-download helper (no equivalent named helper exists in this module).
+function download(filename, type, content) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ─── Combinator tab — fuse complementary library repos into new project ideas ─
@@ -2092,13 +2150,16 @@ const TAB_SLUGS = {
   15: 'tech-stack', 10: 'deep-dive', 11: 'systems', 12: 'ideate', 13: 'prioritize',
   14: 'sktpg', 21: 'docs', 22: 'maintenance', 23: 'license', 24: 'diff',
   25: 'stack-fit', 26: 'ask', 16: 'similar', 17: 'versus', 18: 'synergies',
-  19: 'connections', 20: 'combine',
+  19: 'connections', 20: 'combine', 27: 'canvas',
 };
 const SLUG_TO_TAB = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, Number(k)]));
 
 function show(n, { updateHash = true } = {}) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.tab) === n));
   document.querySelectorAll('.tab-content').forEach((c, idx) => c.classList.toggle('active', idx === n));
+  // Blueprint canvas mounts lazily on every activation path (click, #hash deep-link, per-repo restore).
+  // renderCanvas is idempotent (dataset.mounted guard) and null-safe, so calling it on each show(27) is cheap.
+  if (n === 27) renderCanvas(lastData).catch((err) => console.error('[canvas] render failed', err));
   // Reflect the active tab on its parent menu button + close any open menus.
   document.querySelectorAll('.tab-menu').forEach(m => {
     const owns = [...m.querySelectorAll('.tab-btn')].some(b => Number(b.dataset.tab) === n);
@@ -2129,6 +2190,7 @@ document.querySelector('.tab-nav')?.addEventListener('click', e => {
     const n = Number(btn.dataset.tab);
     show(n);
     if (n === 19) renderConnections(lastData); // network tab — pull fresh on each open (like Similar)
+    // (canvas, tab 27, is dispatched inside show() so deep-link/restore paths render it too)
   }
 });
 

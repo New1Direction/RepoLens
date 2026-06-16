@@ -3,10 +3,11 @@
 
 const DB_NAME = 'repolens';
 // v2 added the 'collections' store. v3 added the 'decisions' store. v4 added the
-// 'snapshots' store (the Scan Ledger). Each upgrade is additive — onupgradeneeded
-// creates any store in STORES that doesn't already exist, so existing data survives.
-const DB_VERSION = 4;
-const STORES = ['repos', 'nodes', 'edges', 'collections', 'decisions', 'snapshots'];
+// 'snapshots' store (the Scan Ledger). v5 added the 'scenes' store (Canvas Engine).
+// Each upgrade is additive — onupgradeneeded creates any store in STORES that
+// doesn't already exist, so existing data survives.
+const DB_VERSION = 5;
+const STORES = ['repos', 'nodes', 'edges', 'collections', 'decisions', 'snapshots', 'scenes'];
 
 let dbPromise = null;
 

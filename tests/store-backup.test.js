@@ -57,7 +57,7 @@ describe('store backup — importStores', () => {
     expect(await scrollPoints()).toHaveLength(0);
 
     const written = await importStores(dump, { mode: 'replace' });
-    expect(written).toEqual({ repos: 2, nodes: 1, edges: 1, collections: 0, decisions: 0, snapshots: 2 });
+    expect(written).toEqual({ repos: 2, nodes: 1, edges: 1, collections: 0, decisions: 0, snapshots: 2, scenes: 0 });
     const points = await scrollPoints();
     expect(points.map((p) => p.payload.repoId).sort()).toEqual(['a/one', 'b/two']);
     const ego = await getEgoGraph('a/one');

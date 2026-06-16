@@ -237,6 +237,40 @@ export async function listDecisions() {
   }
 }
 
+// ─── Canvas scenes ────────────────────────────────────────────────────────────
+
+/** Persist a canvas scene (upsert by id). Throws on failure. */
+export async function saveScene(scene) {
+  if (!scene || !scene.id) throw new Error('saveScene: scene.id required');
+  await idbPut('scenes', scene);
+}
+
+/** Get a single scene by id. Returns null if not found or on store error. */
+export async function getScene(id) {
+  try {
+    return (await idbGet('scenes', String(id))) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** All scenes, optionally filtered by repoId. Best-effort — [] on failure. */
+export async function listScenes(repoId) {
+  try {
+    const all = (await idbGetAll('scenes')) || [];
+    return repoId == null ? all : all.filter((s) => s.repoId === repoId);
+  } catch {
+    return [];
+  }
+}
+
+/** Delete a scene by id. Best-effort — never throws. */
+export async function deleteScene(id) {
+  try {
+    await idbDelete('scenes', String(id));
+  } catch { /* store unavailable */ }
+}
+
 // ─── graph: nodes + edges for the Connections tab ─────────────────────────────
 
 /** Upsert a graph node's payload (idempotent by id). Throws on failure (callers wrap best-effort). */
@@ -247,6 +281,19 @@ export async function upsertNode(nodeId, payload) {
 /** Add/replace an edge (idempotent by id). Throws on failure (callers wrap best-effort). */
 export async function addEdge({ id, source, target, label, properties = {} }) {
   await idbPut('edges', { id: String(id), source: String(source), target: String(target), label, properties });
+}
+
+/** The whole library graph: every node payload + every edge. Best-effort — empty on failure. */
+export async function getLibraryGraph() {
+  try {
+    const [nodeRows, edges] = await Promise.all([idbGetAll('nodes'), idbGetAll('edges')]);
+    return {
+      nodes: (nodeRows || []).filter((r) => r && r.payload).map((r) => ({ nodeId: String(r.id), ...r.payload })),
+      edges: (edges || []),
+    };
+  } catch {
+    return { nodes: [], edges: [] };
+  }
 }
 
 /** Ring-1 ego graph for one repo. Returns { center, edges, neighbors } or null on failure. */
@@ -276,15 +323,16 @@ const validRows = (rows) => (rows || []).filter((r) => r && r.id != null);
 
 /** Gather every row from all stores for a backup envelope. */
 export async function exportStores() {
-  const [repos, nodes, edges, collections, decisions, snapshots] = await Promise.all([
+  const [repos, nodes, edges, collections, decisions, snapshots, scenes] = await Promise.all([
     idbGetAll('repos'),
     idbGetAll('nodes'),
     idbGetAll('edges'),
     idbGetAll('collections'),
     idbGetAll('decisions'),
     idbGetAll('snapshots'),
+    idbGetAll('scenes'),
   ]);
-  return { repos: repos || [], nodes: nodes || [], edges: edges || [], collections: collections || [], decisions: decisions || [], snapshots: snapshots || [] };
+  return { repos: repos || [], nodes: nodes || [], edges: edges || [], collections: collections || [], decisions: decisions || [], snapshots: snapshots || [], scenes: scenes || [] };
 }
 
 /**
@@ -296,21 +344,22 @@ export async function exportStores() {
  * @param {{ repos?: object[], nodes?: object[], edges?: object[] }} rows
  * @param {{ mode?: 'merge'|'replace' }} [opts]
  */
-export async function importStores({ repos = [], nodes = [], edges = [], collections = [], decisions = [], snapshots = [] } = {}, { mode = 'merge' } = {}) {
+export async function importStores({ repos = [], nodes = [], edges = [], collections = [], decisions = [], snapshots = [], scenes = [] } = {}, { mode = 'merge' } = {}) {
   if (mode === 'replace') {
-    await Promise.all([idbClear('repos'), idbClear('nodes'), idbClear('edges'), idbClear('collections'), idbClear('decisions'), idbClear('snapshots')]);
+    await Promise.all([idbClear('repos'), idbClear('nodes'), idbClear('edges'), idbClear('collections'), idbClear('decisions'), idbClear('snapshots'), idbClear('scenes')]);
   }
-  const vr = validRows(repos), vn = validRows(nodes), ve = validRows(edges), vc = validRows(collections), vd = validRows(decisions), vs = validRows(snapshots);
+  const vr = validRows(repos), vn = validRows(nodes), ve = validRows(edges), vc = validRows(collections), vd = validRows(decisions), vs = validRows(snapshots), vsc = validRows(scenes);
   for (const row of vr) await idbPut('repos', row);
   for (const row of vn) await idbPut('nodes', row);
   for (const row of ve) await idbPut('edges', row);
   for (const row of vc) await idbPut('collections', row);
   for (const row of vd) await idbPut('decisions', row);
   for (const row of vs) await idbPut('snapshots', row);
-  return { repos: vr.length, nodes: vn.length, edges: ve.length, collections: vc.length, decisions: vd.length, snapshots: vs.length };
+  for (const row of vsc) await idbPut('scenes', row);
+  return { repos: vr.length, nodes: vn.length, edges: ve.length, collections: vc.length, decisions: vd.length, snapshots: vs.length, scenes: vsc.length };
 }
 
 /** Wipe the whole library (all stores). Backs the "Clear library" action. */
 export async function clearLibrary() {
-  await Promise.all([idbClear('repos'), idbClear('nodes'), idbClear('edges'), idbClear('collections'), idbClear('decisions'), idbClear('snapshots')]);
+  await Promise.all([idbClear('repos'), idbClear('nodes'), idbClear('edges'), idbClear('collections'), idbClear('decisions'), idbClear('snapshots'), idbClear('scenes')]);
 }

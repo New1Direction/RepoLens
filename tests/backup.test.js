@@ -19,12 +19,12 @@ describe('buildBackup', () => {
     expect(b.format).toBe(BACKUP_FORMAT);
     expect(b.version).toBe(BACKUP_VERSION);
     expect(b.exportedAt).toBe('2026-06-12T00:00:00.000Z');
-    expect(b.counts).toEqual({ repos: 2, nodes: 1, edges: 1, cache: 1, collections: 0, decisions: 0, snapshots: 0 });
+    expect(b.counts).toEqual({ repos: 2, nodes: 1, edges: 1, cache: 1, collections: 0, decisions: 0, snapshots: 0, scenes: 0 });
     expect(b.repos).toEqual(repos);
   });
   it('tolerates missing sections (empty library export)', () => {
     const b = buildBackup();
-    expect(b.counts).toEqual({ repos: 0, nodes: 0, edges: 0, cache: 0, collections: 0, decisions: 0, snapshots: 0 });
+    expect(b.counts).toEqual({ repos: 0, nodes: 0, edges: 0, cache: 0, collections: 0, decisions: 0, snapshots: 0, scenes: 0 });
     expect(b.repos).toEqual([]);
     expect(typeof b.exportedAt).toBe('string');
   });
@@ -75,7 +75,7 @@ describe('validateBackup', () => {
   });
   it('always returns a safe normalized value even on failure', () => {
     const { value } = validateBackup(undefined);
-    expect(value).toEqual({ repos: [], nodes: [], edges: [], cache: [], collections: [], decisions: [], snapshots: [] });
+    expect(value).toEqual({ repos: [], nodes: [], edges: [], cache: [], collections: [], decisions: [], snapshots: [], scenes: [] });
   });
   it('clamps oversized sections and warns instead of importing unbounded rows', () => {
     const repos = Array.from({ length: 5001 }, (_, i) => ({ id: i + 1, payload: { repoId: `o/r${i}` } }));
@@ -108,7 +108,7 @@ describe('collections in the envelope', () => {
 describe('summarizeBackup', () => {
   it('counts importable rows from the actual data, not the self-reported counts', () => {
     const lying = { format: BACKUP_FORMAT, version: 1, counts: { repos: 999 }, repos: [{ id: 1, payload: { repoId: 'a/b' } }] };
-    expect(summarizeBackup(lying)).toEqual({ repos: 1, nodes: 0, edges: 0, cache: 0, collections: 0, decisions: 0, snapshots: 0 });
+    expect(summarizeBackup(lying)).toEqual({ repos: 1, nodes: 0, edges: 0, cache: 0, collections: 0, decisions: 0, snapshots: 0, scenes: 0 });
   });
 });
 

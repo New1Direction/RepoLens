@@ -30,16 +30,39 @@
   .lib-btn, .lib-settings { background: var(--panel); border: 1px solid var(--border); color: var(--sub);
     border-radius: 8px; padding: 6px 11px; cursor: pointer; font: 600 12px var(--sans);
     transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
-  .lib-btn:hover, .lib-settings:hover { border-color: var(--border-2); color: var(--text); }
-  .lib-btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+  .lib-btn:hover, .lib-settings:hover { border-color: var(--border-2); color: var(--text);
+    background: color-mix(in srgb, var(--text) 4%, var(--panel)); }
+  .lib-btn:focus-visible, .lib-settings:focus-visible { outline: none;
+    border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent); }
+  .lib-btn-danger:hover { border-color: var(--danger); color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 6%, var(--panel)); }
   .lib-btn.armed { border-color: var(--danger); color: var(--danger); }
+  .lib-btn-kbd { font-family: var(--mono); letter-spacing: .02em; }
+
+  /* Grouped toolbar — a segmented view switcher + token-coloured dividers. */
+  .lib-div { width: 1px; height: 20px; background: var(--border);
+    align-self: center; margin: 0 2px; flex-shrink: 0; }
+  .lib-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px;
+    background: var(--panel-2); border: 1px solid var(--border); }
+  .lib-seg-btn { border: none; background: transparent; color: var(--sub);
+    font: 600 12px var(--sans); padding: 6px 11px; border-radius: 7px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-spring); }
+  .lib-seg-btn:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+  .lib-seg-btn:active { transform: scale(.96); }
+  .lib-seg-btn:focus-visible { outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent); }
+  .lib-seg-btn.on { color: var(--text); background: var(--panel);
+    border: 1px solid var(--border); box-shadow: 0 1px 3px -1px rgba(0,0,0,.3); }
   .lib-tagline { color: var(--sub); font-size: 13px; margin: 0 0 22px; }
   .lib-note { color: var(--muted); font-size: 12px; margin: -16px 0 18px; }
 
   .lib-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
   .lib-search { flex: 1 1 240px; min-width: 200px; background: var(--panel); border: 1px solid var(--border);
-    border-radius: 9px; padding: 10px 13px; color: var(--text); font: 400 13px var(--sans); }
-  .lib-search:focus { outline: none; border-color: var(--border-2); }
+    border-radius: 9px; padding: 10px 13px; color: var(--text); font: 400 13px var(--sans);
+    transition: border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-spring), background-color var(--dur) var(--ease-out); }
+  .lib-search:focus { outline: none; border-color: var(--accent); background: var(--panel-2);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
   .lib-search::placeholder { color: var(--muted); }
   .nl-filter-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     padding: 8px 14px; margin-bottom: 10px; border-radius: 9px;
@@ -62,8 +85,10 @@
   /* Ask bar */
   .lib-ask { display: flex; gap: 8px; margin: 0 0 12px; }
   .lib-ask-input { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 9px;
-    padding: 9px 13px; color: var(--text); font: 400 13px var(--sans); }
-  .lib-ask-input:focus { outline: none; border-color: var(--border-2); }
+    padding: 9px 13px; color: var(--text); font: 400 13px var(--sans);
+    transition: border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-spring), background-color var(--dur) var(--ease-out); }
+  .lib-ask-input:focus { outline: none; border-color: var(--accent); background: var(--panel-2);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
   .lib-ask-input::placeholder { color: var(--muted); }
   .lib-ask-btn { background: var(--accent); color: #fff; border: none; border-radius: 9px; padding: 9px 18px;
     font: 600 13px var(--sans); cursor: pointer; white-space: nowrap;
@@ -128,9 +153,17 @@
   .bp-new { color: var(--cyan); border-top: 1px solid var(--border); border-radius: 0 0 7px 7px; margin-top: 2px; }
 
   #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
-  .lib-card { background: var(--panel); border: 1px solid var(--border); border-radius: 13px; padding: 15px 16px;
+  .lib-card { position: relative; overflow: hidden; background: var(--panel); border: 1px solid var(--border); border-radius: 13px; padding: 15px 16px;
     cursor: pointer; transition: transform var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out); display: flex; flex-direction: column; gap: 9px; }
-  .lib-card:hover { transform: translateY(-2px); border-color: var(--border-2); box-shadow: 0 14px 30px -18px rgba(0,0,0,.4); }
+  /* Hover spotlight — a soft radial highlight that follows the cursor. --mx/--my
+     are set by a single delegated pointermove listener on #grid (library.js). */
+  .lib-card::before { content: ""; position: absolute; inset: 0; opacity: 0; pointer-events: none; border-radius: inherit;
+    background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in srgb, var(--accent) 12%, transparent), transparent 42%);
+    transition: opacity var(--dur) var(--ease-out); }
+  .lib-card > * { position: relative; }
+  .lib-card:hover { transform: translateY(-3px); border-color: var(--border-2); box-shadow: 0 16px 34px -18px rgba(0,0,0,.45); }
+  .lib-card:hover::before { opacity: 1; }
   .lc-top { display: flex; align-items: center; gap: 9px; }
   .lc-name { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
   .lc-owner { font: 500 11.5px/1 var(--mono); color: var(--muted); }
@@ -189,6 +222,14 @@
   .lib-empty { text-align: center; padding: 80px 20px; color: var(--sub); }
   .lib-empty h2 { font-size: 17px; color: var(--text); margin: 0 0 8px; }
   .lib-empty code { font: 600 12px var(--mono); background: var(--panel); border: 1px solid var(--border); padding: 2px 7px; border-radius: 5px; color: var(--cyan); }
+  /* Empty-state glyph — a magnifying glass that draws itself in. */
+  .lib-empty-glyph { display: block; margin: 0 auto 18px; color: var(--accent); }
+  .lib-empty-glyph .leg { stroke-dasharray: 240; stroke-dashoffset: 240; }
+  @media (prefers-reduced-motion: no-preference) {
+    .lib-empty-glyph .leg { animation: lib-empty-draw 900ms var(--ease-out) forwards; }
+    .lib-empty-glyph .leg.l2 { animation-delay: 360ms; }
+    @keyframes lib-empty-draw { to { stroke-dashoffset: 0; } }
+  }
 
   /* Stats bar — a one-glance read on the shape of the library. */
   .lib-stats { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 0 0 18px;
@@ -419,20 +460,12 @@
   #grid.selecting .lib-card:active { transform: none; }
 
   @media (prefers-reduced-motion: no-preference) {
-    /* Grid fills in with a short, capped stagger. `backwards` fill keeps the
-       hover lift working after the entrance (avoids `both` pinning transform). */
+    /* Grid fills in with a short staggered rise. The per-card delay is set
+       inline (style="animation-delay:<i*40>ms", capped in the card render), so
+       it keeps cascading past the first handful of cards. `backwards` fill keeps
+       the hover lift working after the entrance (avoids `both` pinning transform). */
     .lib-card { animation: lib-card-in var(--dur-slow) var(--ease-out) backwards; }
-    @keyframes lib-card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-    .lib-card:nth-child(1)  { animation-delay: 0ms; }
-    .lib-card:nth-child(2)  { animation-delay: 30ms; }
-    .lib-card:nth-child(3)  { animation-delay: 60ms; }
-    .lib-card:nth-child(4)  { animation-delay: 90ms; }
-    .lib-card:nth-child(5)  { animation-delay: 120ms; }
-    .lib-card:nth-child(6)  { animation-delay: 150ms; }
-    .lib-card:nth-child(7)  { animation-delay: 180ms; }
-    .lib-card:nth-child(8)  { animation-delay: 210ms; }
-    .lib-card:nth-child(9)  { animation-delay: 240ms; }
-    .lib-card:nth-child(n+10) { animation-delay: 270ms; }
+    @keyframes lib-card-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   }
   .lib-card.jk-active { outline: 2px solid var(--cyan); outline-offset: 2px; }
 
@@ -446,7 +479,7 @@
   .radar-chip:hover { background: var(--border); color: var(--text); }
   .radar-empty-col { font-size: 12px; color: var(--muted); padding: 6px 0; display: block; }
   .radar-empty-msg { color: var(--muted); font-size: 13px; padding: 32px 0 16px; text-align: center; line-height: 1.6; }
-  #lib-btn-radar.on { color: var(--text); background: var(--surface); border-color: var(--border-2); }
+  /* Radar/Corkboard active state is now governed by .lib-seg-btn.on (segmented switcher). */
   .radar-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
   @media (max-width: 640px) { .radar-grid { grid-template-columns: repeat(2, 1fr); } }
   /* Keyboard hint bar */
@@ -505,20 +538,33 @@
     <div class="lib-header">
       <h1>Library</h1><span class="count" id="count"></span>
       <div class="lib-actions">
-        <button class="lib-btn" id="lib-btn-radar" title="Tech Radar — repos organized by your Adopt/Trial/Hold/Reject decisions">🎯 Radar</button>
+        <!-- View switcher — a segmented control over the three library views.
+             "Grid" returns to the default list; Radar/Corkboard keep their
+             original IDs so library.js's toggle wiring is untouched. -->
+        <div class="lib-seg" role="group" aria-label="Library view">
+          <button class="lib-seg-btn on" id="lib-btn-grid" aria-pressed="true" title="Card grid — the default list view">▦ Grid</button>
+          <button class="lib-seg-btn" id="lib-btn-radar" aria-pressed="false" title="Tech Radar — repos organized by your Adopt/Trial/Hold/Reject decisions">🎯 Radar</button>
+          <button class="lib-seg-btn" id="lib-btn-corkboard" aria-pressed="false" title="Corkboard — a red-string board of your library">🧭 Corkboard</button>
+        </div>
+        <span class="lib-div" aria-hidden="true"></span>
+        <!-- Curate cluster -->
         <button class="lib-btn" id="density-toggle" title="Toggle compact card view" aria-label="Toggle card density">⊟</button>
         <button class="lib-btn" id="select" title="Select several repos to remove at once" aria-pressed="false">☑ Select</button>
         <button class="lib-btn hidden" id="compare-btn" title="Clear the compare selection" aria-label="Clear compare selection">⇄ 0/2 ✕</button>
         <button class="lib-btn" id="auto-organize" title="Auto-group repos by detected language and category">✦ Auto-organize</button>
         <button class="lib-btn" id="batch-scan-link" title="Scan multiple repos at once">📦 Batch</button>
+        <span class="lib-div" aria-hidden="true"></span>
+        <!-- Data cluster -->
         <button class="lib-btn" id="digest-csv" title="Export your whole library as a CSV digest">CSV</button>
         <button class="lib-btn" id="digest-json" title="Export your whole library as a JSON digest">JSON</button>
         <button class="lib-btn" id="export" title="Download your whole library as a JSON backup" aria-label="Export library as a backup file">⬇ Backup</button>
         <button class="lib-btn" id="import" title="Restore a library from a backup file" aria-label="Import a library backup file">⬆ Import</button>
         <button class="lib-btn lib-btn-danger" id="clear" title="Remove every repo from this library" aria-label="Clear the whole library">🗑 Clear</button>
+        <span class="lib-div" aria-hidden="true"></span>
+        <!-- Tools cluster -->
         <button class="lib-btn" id="discover-btn" title="Search GitHub and get recommendations">🔍 Discover</button>
-        <button class="lib-btn" id="open-palette" title="Command palette (⌘K)">⌘K</button>
         <button class="lib-settings" id="settings" title="RepoLens settings" aria-label="Open RepoLens settings">⚙ Settings</button>
+        <button class="lib-btn lib-btn-kbd" id="open-palette" title="Command palette (⌘K)">⌘K</button>
       </div>
     </div>
     <p class="lib-tagline">Every repo you've analyzed, at a glance — click a card to reopen its analysis, hover it to re-scan, open the source, or remove it.</p>
@@ -597,6 +643,7 @@
 
     <div class="cmp-panel hidden" id="compare-panel"></div>
     <div id="radar-panel" class="hidden"></div>
+    <div id="corkboard-panel" class="corkboard-panel hidden"></div>
     <div id="grid"></div>
     <div class="lib-empty hidden" id="empty"></div>
     <div class="lib-kbhints" aria-label="Keyboard shortcuts" role="note">

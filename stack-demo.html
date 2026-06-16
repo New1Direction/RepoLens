@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Stack Studio demo — RepoLens</title>
+  <link rel="stylesheet" href="./themes.css" />
+  <style>
+    :root { --bg:#fbf6ea; --surface:#fffdf6; --text:#211c14; --text-sub:#5a4f3e; --accent:#c2691c; --border:#b9a273; --dur:.2s; --ease-out:cubic-bezier(.16,1,.3,1); }
+    body { margin:0; font-family:ui-monospace,monospace; background:#efe4c9; color:#211c14; padding:24px; }
+    h1 { font-size:18px; margin:0 0 4px; }
+    .sub { font-size:12px; color:#6b5a36; margin:0 0 16px; }
+    .legend { display:flex; gap:14px; font-size:11px; color:#5a4f3e; margin:10px 2px 0; flex-wrap:wrap; }
+    .sw { display:inline-block; width:11px; height:11px; border:2.5px solid; border-radius:3px; vertical-align:middle; margin-right:4px; background:#fffdf6; }
+  </style>
+</head>
+<body>
+  <h1>⚙ RepoLens — Stack Studio (live demo)</h1>
+  <p class="sub">Real pipeline: a Tech-Stack Builder result → <code>buildStackScene</code> → <code>layoutStack</code> → <code>mountCanvas</code>. Repos in adoption order, integrations as string, gaps as dashed cards.</p>
+  <div id="stack" class="stack-canvas" style="height:540px"></div>
+  <div class="legend">
+    <span><span class="sw" style="border-color:#3b6ea5"></span>frontend</span>
+    <span><span class="sw" style="border-color:#2f7d34"></span>backend</span>
+    <span><span class="sw" style="border-color:#c2691c"></span>data</span>
+    <span><span class="sw" style="border-color:#7a5bb0"></span>infra</span>
+    <span><span class="sw" style="border-color:#b3372f"></span>testing</span>
+    <span><span class="sw" style="border-color:#6b5a36"></span>tooling</span>
+    <span><span class="sw" style="border-color:#b3372f;border-style:dashed;background:#fbeae6"></span>gap</span>
+  </div>
+
+  <script type="module">
+    import { buildStackScene } from './stack-scene.js';
+    import { layoutStack } from './canvas-layout.js';
+    import { mountCanvas } from './canvas-engine.js';
+
+    const result = {
+      title: 'Edge API stack',
+      roles: [
+        { repoId: 'vitejs/vite', role: 'dev server / build', layer: 'tooling' },
+        { repoId: 'honojs/hono', role: 'HTTP router', layer: 'backend' },
+        { repoId: 'drizzle-team/drizzle-orm', role: 'data layer', layer: 'data' },
+        { repoId: 'lucia-auth/lucia', role: 'sessions', layer: 'backend' },
+      ],
+      integrations: [
+        { from: 'vitejs/vite', to: 'honojs/hono', glue: 'serves the app' },
+        { from: 'honojs/hono', to: 'drizzle-team/drizzle-orm', glue: 'handlers call the ORM' },
+        { from: 'honojs/hono', to: 'lucia-auth/lucia', glue: 'auth middleware' },
+      ],
+      gaps: ['no rate limiting', 'no observability'],
+      order: ['vitejs/vite', 'honojs/hono', 'drizzle-team/drizzle-orm', 'lucia-auth/lucia'],
+      summary: 'A minimal edge API stack.',
+    };
+
+    const host = document.getElementById('stack');
+    const scene = buildStackScene(result, result.title);
+    scene.nodes = layoutStack(scene.nodes, scene.source.order);
+    mountCanvas(host, scene, {});
+    window.__counts = { nodes: scene.nodes.length, edges: scene.edges.length };
+  </script>
+</body>
+</html>

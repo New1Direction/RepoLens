@@ -6,7 +6,7 @@ import globals from 'globals';
 // intentionally light — advisory warnings, not a wall of errors — so the gate
 // is useful without demanding a rewrite of working code.
 export default [
-  { ignores: ['node_modules/**', 'coverage/**', 'website/**', '.vitest/**'] },
+  { ignores: ['node_modules/**', 'coverage/**', 'website/**', '.vitest/**', 'vendor/**'] },
   js.configs.recommended,
   {
     files: ['**/*.js', '**/*.mjs'],

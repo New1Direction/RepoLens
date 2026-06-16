@@ -25,6 +25,8 @@ export const SAFE_SETTING_KEYS = [
   'xaiModel',
   'nousModel',
   'librarySort',
+  'canvasEnabled',
+  'canvasTourAutoplay',
 ];
 
 const pickSafe = (src) => {

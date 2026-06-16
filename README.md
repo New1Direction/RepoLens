@@ -37,6 +37,7 @@ A scan opens to a **verdict landing** and fans out into focused tabs:
 | 🔍 | **Discover** | Search GitHub from inside the extension, or get **recommendations** from the repos you've already adopted. |
 | 🕸️ | **Connections** | A walkable map centred on the current repo, showing how it relates to the others you've scanned. |
 | 🤝 | **Synergies** · **Versus** · **Combinator** | Complements, head-to-heads, and fused project ideas — grounded in *your* library. |
+| 🗺️ | **Canvas** | Turn a repo's Deep Dive into an interactive, draggable **Blueprint** — pan/zoom the architecture map, take a narrated **Guided Tour** in dependency order (keyboard-navigable, reduced-motion safe), and export to **.excalidraw** or SVG. Switch the Library into a **Corkboard** to map your whole collection at once: every scanned repo a draggable card, related repos joined by colored string (alternatives, synergies, head-to-heads, combined ideas), colored by fit, filterable by Collection, arrangement saved. And the Tech-Stack Builder renders its wiring on the same canvas as a **Stack Studio**. |
 
 Plus **SKTPG** (a one-tap State / Known-pitfalls / Trajectory / Proof / Growth read), framework lenses, and capability re-tagging.
 
