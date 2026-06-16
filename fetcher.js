@@ -1,11 +1,17 @@
-async function fetchJson(url) {
-  const r = await fetch(url);
+async function fetchJson(url, headers) {
+  const r = await fetch(url, headers ? { headers } : undefined);
   if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
   return r.json();
 }
 
-export async function fetchRepoData(platform, repoId) {
-  if (platform === 'github') return fetchGitHub(repoId);
+// Authorization header for GitHub when an MCP caller supplies a token; null
+// otherwise, so the anonymous path stays byte-for-byte identical (extension use).
+function ghHeaders(opts) {
+  return opts && opts.githubToken ? { Authorization: `Bearer ${opts.githubToken}` } : null;
+}
+
+export async function fetchRepoData(platform, repoId, opts = {}) {
+  if (platform === 'github') return fetchGitHub(repoId, opts);
   if (platform === 'gitlab') return fetchGitLab(repoId);
   if (platform === 'npm')    return fetchNpm(repoId);
   if (platform === 'pypi')   return fetchPyPI(repoId);
@@ -22,11 +28,13 @@ function bytesToComposition(langs) {
     .map(([name, bytes]) => ({ name, pct: Math.round((bytes / total) * 100) }));
 }
 
-async function fetchGitHub(repoId) {
+async function fetchGitHub(repoId, opts = {}) {
+  const headers = ghHeaders(opts);
+  const init = headers ? { headers } : undefined;
   const [meta, readmeRes, langRes] = await Promise.all([
-    fetchJson(`https://api.github.com/repos/${repoId}`),
-    fetch(`https://api.github.com/repos/${repoId}/readme`).catch(() => ({ ok: false })),
-    fetch(`https://api.github.com/repos/${repoId}/languages`).catch(() => ({ ok: false })),
+    fetchJson(`https://api.github.com/repos/${repoId}`, headers),
+    fetch(`https://api.github.com/repos/${repoId}/readme`, init).catch(() => ({ ok: false })),
+    fetch(`https://api.github.com/repos/${repoId}/languages`, init).catch(() => ({ ok: false })),
   ]);
   let readme = '';
   if (readmeRes.ok) {

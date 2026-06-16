@@ -28,8 +28,12 @@ export function extractJsonObject(rawText) {
 
 // ─── Stage 0: fetch source (GitHub-first; others degrade to README only) ──────
 
-async function ghJson(url) {
-  const r = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
+async function ghJson(url, opts = {}) {
+  const headers = { Accept: 'application/vnd.github+json' };
+  // Optional auth (MCP only; the extension passes no token). Lifts the 60/hr
+  // anon GitHub limit that blueprint/deep-dive would otherwise trip mid-scan.
+  if (opts.githubToken) headers.Authorization = `Bearer ${opts.githubToken}`;
+  const r = await fetch(url, { headers });
   if (!r.ok) throw new Error(`GitHub ${r.status} for ${url}`);
   return r.json();
 }
@@ -58,13 +62,13 @@ export function selectKeyFiles(paths) {
  * Returns { tree: string[], files: [{path, content}], degraded: boolean }.
  * Only GitHub fetches real source; other platforms return a degraded result.
  */
-export async function fetchSource(platform, repoId) {
+export async function fetchSource(platform, repoId, opts = {}) {
   if (platform !== 'github') return { tree: [], files: [], degraded: true };
 
-  const meta = await ghJson(`https://api.github.com/repos/${repoId}`);
+  const meta = await ghJson(`https://api.github.com/repos/${repoId}`, opts);
   const branch = meta.default_branch || 'main';
   const treeRes = await ghJson(
-    `https://api.github.com/repos/${repoId}/git/trees/${branch}?recursive=1`
+    `https://api.github.com/repos/${repoId}/git/trees/${branch}?recursive=1`, opts
   );
   const allPaths = (treeRes.tree || []).filter(e => e.type === 'blob').map(e => e.path);
   const tree = allPaths.slice(0, MAX_TREE_PATHS);
@@ -73,7 +77,7 @@ export async function fetchSource(platform, repoId) {
   const files = [];
   for (const path of keyPaths) {
     try {
-      const data = await ghJson(`https://api.github.com/repos/${repoId}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`);
+      const data = await ghJson(`https://api.github.com/repos/${repoId}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, opts);
       if (data.encoding === 'base64' && data.content) {
         const content = atob(data.content.replace(/\n/g, '')).slice(0, MAX_FILE_CHARS);
         files.push({ path, content });
