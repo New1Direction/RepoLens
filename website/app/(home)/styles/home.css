@@ -34,71 +34,48 @@
   position: relative;
   width: clamp(224px, 30vw, 324px);
   aspect-ratio: 460 / 539;
-  border-radius: 30px;
-  overflow: hidden;
-  background: #c2c3c8;
-  border: 1px solid var(--border-2);
-  box-shadow: 0 40px 90px -34px var(--accent-glow), var(--shadow-md);
 }
+/* The source clip has a grey backdrop baked in, so boxing it always reads as a
+   pasted square. Instead we feather the media's edges to transparent — Vee melts
+   into the page, no frame, no seam, matches any background. */
 .hero-mascot-stage img,
 .hero-mascot-stage video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  -webkit-mask-image: radial-gradient(
+    ellipse 68% 76% at 50% 44%,
+    #000 44%,
+    rgba(0, 0, 0, 0.5) 68%,
+    transparent 90%
+  );
+  mask-image: radial-gradient(
+    ellipse 68% 76% at 50% 44%,
+    #000 44%,
+    rgba(0, 0, 0, 0.5) 68%,
+    transparent 90%
+  );
 }
-/* Soft inner ring + an accent wash from below so the port feels lit, not pasted. */
+/* A soft accent pool beneath Vee so the feathered portrait reads as placed, not
+   floating. Sits behind the media, unaffected by the mask above. */
 .hero-mascot-stage::after {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-    inset 0 -56px 60px -34px var(--accent-glow);
-}
-/* Lens sheen — a soft specular glint drifts across the glass, like light
-   catching a lens. No hard scan-line. Slow, with a long calm pause between
-   passes. Reduced-motion: nothing moves. */
-.hero-mascot-stage::before {
-  content: '';
-  position: absolute;
-  inset: -30%;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 41%,
-    rgba(226, 246, 255, 0.1) 47%,
-    rgba(240, 251, 255, 0.34) 50%,
-    rgba(226, 246, 255, 0.1) 53%,
-    transparent 59%
+  left: 50%;
+  bottom: 7%;
+  width: 56%;
+  height: 11%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    var(--accent-glow, rgba(37, 99, 235, 0.28)) 0%,
+    transparent 72%
   );
-  mix-blend-mode: screen;
-  transform: translateX(-58%);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .hero-mascot-stage::before {
-    animation: lensSheen 7s var(--ease-out) infinite;
-  }
-}
-@keyframes lensSheen {
-  0% {
-    transform: translateX(-58%);
-    opacity: 0;
-  }
-  6% {
-    opacity: 1;
-  }
-  19% {
-    opacity: 1;
-  }
-  27%,
-  100% {
-    transform: translateX(58%);
-    opacity: 0;
-  }
+  filter: blur(9px);
+  pointer-events: none;
+  z-index: -1;
 }
 .hero-say {
   font-size: 0.9rem;
