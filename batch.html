@@ -87,6 +87,7 @@
   /* Row loading dot */
   .row-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: dot-pulse 1.2s ease-in-out infinite; }
   @keyframes dot-pulse { 0%,100%{opacity:.4;transform:scale(.9)} 50%{opacity:1;transform:scale(1.1)} }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }
 
   /* Done summary */
   #done-bar { display: none; background: var(--ok-bg); border: 1px solid var(--ok-edge); border-radius: 10px; padding: 14px 18px; margin-top: 20px; font: 600 13px var(--font); color: var(--ok-ink); display: none; align-items: center; gap: 14px; }

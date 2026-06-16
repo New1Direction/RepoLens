@@ -10,7 +10,7 @@
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
 ![Tests](https://img.shields.io/badge/tests-730%2B_passing-2f7d34)
-![Version](https://img.shields.io/badge/version-3.0.0-c2691c)
+![Version](https://img.shields.io/badge/version-3.0.1-c2691c)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -45,6 +45,15 @@ Plus **SKTPG** (a one-tap State / Known-pitfalls / Trajectory / Proof / Growth r
 ## 🆕 What's new
 
 Newest first — the highlights. Full, detailed notes live in the **[changelog](CHANGELOG.md)**.
+
+### v3.0.1 — Audit hardening
+
+A correctness, security, and tooling pass from a full code audit — fixes only, no feature changes.
+
+- 🔒 **Hardened.** Batch-scan output is now HTML-escaped (XSS), the manifest declares an explicit CSP, and the shared escaper covers single quotes too.
+- 🐞 **Squashed.** Fixed a "Compare" modal crash, made the daily **stale-repos drift alert** actually fire (it was reading the wrong field), and stopped two loaders from pulsing under reduced-motion.
+- ♿ **Contrast.** Faint label text on the light themes now meets WCAG AA.
+- 🧰 **Tooling.** Reconciled the version across manifest / package.json, and switched CI to `npm ci` with a blocking lint gate + a dependency audit. 733 tests green.
 
 ### v1.7.0 — Boards, Vee & a motion pass
 

@@ -27,6 +27,7 @@
   .st-loading { display: flex; align-items: center; gap: 12px; color: var(--text-sub); padding: 64px 0; }
   .st-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:.4;transform:scale(.9)} 50%{opacity:1;transform:scale(1.1)} }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }
   .st-error { padding: 64px 0; text-align: center; color: var(--text-sub); }
   .st-error h2 { font-size: 20px; color: var(--text); margin-bottom: 10px; }
 

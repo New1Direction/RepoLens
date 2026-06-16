@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "RepoLens",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "One-click repo explainer. Powered by Claude.",
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'" },
   "permissions": ["storage", "activeTab", "tabs", "identity", "webNavigation", "notifications", "contextMenus", "alarms"],
   "host_permissions": [
     "https://github.com/*",

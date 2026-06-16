@@ -14,14 +14,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-      # `npm install` (not `npm ci`) so the lockfile can pick up the newly added
-      # dev tooling without a separate commit.
-      - run: npm install
+      # Lockfile is in sync, so `npm ci` enforces it (reproducible installs).
+      - run: npm ci
       - name: Unit tests
         run: npm test
-      - name: Lint (advisory)
+      - name: Lint
         run: npm run lint
-        continue-on-error: true
       - name: Format check (advisory)
         run: npm run format:check
+        continue-on-error: true
+      - name: Dependency audit (advisory)
+        run: npm audit --audit-level=high
         continue-on-error: true

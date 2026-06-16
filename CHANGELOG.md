@@ -7,6 +7,43 @@ This project follows [Semantic Versioning](https://semver.org/) and groups chang
 by theme. Dates are when the release landed on `main` — 1.1.0 through 1.6.0 shipped
 the same day, as a rapid burst of improvements, so they share a date.
 
+## [3.0.1] — 2026-06-15 · _Audit hardening_
+
+A focused correctness, security, and tooling pass from a full code audit — no
+behavioural changes to features, just fixes and guardrails.
+
+### Fixed
+
+- **Batch scanner XSS.** The Batch view rendered provider error messages and the
+  URLs you paste straight into the DOM; both are now HTML-escaped like everywhere
+  else in the app.
+- **"Compare" modal crash.** The multi-repo compare table threw a `ReferenceError`
+  on the _Fit delta_ cell whenever a compared repo had a fit change — a constant was
+  scoped to the wrong function. Hoisted to one shared definition.
+- **Drift alert never fired.** The daily "repos went stale" check read a field
+  (`savedAt`) the store never writes (`saved_at`), so the count was always zero. The
+  field names now match and stale repos surface again.
+- **Reduced-motion leaks.** The Batch and Stack loading dots kept pulsing for users
+  who asked for reduced motion; both now honour `prefers-reduced-motion`.
+- **Light-theme contrast.** Faint label text on the light themes (paper, cream,
+  apple, latte, solarized) now clears WCAG AA.
+
+### Changed
+
+- **One version of the truth.** `package.json` and the manifest now agree (3.0.1),
+  resolving the long-standing drift between them.
+- **Explicit Content-Security-Policy** in the manifest (matches the MV3 default, now
+  auditable).
+- **Stronger CI.** Reproducible installs via `npm ci`, lint promoted to a blocking
+  gate (it was advisory), and a dependency-audit step added.
+- The shared `esc()` helper now escapes single quotes too, matching the canonical
+  `safe-html` escaper.
+
+### Notes
+
+- Still 100% client-side — fixes and hardening only, no new permissions and no new
+  data collected.
+
 ## [1.7.0] — 2026-06-13 · _Boards, Vee, and a motion pass_
 
 ### Added
