@@ -41,6 +41,8 @@ A scan opens to a **verdict landing** and fans out into focused tabs:
 
 Plus **SKTPG** (a one-tap State / Known-pitfalls / Trajectory / Proof / Growth read), framework lenses, and capability re-tagging.
 
+**First run:** Vee walks new users through a seeded demo repo (Library → Verdict → Blueprint) via a coachmark tour. After roughly five real scans a second "power tour" introduces the cross-library tools: Ask, Corkboard analysis, multi-select compare, Radar, and Discover.
+
 ---
 
 ## 🆕 What's new
