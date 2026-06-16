@@ -324,7 +324,9 @@ export async function getEgoGraph(repoId) {
 
 const validRows = (rows) => (rows || []).filter((r) => r && r.id != null);
 
-/** Gather every row from all stores for a backup envelope. */
+/** Gather every row from all stores for a backup envelope. The seeded onboarding
+ *  demo (repo + its snapshot + its scene, all tagged __demo__) is dropped so it
+ *  never leaks into a user's backup file. */
 export async function exportStores() {
   const [repos, nodes, edges, collections, decisions, snapshots, scenes] = await Promise.all([
     idbGetAll('repos'),
@@ -335,7 +337,18 @@ export async function exportStores() {
     idbGetAll('snapshots'),
     idbGetAll('scenes'),
   ]);
-  return { repos: repos || [], nodes: nodes || [], edges: edges || [], collections: collections || [], decisions: decisions || [], snapshots: snapshots || [], scenes: scenes || [] };
+  const isDemoRepo = (r) => r?.payload?.__demo__ === true;
+  // Snapshot rows share the repo's hashed id, so the demo repo's id is also its snapshot key.
+  const demoIds = new Set((repos || []).filter(isDemoRepo).map((r) => r.id));
+  return {
+    repos: (repos || []).filter((r) => !isDemoRepo(r)),
+    nodes: nodes || [],
+    edges: edges || [],
+    collections: collections || [],
+    decisions: decisions || [],
+    snapshots: (snapshots || []).filter((s) => !demoIds.has(s.id)),
+    scenes: (scenes || []).filter((s) => s?.__demo__ !== true),
+  };
 }
 
 /**

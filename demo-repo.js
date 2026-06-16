@@ -39,9 +39,11 @@ export const DEMO_REPO = {
   },
 };
 
-/** The blueprint scene for the demo (so the Canvas tab renders real content). */
+/** The blueprint scene for the demo (so the Canvas tab renders real content).
+ *  Tagged __demo__ so exportStores can drop it without coupling the store to this
+ *  fixture (saveScene persists the scene verbatim, so the tag survives). */
 export function demoScene() {
-  return buildBlueprintScene({ deepDive: DEMO_REPO.deepDive, repoId: DEMO_REPO.repoId, title: DEMO_REPO.repoId });
+  return { ...buildBlueprintScene({ deepDive: DEMO_REPO.deepDive, repoId: DEMO_REPO.repoId, title: DEMO_REPO.repoId }), __demo__: true };
 }
 
 /** True only for the seeded demo row. */

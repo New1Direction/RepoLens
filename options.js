@@ -76,6 +76,13 @@ loadHistory();
 document.getElementById('open-library-link')
   ?.addEventListener('click', () => openTab(chrome.runtime.getURL('library.html')));
 
+// ─── Replay onboarding ────────────────────────────────────────────────────────
+// Reset the onboarding flags and open the Library, where the first-run tour fires.
+document.getElementById('replayOnboardingBtn')?.addEventListener('click', async () => {
+  await chrome.storage.local.set({ onboardingSeen: false, milestoneTourSeen: false, milestoneSnoozeAt10: false });
+  openTab(chrome.runtime.getURL('library.html'));
+});
+
 // ─── Delay between AI calls (paces bursts; read live by background.js) ────────
 const aiGap = document.getElementById('aiGap');
 const aiGapLabel = document.getElementById('aiGapLabel');
