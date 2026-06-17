@@ -21,6 +21,7 @@ export const COMPAT_PROVIDERS = [
     id: 'openai', label: 'OpenAI (GPT)', protocol: 'openai',
     hint: 'Official OpenAI API', keyHint: 'sk-…',
     endpoint: 'https://api.openai.com/v1/chat/completions',
+    embeddingsModel: 'text-embedding-3-small',
     host: 'https://api.openai.com/*', docsUrl: 'https://platform.openai.com/api-keys',
     models: [
       { value: 'gpt-4.1', label: 'GPT-4.1', recommended: true },
@@ -274,6 +275,39 @@ export function compatEndpoint(id, keys = {}) {
   const override = (keys[provBaseName(id)] || '').trim();
   if (override) return proto === 'anthropic' ? normalizeAnthropicUrl(override) : normalizeOpenAiUrl(override);
   return p.endpoint || '';
+}
+
+// ── embeddings capability (OpenAI-protocol providers only) ─────────────────────
+export const provEmbedModelName = (id) => `${id}EmbedModel`; // optional embeddings-model override
+
+/** The embeddings model for a provider (override → registry default → ''). */
+export function embeddingsModelFor(id, keys = {}) {
+  const p = compatProviderById(id);
+  return (keys[provEmbedModelName(id)] || (p && p.embeddingsModel) || '').trim();
+}
+
+/** Derive the POST-able /embeddings URL from the provider's chat endpoint. '' when unknown. */
+export function compatEmbeddingsEndpoint(id, keys = {}) {
+  const chat = compatEndpoint(id, keys);                 // e.g. .../v1/chat/completions
+  if (!chat) return '';
+  return chat.replace(/\/chat\/completions(\?.*)?$/, '/embeddings');
+}
+
+/** True when an OpenAI-protocol provider is connected AND has an embeddings model. */
+export function providerSupportsEmbeddings(id, keys = {}) {
+  return compatProtocol(id, keys) === 'openai'
+    && !!embeddingsModelFor(id, keys)
+    && isCompatConnected(id, keys);
+}
+
+/** First connected provider that supports embeddings → { id, endpoint, key, model }, or null. */
+export function pickEmbeddingsProvider(keys = {}) {
+  for (const p of COMPAT_PROVIDERS) {
+    if (providerSupportsEmbeddings(p.id, keys)) {
+      return { id: p.id, endpoint: compatEmbeddingsEndpoint(p.id, keys), key: keys[provKeyName(p.id)], model: embeddingsModelFor(p.id, keys) };
+    }
+  }
+  return null;
 }
 
 // ── pure request bodies + response parsers (shared by call + test paths) ───────
