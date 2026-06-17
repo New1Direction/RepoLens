@@ -532,10 +532,29 @@ function openNote(repoId, btn) {
   panel.querySelector('.lc-note-save')?.addEventListener('click', saveNote);
 }
 
-function openRow(repoId) {
+// Forward path (library → output). Before opening a fresh output tab, focus an
+// already-open output tab for the same repo so re-clicking a card round-trips
+// instead of orphaning duplicate analysis tabs. Output tabs set their title to
+// `… {repoId} — RepoLens` (output-tab.js), which is what we match on — the random
+// session key never reaches the URL, so the title is the only stable repo signal.
+async function focusExistingOutputTab(repoId) {
+  try {
+    const tabs = await chrome.tabs.query({ url: chrome.runtime.getURL('output-tab.html') + '*' });
+    const existing = tabs.find((t) => typeof t.title === 'string' && t.title.includes(`${repoId} — RepoLens`));
+    if (!existing) return false;
+    await chrome.tabs.update(existing.id, { active: true });
+    await chrome.windows.update(existing.windowId, { focused: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function openRow(repoId) {
   const cached = cacheByRepo.get(repoId);
-  if (cached) openCachedAnalysis(cached);
-  else openSource(repoId);
+  if (!cached) { openSource(repoId); return; }
+  if (await focusExistingOutputTab(repoId)) return;
+  openCachedAnalysis(cached);
 }
 
 function openSource(repoId) {

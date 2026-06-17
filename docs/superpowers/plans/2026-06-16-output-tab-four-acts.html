@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Output Tab — Four-Act Narrative — Implementation Plan</title>
+  <style>
+    :root {
+      --ink:#0f1115; --surface:#fff; --paper:#f6f7f9; --grey:#6b7280; --line:#e5e7eb;
+      --cobalt:#2563eb; --electric:#1d4ed8; --good:#15803d; --warn:#b45309; --radius:12px;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink);
+      font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:880px; margin:0 auto; padding:56px 24px 96px; }
+    header.doc { border-left:4px solid var(--cobalt); padding:4px 0 4px 20px; margin-bottom:32px; }
+    header.doc h1 { font-size:1.9rem; line-height:1.15; margin:0 0 10px; letter-spacing:-0.02em; }
+    .meta { color:var(--grey); font-size:0.92rem; }
+    .meta strong { color:var(--ink); }
+    .callout { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--cobalt);
+      border-radius:8px; padding:12px 18px; margin:16px 0; font-size:0.94rem; }
+    .callout.warn { border-left-color:var(--warn); }
+    h2 { font-size:1.3rem; margin:40px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line); letter-spacing:-0.01em; }
+    h3 { font-size:1.02rem; margin:22px 0 8px; }
+    p { margin:10px 0; }
+    ul { padding-left:22px; } li { margin:5px 0; }
+    code { background:var(--paper); border:1px solid var(--line); border-radius:5px; padding:1px 6px;
+      font-size:0.84em; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .phase { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:6px 22px 18px; margin:16px 0; }
+    .phase .ph-tag { display:inline-block; margin:16px 0 2px; font-weight:700; letter-spacing:.03em; color:var(--electric); font-size:.95rem; }
+    .task { border-top:1px solid var(--line); padding:12px 0; }
+    .task:first-of-type { border-top:none; }
+    .task .t-name { font-weight:650; }
+    .task .files { color:var(--grey); font-size:.85rem; margin-top:3px; }
+    .task .files code { font-size:.8em; }
+    .task .what { margin-top:4px; font-size:.94rem; }
+    .pill { display:inline-block; font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:999px;
+      border:1px solid var(--line); color:var(--grey); margin-right:6px; }
+    .pill.new { color:var(--good); border-color:#bbf7d0; background:#f0fdf4; }
+    .pill.mod { color:var(--warn); border-color:#fde68a; background:#fffbeb; }
+    footer { margin-top:48px; color:var(--grey); font-size:.85rem; border-top:1px solid var(--line); padding-top:16px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc">
+    <h1>Output Tab — Four-Act Narrative</h1>
+    <div class="meta">
+      <strong>Implementation plan</strong> &middot; Pillar A &middot; 2026-06-16 &middot; branch <code>feat/output-tab-four-acts</code><br>
+      Overview for review. The exact step-by-step code (TDD steps, commands, commits) lives in the companion <code>.md</code>.
+    </div>
+  </header>
+
+  <div class="callout">
+    <strong>Goal.</strong> Restructure the flat 28-tab nav into a four-act narrative (Decide &rarr; Understand &rarr; Go Deeper &rarr; Act) &mdash; keeping every panel, render function, and deep link &mdash; via a pure act-model module and a two-tier nav, then a few targeted UX fixes.
+  </div>
+
+  <h2>Architecture</h2>
+  <p>Keep the existing <code>#t0</code>&ndash;<code>#t27</code> panels, their render functions, and <code>show(n)</code> behavior. Add a pure, unit-tested <code>output-acts.js</code> that groups tab indices into four ordered acts. Replace the flat nav markup with a two-tier nav (primary act row + a secondary row showing only the active act's tabs), generated from the model. Make <code>show(n)</code> also highlight the owning act and render its secondary row. No <code>background.js</code> / message-contract changes.</p>
+
+  <div class="callout">
+    <strong>Why this is lower-risk than a rewrite</strong> (confirmed by reading the code):
+    <ul>
+      <li><strong>Slugs already exist</strong> (<code>TAB_SLUGS</code>) and <code>show()</code> already writes the hash + per-repo recall &mdash; so deep links and restore <em>already work</em>; the model just adds "which act owns this tab."</li>
+      <li><strong>Lens labeling already exists</strong> &mdash; per-tab BEST-FOR / SKIP-IF / COST tooltips + the "?" guide + Deep-Dive staged progress. Mostly a matter of <em>surfacing</em> under Go Deeper, not new work.</li>
+      <li>The nav is one block + one click handler &mdash; swapping flat&rarr;two-tier is contained.</li>
+    </ul>
+  </div>
+  <div class="callout warn">
+    <strong>One coupling fixed:</strong> <code>show()</code> currently toggles panels by DOM index (<code>idx === n</code>), relying on panel order matching tab number. Task&nbsp;4 switches to selecting by id (<code>#t{n}</code>) so it stays correct regardless of order.
+  </div>
+
+  <h2>The four acts (tab grouping)</h2>
+  <ul>
+    <li><strong>Decide</strong> &mdash; Verdict (the landing; decision control moves to the top here)</li>
+    <li><strong>Understand</strong> &mdash; ELI5, Technical, Use Cases, Skip If, Enables, Pros/Cons, Red Flags, Alternatives, Health, Tech Stack</li>
+    <li><strong>Go Deeper</strong> &mdash; Deep Dive, Canvas, Systems, Ideate, Prioritize, SKTPG, Docs Quality, Maintenance, License, Since Last Scan</li>
+    <li><strong>Act</strong> &mdash; Fits MY Stack, Similar, Versus, Synergies, Connections, Combine, Ask (Save/Share stay in the header)</li>
+  </ul>
+  <p class="meta">All 28 indices map to exactly one act (verified by a unit test).</p>
+
+  <h2>Tasks</h2>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 1 &mdash; Foundation</span>
+    <div class="task">
+      <div class="t-name">Task 1 &middot; Pure act model <span class="pill new">create</span></div>
+      <div class="files"><code>output-acts.js</code> + <code>tests/output-acts.test.js</code></div>
+      <div class="what">Full TDD: <code>ACTS</code>, <code>TAB_LABELS</code>, <code>actForTab()</code>, <code>tabsForAct()</code>, <code>ACT_ORDER</code>. Tests assert every index 0&ndash;27 is covered exactly once, plus helper correctness.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 2 &mdash; Two-tier nav</span>
+    <div class="task">
+      <div class="t-name">Task 2 &middot; Nav containers + styles <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.html</code></div>
+      <div class="what">Replace the flat <code>.tab-nav</code> + dropdown menus with two containers (<code>#act-nav</code>, <code>#act-subnav</code>) and Mono-Ink styles (secondary row reuses <code>.tab-btn</code>).</div>
+    </div>
+    <div class="task">
+      <div class="t-name">Task 3 &middot; Render the nav from the model <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code></div>
+      <div class="what">Import the model; <code>renderActNav()</code> (primary acts) + <code>renderSubNav(actId)</code> (active act's tabs). Buttons keep <code>data-tab</code> so the existing show() path is reused.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 3 &mdash; Routing</span>
+    <div class="task">
+      <div class="t-name">Task 4 &middot; show() selects by id + tracks the act <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code></div>
+      <div class="what">Panels by <code>#t{n}</code>; set the active act button + render/mark its secondary row; hash + per-repo recall kept verbatim.</div>
+    </div>
+    <div class="task">
+      <div class="t-name">Task 5 &middot; Two-tier click handling + tooltips <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code></div>
+      <div class="what">Act click &rarr; show its first tab; subnav click &rarr; show(n). Remove the old dropdown handlers; re-point the explainer tooltips at the persistent <code>#act-subnav</code> (delegated, survives re-renders).</div>
+    </div>
+    <div class="task">
+      <div class="t-name">Task 6 &middot; Deep-link/restore order <span class="pill mod">modify if needed</span></div>
+      <div class="files"><code>output-tab.js</code></div>
+      <div class="what">Ensure <code>renderActNav()</code> runs before the initial hash/recall route resolves; show() handles the rest.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 4 &mdash; Targeted UX fixes</span>
+    <div class="task">
+      <div class="t-name">Task 7 &middot; Decision control to the top of Decide <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code>, <code>output-tab.html</code></div>
+      <div class="what">Re-anchor the Adopt/Trial/Hold/Reject block after the fit chip + bottom line (was buried at the bottom). Internals unchanged.</div>
+    </div>
+    <div class="task">
+      <div class="t-name">Task 8 &middot; Highlights anchor, not cross-navigate <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code> (<code>renderHighlights</code>)</div>
+      <div class="what">A highlight click switches to its section and scrolls it into view (reduced-motion aware) instead of silently swapping context.</div>
+    </div>
+    <div class="task">
+      <div class="t-name">Task 9 &middot; Previews jump to canonical (dedupe) <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code></div>
+      <div class="what">Ensure each Verdict preview (tech stack, top flags) has a jump to its full section (15, 8). Previews stay &mdash; one source of truth.</div>
+    </div>
+    <div class="task">
+      <div class="t-name">Task 10 &middot; "Run all lenses" in the Go-Deeper subnav <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code> (<code>renderSubNav</code>)</div>
+      <div class="what">Relocate the run-all control (from the removed Lenses dropdown) into the Go-Deeper secondary row.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 5 &mdash; Folded-in journey win</span>
+    <div class="task">
+      <div class="t-name">Task 11 &middot; Circular library &harr; output nav <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code>, <code>library.js</code></div>
+      <div class="what">One clear, reversible path each way (focus/reuse an existing tab rather than orphaning new ones).</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 6 &mdash; Verification</span>
+    <div class="task">
+      <div class="t-name">Task 12 &middot; Full pass</div>
+      <div class="what"><code>vitest run</code> (857 + 5 new) &middot; <code>eslint .</code> 0 errors &middot; <code>check:html</code> &middot; <code>node --check</code> &middot; Playwright screenshots at 320/768/1024/1440 + deep-link, keyboard, reduced-motion, a11y checks.</div>
+    </div>
+  </div>
+
+  <h2>Spec coverage &amp; honest gaps</h2>
+  <ul>
+    <li>28 destinations &rarr; four acts: Tasks 1&ndash;5. Decision to top: Task 7. Dedupe/jumps: Task 9. Highlights anchor: Task 8.</li>
+    <li>Deep links + per-repo recall preserved (slugs unchanged): Tasks 4, 6. Keyboard nav preserved; verified in Task 12.</li>
+    <li>Circular nav (folded-in B win): Task 11.</li>
+    <li><strong>Partial vs spec:</strong> "live progress for every lens" is real for Deep Dive but Maintenance/Docs only show a thinking state &mdash; richer per-lens progress needs <code>background.js</code> streaming, which the spec puts out of scope. <strong>Deliberate follow-up.</strong></li>
+  </ul>
+
+  <h2>Out of scope (per spec)</h2>
+  <p>Gamification/juice (Pillar 3), settings redesign, new analysis features, rewriting section internals or the analysis pipeline.</p>
+
+  <footer>RepoLens &middot; Pillar A implementation plan &middot; review, then execute task-by-task (subagent-driven or inline).</footer>
+
+</div>
+</body>
+</html>

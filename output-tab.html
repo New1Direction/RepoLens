@@ -70,6 +70,13 @@
   .tab-btn:hover { color: var(--text-sub); }
   .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+  .act-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; gap: 4px; }
+  .act-tab { padding: 14px 20px; font-size: 13px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-faint); cursor: pointer; background: none; border: none; border-bottom: 2px solid transparent; transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+  .act-tab:hover { color: var(--text-sub); }
+  .act-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .act-subnav { background: var(--surface-alt); border-bottom: 1px solid var(--border); padding: 8px 32px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .act-subnav:empty { display: none; }
+
   /* Grouped tab menus (Lenses / Library) — chunked to cut nav clutter */
   .tab-menu { position: relative; }
   .tab-menu-btn { padding: 14px 16px; font: 600 12px/1 inherit; color: var(--text-faint); cursor: pointer; background: none; border: none; border-bottom: 2px solid transparent; white-space: nowrap; }
@@ -303,7 +310,7 @@
   .sk-row .sub { width: 100%; color: var(--text-sub); font-size: 12px; line-height: 1.5; margin-top: 2px; }
 
   /* Decision Log */
-  .dl-block { margin-top: 28px; border-top: 1px solid var(--border); padding-top: 20px; }
+  .dl-block { margin: 16px 0; }
   .dl-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; }
   .dl-choices { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .dl-btn { padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-2); background: var(--surface); color: var(--text-sub); transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
@@ -841,48 +848,9 @@
   <div id="highlights"></div>
   <div id="scan-history"></div>
 
-  <!-- Tabs -->
-  <div class="tab-nav">
-    <button class="tab-btn active" data-tab="9">Verdict</button>
-    <button class="tab-btn" data-tab="0">ELI5</button>
-    <button class="tab-btn" data-tab="1">Technical</button>
-    <button class="tab-btn" data-tab="2">Use Cases</button>
-    <button class="tab-btn" data-tab="3">Skip If</button>
-    <button class="tab-btn" data-tab="4">Enables</button>
-    <button class="tab-btn" data-tab="5">Pros / Cons</button>
-    <button class="tab-btn" data-tab="6">Alternatives</button>
-    <button class="tab-btn" data-tab="7">Health</button>
-    <button class="tab-btn" data-tab="8">Red Flags</button>
-    <button class="tab-btn" data-tab="15">Tech Stack</button>
-    <div class="tab-menu" id="menu-lenses">
-      <button class="tab-menu-btn">Lenses ▾</button>
-      <div class="tab-menu-list">
-        <button class="tab-menu-run" id="run-all-lenses">▸ Run all lenses <span id="lens-progress" style="font:500 10px/1 ui-monospace,monospace;opacity:.7;margin-left:4px"></span></button>
-        <button class="tab-btn" data-tab="10">Deep Dive</button>
-        <button class="tab-btn" data-tab="27">Canvas</button>
-        <button class="tab-btn" data-tab="11">Systems</button>
-        <button class="tab-btn" data-tab="12">Ideate</button>
-        <button class="tab-btn" data-tab="13">Prioritize</button>
-        <button class="tab-btn" id="tab-sktpg" data-tab="14">SKTPG</button>
-        <button class="tab-btn" data-tab="21">Docs Quality</button>
-        <button class="tab-btn" data-tab="22">Maintenance</button>
-        <button class="tab-btn" data-tab="23">License</button>
-        <button class="tab-btn" data-tab="24">Since Last Scan</button>
-        <button class="tab-btn" data-tab="25">Fits MY Stack?</button>
-        <button class="tab-btn" data-tab="26">Ask</button>
-      </div>
-    </div>
-    <div class="tab-menu" id="menu-library">
-      <button class="tab-menu-btn">Library ▾</button>
-      <div class="tab-menu-list">
-        <button class="tab-btn" data-tab="16">Similar</button>
-        <button class="tab-btn" data-tab="18">Synergies</button>
-        <button class="tab-btn" data-tab="17">Versus</button>
-        <button class="tab-btn" data-tab="19">Connections</button>
-        <button class="tab-btn" data-tab="20">Combine</button>
-      </div>
-    </div>
-  </div>
+  <!-- Tabs: two-tier act nav (primary acts + secondary row), built in output-tab.js -->
+  <nav class="act-nav" id="act-nav" aria-label="Sections"></nav>
+  <div class="act-subnav" id="act-subnav" role="tablist"></div>
 
   <div class="scan-tip" id="scan-tip" role="tooltip" aria-hidden="true"></div>
 

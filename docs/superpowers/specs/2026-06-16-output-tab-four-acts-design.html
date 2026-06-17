@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Output Tab — Four-Act Narrative (Pillar A)</title>
+  <style>
+    :root {
+      --ink: #0f1115;
+      --surface: #ffffff;
+      --paper: #f6f7f9;
+      --grey: #6b7280;
+      --line: #e5e7eb;
+      --cobalt: #2563eb;
+      --electric: #1d4ed8;
+      --good: #15803d;
+      --warn: #b45309;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+    header.doc {
+      border-left: 4px solid var(--cobalt);
+      padding: 4px 0 4px 20px;
+      margin-bottom: 36px;
+    }
+    header.doc h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 12px; letter-spacing: -0.02em; }
+    .meta { color: var(--grey); font-size: 0.92rem; }
+    .meta strong { color: var(--ink); font-weight: 600; }
+    .pillars {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin: 18px 0 0;
+      font-size: 0.92rem;
+    }
+    .pillars .p { padding: 4px 0; }
+    .pillars .now { color: var(--electric); font-weight: 600; }
+    h2 {
+      font-size: 1.3rem; margin: 44px 0 14px; letter-spacing: -0.01em;
+      padding-bottom: 8px; border-bottom: 1px solid var(--line);
+    }
+    h3 { font-size: 1.05rem; margin: 28px 0 10px; }
+    p { margin: 12px 0; }
+    ul, ol { padding-left: 22px; }
+    li { margin: 6px 0; }
+    code {
+      background: var(--paper); border: 1px solid var(--line);
+      border-radius: 5px; padding: 1px 6px; font-size: 0.86em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { background: var(--surface); font-weight: 600; }
+    .act {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 4px 22px 18px; margin: 18px 0;
+    }
+    .act .tag {
+      display: inline-block; margin: 18px 0 2px; font-weight: 700;
+      letter-spacing: 0.04em; color: var(--electric); font-size: 0.95rem;
+    }
+    .act .sub { color: var(--grey); font-style: italic; font-size: 0.9rem; margin: 0 0 6px; }
+    .pill {
+      display: inline-block; font-size: 0.74rem; font-weight: 600; padding: 2px 8px;
+      border-radius: 999px; border: 1px solid var(--line); color: var(--grey);
+    }
+    .pill.def { color: var(--good); border-color: #bbf7d0; background: #f0fdf4; }
+    .pill.dem { color: var(--warn); border-color: #fde68a; background: #fffbeb; }
+    .note {
+      background: var(--surface); border: 1px solid var(--line);
+      border-left: 4px solid var(--cobalt); border-radius: 8px;
+      padding: 12px 18px; margin: 16px 0; font-size: 0.94rem;
+    }
+    .ac li { margin: 8px 0; }
+    footer { margin-top: 56px; color: var(--grey); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc">
+    <h1>Output Tab — Four-Act Narrative</h1>
+    <div class="meta">
+      <strong>Pillar A</strong> &middot; 2026-06-16 &middot; Status: <strong>Approved (design)</strong> — pending implementation plan<br>
+      Surface: the extension's analysis/verdict view (<code>output-tab.html</code> + <code>output-tab.js</code>)
+    </div>
+    <div class="pillars">
+      Part of a 3-pillar "simpler to use and digest" effort:
+      <div class="p"><span class="now">Pillar A — Output-tab narrative</span> &larr; this spec, building first</div>
+      <div class="p">Pillar B — Cross-app journey (circular nav, entry points, save/discovery clarity)</div>
+      <div class="p">Pillar 3 — The Knowledge Game (library + corkboard + canvas: smooth, juicy, addictive — mastery + discovery + collection + crafting, to "plug pieces together and think in new ways")</div>
+    </div>
+  </header>
+
+  <h2>Problem</h2>
+  <p>The output tab is information-rich and genuinely good — the problem is purely presentation and flow. From a current-state audit:</p>
+  <ol>
+    <li><strong>28 flat tabs.</strong> Verdict, ELI5, Technical, Use-Cases, Skip-If, Enables, Pros-Cons, Alternatives, Health, Red-Flags, Tech-Stack, + Deep-Dive/Systems/Ideate/Prioritize/SKTPG, + Docs/Maintenance/License/Diff/Fits-Stack, + Similar/Versus/Synergies/Connections/Combine, + Ask/Canvas. No sense of what to read first or in what order.</li>
+    <li><strong>No narrative, weak wayfinding.</strong> The Verdict landing tries to be everything (11 stacked sections, flat hierarchy); the <strong>Decision control (Adopt/Trial/Hold/Reject) is buried ~2000px down</strong>; key info is previewed on Verdict but fully rendered elsewhere with no jump links; fit verdict, red flags, and tech stack each render in two places.</li>
+    <li><strong>Opaque "lenses," hidden prerequisites.</strong> "Lens" is never explained; Canvas silently needs Deep Dive first; library tabs need 2+ scans; multi-stage runs give no progress/ETA.</li>
+  </ol>
+
+  <h2>Goals</h2>
+  <ul>
+    <li>Reorganize the output tab into a <strong>four-act narrative</strong>: Decide &rarr; Understand &rarr; Go Deeper &rarr; Act.</li>
+    <li>Add real hierarchy, wayfinding (preview &rarr; jump), and lens clarity (label + prerequisite + time estimate + live progress).</li>
+    <li><strong>Preserve every piece of information</strong>, all functionality, all deep links, and per-repo position recall. Nothing is removed.</li>
+  </ul>
+
+  <h2>Non-goals</h2>
+  <ul>
+    <li>No rewrite of individual section internals or the analysis pipeline (<code>background.js</code> runners, prompts, parsers stay as-is).</li>
+    <li>No gamification / motion juice (that is Pillar 3).</li>
+    <li>No settings redesign, no new analysis features.</li>
+    <li><strong>One folded-in exception:</strong> the small circular library&harr;output navigation fix (central to "flow" and cheap).</li>
+  </ul>
+
+  <h2>Structure: chosen approach</h2>
+  <p><strong>Four Acts, two-tier navigation.</strong> Four primary acts as the top-level nav; each act opens its own focused, bounded view containing its grouped sections. The user always knows which act they are in; never an endless scroll. Keyboard navigation preserved. Cleanest fit for the zero-build codebase.</p>
+
+  <h2>The four acts — complete section mapping</h2>
+  <p><span class="pill def">Default</span> = shown immediately after a scan. <span class="pill dem">On-demand</span> = user triggers an AI run.</p>
+
+  <div class="act">
+    <span class="tag">&#9312; DECIDE</span>
+    <p class="sub">"should I use this, and what do I do about it?" — the landing</p>
+    <table>
+      <tr><th>Element</th><th>When</th><th>Notes</th></tr>
+      <tr><td>Fit verdict (level + label + why)</td><td><span class="pill def">Default</span></td><td>Anchored at top</td></tr>
+      <tr><td>Bottom line (one-liner)</td><td><span class="pill def">Default</span></td><td></td></tr>
+      <tr><td><strong>Decision control</strong> (Adopt/Trial/Hold/Reject + note)</td><td><span class="pill def">Default</span></td><td><strong>Moved to the top</strong> (was buried at page bottom)</td></tr>
+      <tr><td>At-a-glance facts (health, stars/license/lang, pros/cons/flag counts)</td><td><span class="pill def">Default</span></td><td>Compact summary row</td></tr>
+      <tr><td>Top red flags (up to 3)</td><td><span class="pill def">Default</span></td><td>Distinct "warning" treatment; link to full list</td></tr>
+      <tr><td>Where-to-start cards</td><td><span class="pill def">Default</span></td><td>if present</td></tr>
+      <tr><td>Since-last-scan diff callout</td><td><span class="pill def">Default</span></td><td>if prior scan</td></tr>
+      <tr><td>"Worth noting" highlights</td><td><span class="pill def">Default</span></td><td>Now <strong>anchor</strong> to their home section (no context-thrash)</td></tr>
+    </table>
+  </div>
+
+  <div class="act">
+    <span class="tag">&#9313; UNDERSTAND</span>
+    <p class="sub">deep reading; all pre-computed, no waiting</p>
+    <table>
+      <tr><th>Element</th><th>When</th><th>Notes</th></tr>
+      <tr><td>ELI5 (+ analogies)</td><td><span class="pill def">Default</span></td><td></td></tr>
+      <tr><td>Technical</td><td><span class="pill def">Default</span></td><td></td></tr>
+      <tr><td>Use Cases (4-grid)</td><td><span class="pill def">Default</span></td><td></td></tr>
+      <tr><td>Skip If (4-grid)</td><td><span class="pill def">Default</span></td><td></td></tr>
+      <tr><td>Enables</td><td><span class="pill def">Default</span></td><td></td></tr>
+      <tr><td>Pros / Cons (full)</td><td><span class="pill def">Default</span></td><td>Verdict shows counts &rarr; jump here</td></tr>
+      <tr><td>Red Flags (full list)</td><td><span class="pill def">Default</span></td><td>Decide shows top 3 &rarr; jump to the canonical full list here</td></tr>
+      <tr><td>Alternatives</td><td><span class="pill def">Default</span></td><td></td></tr>
+      <tr><td>Health (full: 4 signals + summary)</td><td><span class="pill def">Default</span></td><td><strong>Add metric explanations</strong></td></tr>
+      <tr><td>Tech Stack (full: built_with + key_dependencies)</td><td><span class="pill def">Default</span></td><td>Verdict shows language chips &rarr; jump here</td></tr>
+    </table>
+    <p><strong>De-duplication rule:</strong> where Verdict shows a preview, the full version lives here and Verdict links to it. One source of truth per element.</p>
+  </div>
+
+  <div class="act">
+    <span class="tag">&#9314; GO DEEPER</span>
+    <p class="sub">on-demand lenses about THIS repo; each a labeled card</p>
+    <p>Each lens card shows: <strong>name &middot; one-line "what it does" &middot; prerequisite badge &middot; time estimate &middot; live stage progress.</strong></p>
+    <table>
+      <tr><th>Lens</th><th>Prerequisite</th><th>Notes</th></tr>
+      <tr><td>Deep Dive (atoms &rarr; lineage &rarr; Feynman)</td><td>&mdash;</td><td>~90s, 3 stages with progress</td></tr>
+      <tr><td>Canvas / Blueprint</td><td><strong>Needs Deep Dive</strong></td><td>prereq badge shown</td></tr>
+      <tr><td>Systems / Ideate / Prioritize</td><td>&mdash;</td><td>framework chips</td></tr>
+      <tr><td>SKTPG</td><td>&mdash;</td><td>auto-run by default (toggle)</td></tr>
+      <tr><td>Docs Quality</td><td>&mdash;</td><td></td></tr>
+      <tr><td>Maintenance</td><td>&mdash;</td><td>can be slow; show progress</td></tr>
+      <tr><td>License</td><td>library context</td><td></td></tr>
+      <tr><td>Since Last Scan</td><td>prior scan</td><td></td></tr>
+    </table>
+  </div>
+
+  <div class="act">
+    <span class="tag">&#9315; ACT</span>
+    <p class="sub">do something with it</p>
+    <table>
+      <tr><th>Element</th><th>Notes</th></tr>
+      <tr><td>Save</td><td>clear saved-state feedback</td></tr>
+      <tr><td>Ask this repo</td><td>requires a completed scan — state up front</td></tr>
+      <tr><td>Share</td><td></td></tr>
+      <tr><td><strong>Against your library:</strong> Similar &middot; Versus &middot; Synergies &middot; Connections &middot; Combine &middot; Fits-My-Stack</td><td>Honest "needs N scans" unlock states. Deeper gamified treatment is <strong>Pillar 3</strong>.</td></tr>
+    </table>
+  </div>
+
+  <h2>Navigation &amp; interaction</h2>
+  <ul>
+    <li><strong>Persistent header</strong> — repo name, meta pills, fit chip — always visible across acts.</li>
+    <li><strong>Primary nav</strong> — four acts (Decide &middot; Understand &middot; Go Deeper &middot; Act). Default landing = Decide.</li>
+    <li><strong>Secondary nav within an act</strong> — section list (Understand) or labeled cards (Go Deeper / Act).</li>
+    <li><strong>Keyboard</strong> — <code>1</code>–<code>4</code> select acts; within-act keys for sections; preserve <code>r</code>/<code>f</code>/<code>l</code>/<code>o</code>.</li>
+    <li><strong>Deep-linking</strong> — new hash scheme (<code>#decide</code>, <code>#understand/health</code>, <code>#deeper/deep-dive</code>, <code>#act/versus</code>) with a <strong>legacy slug map</strong> so every old <code>#slug</code> still resolves.</li>
+    <li><strong>Per-repo recall</strong> — remember act + section (<code>repolens_tab_&lt;repoId&gt;</code>).</li>
+  </ul>
+
+  <h2>Component design (isolation + testability)</h2>
+  <p>Extract a <strong>pure act-model module</strong> (e.g. <code>output-acts.js</code>), no DOM/network, exporting: <code>ACTS</code>, <code>sectionToAct()</code>, <code>routeForHash()</code> / <code>hashForRoute()</code>, <code>LEGACY_SLUG_MAP</code> + <code>resolveLegacySlug()</code>, and <code>keyboardMap</code>. <code>output-tab.js</code> consumes it to render the act shell and route; section render functions stay as-is and mount into act containers. Routing/grouping logic becomes unit-testable independent of the DOM.</p>
+
+  <h2>Constraints honored</h2>
+  <ul>
+    <li><strong>Zero-build, zero-dep, vanilla ES modules.</strong> Reorganize <code>output-tab.html</code> + <code>output-tab.js</code>; no framework/bundler/deps.</li>
+    <li><strong>Mono Ink</strong> brand, stop-slop/human voice, no emoji on product surfaces, motion behind <code>prefers-reduced-motion</code> (reuse <code>--dur-*</code>/<code>--ease-*</code>).</li>
+    <li><strong>No DOM test environment</strong> — pure logic to vitest; DOM glue via <code>node --check</code> + a <code>*-demo.html</code> harness.</li>
+    <li><strong>No <code>background.js</code> contract changes</strong> — message types unchanged; front-end reorganization only.</li>
+  </ul>
+
+  <h2>Testing</h2>
+  <ul>
+    <li><strong>vitest (pure):</strong> act-model completeness (every slug maps to exactly one act/section), legacy-slug resolution, hash round-trip, keyboard map.</li>
+    <li><strong><code>node --check</code></strong> on glue.</li>
+    <li><strong>Visual:</strong> an <code>output-tab</code> demo harness; Playwright screenshots at 320 / 768 / 1024 / 1440; reduced-motion; accessibility (keyboard, focus, contrast).</li>
+    <li>Existing suite green; <code>eslint .</code> 0 errors; HTML parse gate passes.</li>
+  </ul>
+
+  <h2>Migration / rollout</h2>
+  <ol>
+    <li>Build the pure act-model module + act shell + routing (tested first).</li>
+    <li>Move sections into acts group-by-group, keeping tests green.</li>
+    <li>Add the legacy-hash redirect so existing <code>#slug</code> links resolve.</li>
+    <li>Preserve auto-save, lens runners, and all message contracts (front-end only).</li>
+  </ol>
+
+  <h2>Acceptance criteria</h2>
+  <ul class="ac">
+    <li>All ~28 destinations reachable, grouped into the four acts.</li>
+    <li>Decision control in Decide, visible without scrolling.</li>
+    <li>No element rendered twice as a source of truth — previews jump to the canonical section.</li>
+    <li>Every lens shows what-it-does + prerequisite + time estimate + live progress.</li>
+    <li>Old deep links resolve; keyboard nav works; per-repo recall works.</li>
+    <li>Verdict landing scannable with clear hierarchy.</li>
+    <li>All existing tests pass + new act-model tests; <code>eslint .</code> 0 errors; HTML gate passes.</li>
+  </ul>
+
+  <div class="note">
+    <strong>Resolved decisions:</strong> Four Acts (two-tier nav) &middot; decision control &rarr; top of Decide &middot; library-relational features &rarr; Act (gamified depth deferred to Pillar 3) &middot; circular library&harr;output nav folded into A.
+  </div>
+
+  <footer>RepoLens &middot; Pillar A design spec &middot; review this, then it becomes an implementation plan.</footer>
+
+</div>
+</body>
+</html>

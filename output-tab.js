@@ -39,6 +39,7 @@ import { snapshotTrend, sparkline } from './snapshots.js';
 import { introStageB, COPY } from './onboarding.js';
 import { startCoachmark } from './coachmark.js';
 import { clearDemoEverywhere, isDemo } from './demo-repo.js';
+import { ACTS, TAB_LABELS, actForTab, tabsForAct } from './output-acts.js';
 
 // Apply the saved theme ASAP (before render) to minimise flash.
 initTheme();
@@ -364,6 +365,8 @@ async function init() {
   initOutputPalette(data);
 
   // Restore tab: URL hash takes priority (explicit intent), then per-repo memory.
+  // Default landing (no hash, no stored tab) = Decide, with its act-tab marked
+  // active so routing state is consistent on first view.
   const hashTab = SLUG_TO_TAB[location.hash.slice(1)];
   if (hashTab != null) {
     show(hashTab, { updateHash: false });
@@ -371,7 +374,10 @@ async function init() {
     chrome.storage.local.get(`repolens_tab_${data.repoId}`).then((res) => {
       const stored = res[`repolens_tab_${data.repoId}`];
       if (stored != null && stored !== 9) show(stored, { updateHash: true });
-    }).catch(() => {});
+      else show(9, { updateHash: false });
+    }).catch(() => show(9, { updateHash: false }));
+  } else {
+    show(9, { updateHash: false });
   }
 
   // Header logo becomes Vee, reacting to the verdict (one-shot pop/squint on mount).
@@ -811,7 +817,12 @@ function renderHighlights(d) {
   }
 
   host.querySelectorAll('.hl-row.clickable').forEach(row => {
-    row.addEventListener('click', () => show(Number(row.dataset.jump)));
+    row.addEventListener('click', () => {
+      const n = Number(row.dataset.jump);
+      show(n);
+      const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      document.getElementById('t' + n)?.scrollIntoView({ behavior, block: 'start' });
+    });
   });
 }
 
@@ -1926,7 +1937,7 @@ function verdictDashboard(d) {
     : '';
 
   const jump = (id, label) => `<button class="v-jump" data-jump="${id}">${label} <span class="arr">→</span></button>`;
-  const jumps = `<div class="v-jumps">${jump(7, "Why it's " + (score >= 70 ? 'healthy' : 'mixed'))}${jump(8, 'What to watch')}${jump(6, 'Alternatives')}${jump(10, 'Deep Dive')}</div>`;
+  const jumps = `<div class="v-jumps">${jump(7, "Why it's " + (score >= 70 ? 'healthy' : 'mixed'))}${jump(8, 'What to watch')}${jump(15, 'Tech Stack')}${jump(6, 'Alternatives')}${jump(10, 'Deep Dive')}</div>`;
 
   const diff = d.diff;
   const diffCallout = (() => {
@@ -1958,6 +1969,7 @@ function verdictDashboard(d) {
     <p class="v-what">${what}</p>
     <div class="v-fit fit-${fit.level}"><span class="v-chip">${esc(fit.label)}</span><span class="v-why">${esc(fit.why)}</span></div>
     ${line}
+    <div id="vd-decision-anchor"></div>
     <div class="v-facts">${cells}</div>
     ${flags}
     ${entries}
@@ -2108,7 +2120,10 @@ async function renderDecisionControl(d) {
       <span class="dl-saved-msg" id="dl-saved-msg"></span>
     </div>
   `;
-  host.appendChild(block);
+  // Anchor near the top of Decide (after fit + bottom line); fall back to host end.
+  const anchor = host.querySelector('#vd-decision-anchor');
+  if (anchor) anchor.appendChild(block);
+  else host.appendChild(block);
 
   let selected = existing?.decision || null;
 
@@ -2207,18 +2222,69 @@ const TAB_SLUGS = {
 };
 const SLUG_TO_TAB = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, Number(k)]));
 
-function show(n, { updateHash = true } = {}) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.tab) === n));
-  document.querySelectorAll('.tab-content').forEach((c, idx) => c.classList.toggle('active', idx === n));
-  // Blueprint canvas mounts lazily on every activation path (click, #hash deep-link, per-repo restore).
-  // renderCanvas is idempotent (dataset.mounted guard) and null-safe, so calling it on each show(27) is cheap.
-  if (n === 27) renderCanvas(lastData).catch((err) => console.error('[canvas] render failed', err));
-  // Reflect the active tab on its parent menu button + close any open menus.
-  document.querySelectorAll('.tab-menu').forEach(m => {
-    const owns = [...m.querySelectorAll('.tab-btn')].some(b => Number(b.dataset.tab) === n);
-    m.querySelector('.tab-menu-btn')?.classList.toggle('active', owns);
-    m.classList.remove('open');
+// Two-tier act nav: a primary row of acts, and a secondary row of the active
+// act's tabs. Both are generated from the act model so the grouping has one
+// source of truth. Buttons keep `data-tab` so the existing show() path is reused.
+function renderActNav() {
+  const nav = document.getElementById('act-nav');
+  if (!nav) return;
+  nav.innerHTML = ACTS.map(
+    (a) => `<button class="act-tab" data-act="${a.id}">${a.label}</button>`,
+  ).join('');
+}
+
+function renderSubNav(actId) {
+  const sub = document.getElementById('act-subnav');
+  if (!sub) return;
+  const tabs = tabsForAct(actId);
+  // A single-tab act (Decide) needs no secondary row.
+  sub.innerHTML = tabs.length <= 1
+    ? ''
+    : tabs.map((n) => `<button class="tab-btn"${n === 14 ? ' id="tab-sktpg"' : ''} data-tab="${n}">${TAB_LABELS[n]}</button>`).join('');
+
+  if (actId === 'deeper') {
+    sub.insertAdjacentHTML('afterbegin',
+      `<button class="tab-menu-run" id="run-all-lenses">▸ Run all lenses ` +
+      `<span id="lens-progress" style="font:500 10px/1 ui-monospace,monospace;opacity:.7;margin-left:4px"></span></button>`);
+  }
+
+  // Mark scan buttons that have an explainer with a subtle ⓘ (per-render, so
+  // freshly-rendered subnav buttons get one; the tip listeners in initScanTips
+  // delegate from #act-subnav and survive this re-render).
+  sub.querySelectorAll('.tab-btn[data-tab]').forEach((btn) => {
+    if (explainerFor(btn.dataset.tab) && !btn.querySelector('.tip-i')) {
+      const i = document.createElement('span');
+      i.className = 'tip-i';
+      i.textContent = 'ⓘ';
+      btn.appendChild(i);
+    }
   });
+
+  // The Go-Deeper subnav owns the SKTPG button; re-apply its visibility setting
+  // now that #tab-sktpg has just been (re)rendered, so an off-toggle still hides it.
+  if (actId === 'deeper' && typeof applySktpgVisibility === 'function') applySktpgVisibility();
+}
+
+function show(n, { updateHash = true } = {}) {
+  // Active tab button (in the secondary row) + active panel (by id, not DOM order).
+  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.tab) === n));
+  document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+  document.getElementById(`t${n}`)?.classList.add('active');
+
+  // Active act: highlight it and render its secondary row (if not already shown).
+  const actId = actForTab(n);
+  document.querySelectorAll('.act-tab').forEach((b) => b.classList.toggle('active', b.dataset.act === actId));
+  const sub = document.getElementById('act-subnav');
+  if (sub && sub.dataset.act !== actId) {
+    renderSubNav(actId);
+    sub.dataset.act = actId || '';
+  }
+  // Re-mark the active secondary button after a possible re-render.
+  document.querySelectorAll('#act-subnav .tab-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.tab) === n));
+
+  // Blueprint canvas mounts lazily on every activation path (idempotent + null-safe).
+  if (n === 27) renderCanvas(lastData).catch((err) => console.error('[canvas] render failed', err));
+
   if (updateHash && TAB_SLUGS[n]) {
     history.replaceState(null, '', `#${TAB_SLUGS[n]}`);
   }
@@ -2227,47 +2293,34 @@ function show(n, { updateHash = true } = {}) {
   }
 }
 
-// Nav clicks: open/close a grouped menu, run-all, or switch tab.
-document.querySelector('.tab-nav')?.addEventListener('click', e => {
-  const menuBtn = e.target.closest('.tab-menu-btn');
-  if (menuBtn) {
-    const menu = menuBtn.closest('.tab-menu');
-    const wasOpen = menu.classList.contains('open');
-    document.querySelectorAll('.tab-menu').forEach(m => m.classList.remove('open'));
-    if (!wasOpen) menu.classList.add('open');
-    return;
-  }
-  if (e.target.closest('#run-all-lenses')) { runAllLenses(); return; }
-  const btn = e.target.closest('[data-tab]');
-  if (btn) {
-    const n = Number(btn.dataset.tab);
-    show(n);
-    if (n === 19) renderConnections(lastData); // network tab — pull fresh on each open (like Similar)
-    // (canvas, tab 27, is dispatched inside show() so deep-link/restore paths render it too)
-  }
+// Primary act row: clicking an act shows its first tab.
+document.getElementById('act-nav')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.act-tab');
+  if (!btn) return;
+  const first = tabsForAct(btn.dataset.act)[0];
+  if (first != null) show(first);
 });
 
-// Close menus on an outside click.
-document.addEventListener('click', e => {
-  if (!e.target.closest('.tab-nav')) document.querySelectorAll('.tab-menu').forEach(m => m.classList.remove('open'));
+// Secondary row: clicking a tab switches panels (same contract as before).
+document.getElementById('act-subnav')?.addEventListener('click', (e) => {
+  if (e.target.closest('#run-all-lenses')) { runAllLenses(); return; }
+  const btn = e.target.closest('[data-tab]');
+  if (!btn) return;
+  const n = Number(btn.dataset.tab);
+  show(n);
+  if (n === 19) renderConnections(lastData); // Connections: pull fresh on each open
 });
 
 // Scan explainers: a styled "when to use / skip" tooltip on each on-demand scan
 // button, shown on hover OR keyboard focus. Static copy lives in explainers.js.
 function initScanTips() {
   const tip = document.getElementById('scan-tip');
-  const nav = document.querySelector('.tab-nav');
+  const nav = document.getElementById('act-subnav');
   if (!tip || !nav) return;
 
-  // Mark scan buttons that have an explainer with a subtle ⓘ.
-  nav.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
-    if (explainerFor(btn.dataset.tab) && !btn.querySelector('.tip-i')) {
-      const i = document.createElement('span');
-      i.className = 'tip-i';
-      i.textContent = 'ⓘ';
-      btn.appendChild(i);
-    }
-  });
+  // ⓘ markers are added per-render in renderSubNav() so freshly-rendered
+  // subnav buttons get one; the listeners below delegate from the persistent
+  // #act-subnav element, so they survive each subnav re-render.
 
   const showFor = (btn) => {
     const e = explainerFor(btn.dataset.tab);
@@ -2297,6 +2350,7 @@ function initScanTips() {
   nav.addEventListener('focusout', hide);
 }
 initScanTips();
+renderActNav();
 
 // ─── "?" Guide overlay — feature discovery on demand ──────────────────────────
 // One small button; the overlay explains scanning, the tabs, every lens (from
@@ -2393,8 +2447,18 @@ document.getElementById('copy-url')?.addEventListener('click', async () => {
   await copyWithFlash(document.getElementById('copy-url'), url);
 });
 
-document.getElementById('open-library')?.addEventListener('click', () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL('library.html') });
+// Return path (output → library): focus an existing Library tab if one is open,
+// otherwise open a fresh one. Mirrors background.js's focus-or-create idiom so the
+// library ↔ output round-trip never orphans duplicate Library tabs.
+document.getElementById('open-library')?.addEventListener('click', async () => {
+  const libUrl = chrome.runtime.getURL('library.html');
+  const [existing] = await chrome.tabs.query({ url: libUrl });
+  if (existing) {
+    await chrome.tabs.update(existing.id, { active: true });
+    await chrome.windows.update(existing.windowId, { focused: true });
+  } else {
+    chrome.tabs.create({ url: libUrl });
+  }
 });
 
 const CURRENT_VERSION = '3.0.0';
