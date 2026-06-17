@@ -2230,17 +2230,25 @@ function renderSubNav(actId) {
 }
 
 function show(n, { updateHash = true } = {}) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.tab) === n));
-  document.querySelectorAll('.tab-content').forEach((c, idx) => c.classList.toggle('active', idx === n));
-  // Blueprint canvas mounts lazily on every activation path (click, #hash deep-link, per-repo restore).
-  // renderCanvas is idempotent (dataset.mounted guard) and null-safe, so calling it on each show(27) is cheap.
+  // Active tab button (in the secondary row) + active panel (by id, not DOM order).
+  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.tab) === n));
+  document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+  document.getElementById(`t${n}`)?.classList.add('active');
+
+  // Active act: highlight it and render its secondary row (if not already shown).
+  const actId = actForTab(n);
+  document.querySelectorAll('.act-tab').forEach((b) => b.classList.toggle('active', b.dataset.act === actId));
+  const sub = document.getElementById('act-subnav');
+  if (sub && sub.dataset.act !== actId) {
+    renderSubNav(actId);
+    sub.dataset.act = actId || '';
+  }
+  // Re-mark the active secondary button after a possible re-render.
+  document.querySelectorAll('#act-subnav .tab-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.tab) === n));
+
+  // Blueprint canvas mounts lazily on every activation path (idempotent + null-safe).
   if (n === 27) renderCanvas(lastData).catch((err) => console.error('[canvas] render failed', err));
-  // Reflect the active tab on its parent menu button + close any open menus.
-  document.querySelectorAll('.tab-menu').forEach(m => {
-    const owns = [...m.querySelectorAll('.tab-btn')].some(b => Number(b.dataset.tab) === n);
-    m.querySelector('.tab-menu-btn')?.classList.toggle('active', owns);
-    m.classList.remove('open');
-  });
+
   if (updateHash && TAB_SLUGS[n]) {
     history.replaceState(null, '', `#${TAB_SLUGS[n]}`);
   }
