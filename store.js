@@ -281,6 +281,36 @@ export async function getAllMastery() {
   }
 }
 
+// ─── concepts: per-repo deep-dive atoms + embeddings (Knowledge Graph) ────────
+
+/** Persist a repo's concept record (atoms [+ vectors]). Throws on failure. */
+export async function setConcepts(repoId, record) {
+  if (!repoId) throw new Error('setConcepts needs a repoId');
+  await idbPut('concepts', { id: repoId, payload: record });
+}
+
+/** Get a repo's concept record, or null. */
+export async function getConcepts(repoId) {
+  try {
+    const row = await idbGet('concepts', repoId);
+    return (row && row.payload) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** All concept records as a { repoId: record } map. Best-effort — {} on failure. */
+export async function getAllConcepts() {
+  try {
+    const rows = await idbGetAll('concepts');
+    const out = {};
+    for (const r of rows || []) if (r && r.id) out[r.id] = r.payload;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 // ─── Canvas scenes ────────────────────────────────────────────────────────────
 
 /** Persist a canvas scene (upsert by id). Throws on failure. */

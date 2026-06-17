@@ -3,10 +3,11 @@
 
 const DB_NAME = 'repolens';
 // v2 added 'collections'. v3 added 'decisions'. v4 added 'snapshots'. v5 added
-// 'scenes'. v6 added 'mastery' (the Knowledge Game signal). Each upgrade is
-// additive — onupgradeneeded creates any new store, so existing data survives.
-const DB_VERSION = 6;
-const STORES = ['repos', 'nodes', 'edges', 'collections', 'decisions', 'snapshots', 'scenes', 'mastery'];
+// 'scenes'. v6 added 'mastery' (the Knowledge Game signal). v7 added 'concepts'
+// (the Knowledge-Graph concept substrate). Each upgrade is additive —
+// onupgradeneeded creates any new store, so existing data survives.
+const DB_VERSION = 7;
+const STORES = ['repos', 'nodes', 'edges', 'collections', 'decisions', 'snapshots', 'scenes', 'mastery', 'concepts'];
 
 let dbPromise = null;
 
