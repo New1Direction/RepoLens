@@ -51,33 +51,42 @@ Levels:
 
 `mastery.js` is pure (no DOM, no network) and exports:
 - `MASTERY_LEVELS` (ordered: new < explored < understood) + `levelLabel(level)`.
-- `deriveCheckResult(questions, ratings)` → `{ level, score, glows, grows }`.
+- Constants: `UNDERSTOOD_THRESHOLD = 2 / 3` and `MASTERY_LEVELS = { NEW: 'new', EXPLORED: 'explored', UNDERSTOOD: 'understood' }`.
+- `deriveCheckResult(questions, ratings)` → `{ level, score, gotIt, shaky, missed, total, glows, grows }` (the counts are returned so the caller can persist `lastResult` directly).
   - `ratings` is an array aligned to `questions`, each `'gotIt' | 'shaky' | 'missed'`.
   - `score` = gotIt / total.
-  - `level` = `'understood'` when `score >= UNDERSTOOD_THRESHOLD` where `UNDERSTOOD_THRESHOLD = 2/3` (≈0.667 — e.g. 2 of 3 questions passes; tunable constant). Compare against the `2/3` constant, not a rounded `0.67` (2/3 = 0.6667 < 0.67, so a rounded literal would wrongly require 3-of-3). Else `'explored'`.
+  - `level` = `'understood'` when `score >= UNDERSTOOD_THRESHOLD`. Compare against the `2/3` constant, **not a rounded `0.67`** (2/3 = 0.6667 < 0.67, so a rounded literal would wrongly require 3-of-3; 2-of-3 must pass). Else `'explored'`.
   - `glows` = the `q` text of the gotIt questions (what you're solid on); `grows` = the `q` text of shaky/missed questions (what to revisit). No AI — pure reflection of which questions were self-rated low.
-- `aggregateMastery(records)` → `{ understood, explored, new, total }` for the library view.
+  - **Zero questions** (`questions` empty) → `{ level: 'new', score: 0, total: 0, gotIt: 0, shaky: 0, missed: 0, glows: [], grows: [] }`. The caller writes nothing (see Edge cases) — no accidental promotion.
+- `aggregateMastery(records)` → `{ understood, explored, new, total }` for the library view. (`coverage` is left derived in the UI, not stored.)
+
+### Edge cases (explicit)
+
+- **Zero-question check** → `deriveCheckResult` returns `level: 'new'` and the caller persists nothing. A deep dive that emitted no questions cannot earn mastery.
+- **Partial completion** → if the user closes the panel before every question is rated (`ratings.length < questions.length`), **persist nothing**. Mastery is written only on a fully-rated check.
+- **Retakes** → allowed; the latest completed result replaces the prior `mastery[repoId]` (latest wins). No history kept in v1.
 
 ### ② Earn — the Understand-Check (deep-dive panel, "Go Deeper")
 
 The deep-dive output already renders a "self-test questions" section from `deepdive.parseFeynman().questions`. Turn it interactive:
-- Each question is a flip card: shows `q`; **Reveal answer** shows `a`; then three self-rating buttons: **Got it · Shaky · Missed**.
-- After all cards rated, call `deriveCheckResult(questions, ratings)`, persist to `mastery[repoId]` (via `store.js`), and show a **Glows & Grows** summary ("Solid on: …; revisit: …") + the new level.
-- Re-taking is allowed; the latest result replaces the prior one.
+- **One card at a time:** show `q`; **Reveal answer** shows `a`; then three self-rating buttons (**Got it · Shaky · Missed**); rating auto-advances to the next card. Low friction.
+- **Completion screen** (after all cards rated): lead with the **level earned** + **Glows & Grows** ("Solid on: …; revisit: …"), *not* a raw percentage — the score is stored but not the headline (a 66.7% feels like a grade; "Understood — revisit middleware" feels educational).
+- **Persist only on completion:** call `deriveCheckResult(questions, ratings)` and write `mastery[repoId]` (via `store.js`) **only when every question is rated**. Closing early writes nothing.
+- Re-taking is allowed; the latest completed result replaces the prior one.
 - The flip-card UI is DOM glue in `output-tab.js`/HTML/CSS; all scoring/leveling/summary logic lives in `mastery.js` (testable).
 
 ### ③ See — the Mastery Map (library)
 
-- Each library card gains a subtle level indicator (small ring/dot — *not* a loud badge): new (faint), explored (half), understood (full/accent).
-- One honest aggregate line at the top of the library: e.g. "Understood 12 of 40 · 7 explored."
-- A level filter (All / Understood / Explored / New) reusing the existing library filter pattern.
+- Each library card gains a subtle level indicator to the left of the title — *not* a loud badge: **new = ○** (faint outline), **explored = ◐** (half), **understood = ●** (accent fill). The text label appears only on hover/focus.
+- One honest aggregate line at the top of the library: e.g. "Understood 12 of 40 · 7 explored." Never a "Mastery 82%" — that implies precision the self-graded signal doesn't have.
+- A **single-select** level filter (All / Understood / Explored / New) reusing the existing library filter pattern (no multi-filter in v1).
 - Rendered in `library.js` from the mastery records; coverage stats from `aggregateMastery`.
 
 ## Architecture (files)
 
 - **Create** `mastery.js` — pure model + helpers (one responsibility: the mastery signal + scoring + aggregation).
 - **Create** `tests/mastery.test.js` — `deriveCheckResult` thresholds/levels/glows-grows, `aggregateMastery`, level helpers.
-- **Modify** `store.js` — add `getMastery(repoId)` / `setMastery(repoId, record)` (IDB; follow the existing scene/library store patterns). Add a store test in `tests/`.
+- **Modify** `store.js` — add `getAllMastery()` (read the full `{ [repoId]: record }` map for the library) and `setMastery(repoId, record)` (persist one already-computed record). **CRUD only** — no leveling/merge logic in the store; the level is computed in `mastery.js` and passed in. Do *not* add an `updateMastery` that computes inside the persistence layer. Follow the existing scene/library store patterns; add a store test in `tests/`.
 - **Modify** `output-tab.js` (+ `output-tab.html` styles) — render the flip-card check in the deep-dive panel; wire ratings → `deriveCheckResult` → `store.setMastery` → summary + level.
 - **Modify** `library.js` (+ styles) — card level indicators, the aggregate line, the level filter.
 
@@ -97,9 +106,11 @@ The deep-dive output already renders a "self-test questions" section from `deepd
 
 - [ ] After a deep dive, the self-test questions render as an interactive self-graded check (reveal + Got it / Shaky / Missed).
 - [ ] Completing the check persists `mastery[repoId]` and shows a Glows & Grows summary + the earned level.
-- [ ] `understood` requires `score >= 2/3` (the `UNDERSTOOD_THRESHOLD` constant, ≈0.667; e.g. 2 of 3 questions); otherwise `explored`.
-- [ ] Library cards show their mastery level; the library shows an honest aggregate ("Understood X of Y") and a level filter.
-- [ ] `mastery.js` logic is fully unit-tested; mastery persistence is tested with fake-indexeddb.
+- [ ] `understood` requires `score >= 2/3` (the `UNDERSTOOD_THRESHOLD` constant, ≈0.667; e.g. 2 of 3 questions); otherwise `explored`. A 2-of-3 check earns `understood`.
+- [ ] **Partial completion** (panel closed before all questions rated) persists nothing.
+- [ ] A deep dive with **zero questions** cannot earn mastery — it stays `new` and writes nothing.
+- [ ] Library cards show their mastery level (subtle ○ / ◐ / ● indicator, label on hover/focus); the library shows an honest aggregate ("Understood X of Y · N explored", never a "Mastery %") and a single-select level filter.
+- [ ] `mastery.js` logic is fully unit-tested (incl. the 2/3 boundary, glows/grows partition, zero-question, aggregate counts); mastery persistence round-trip tested with fake-indexeddb.
 - [ ] All existing tests pass + new tests; `eslint .` 0 errors; HTML gate passes; no AI calls or `background.js` changes added.
 
 ## Resolved decisions

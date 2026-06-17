@@ -75,7 +75,8 @@
   lastResult: { gotIt, shaky, missed, total } | null,
 }</pre>
     <p>Levels: <span class="lvl n">new</span> scanned, no check &middot; <span class="lvl e">explored</span> attempted, not passed &middot; <span class="lvl u">understood</span> passed.</p>
-    <p>Pure exports (no DOM/network): <code>MASTERY_LEVELS</code> + <code>levelLabel()</code>; <code>deriveCheckResult(questions, ratings)</code> &rarr; <code>{ level, score, glows, grows }</code> (score = gotIt/total; understood when score &ge; <strong>&#8532;</strong> (the <code>UNDERSTOOD_THRESHOLD</code> constant, ≈0.667 — e.g. 2 of 3 passes; compare against the 2/3 constant, not a rounded 0.67), tunable; glows = the questions you got, grows = the ones to revisit — pure reflection, no AI); <code>aggregateMastery(records)</code> &rarr; coverage counts.</p>
+    <p>Constants: <code>UNDERSTOOD_THRESHOLD = 2/3</code>, <code>MASTERY_LEVELS</code>. Pure exports (no DOM/network): <code>levelLabel()</code>; <code>deriveCheckResult(questions, ratings)</code> &rarr; <code>{ level, score, gotIt, shaky, missed, total, glows, grows }</code> (counts returned so the caller persists <code>lastResult</code> directly; score = gotIt/total; understood when score &ge; <strong>&#8532;</strong> — compare against the 2/3 constant, not a rounded 0.67, so 2-of-3 passes; glows = questions you got, grows = ones to revisit, pure reflection, no AI); <code>aggregateMastery(records)</code> &rarr; coverage counts (<code>coverage</code> left derived in UI).</p>
+    <p><strong>Edge cases:</strong> <em>zero questions</em> &rarr; <code>level: 'new'</code>, caller writes nothing (no accidental promotion); <em>partial completion</em> (closed before all rated) &rarr; persist nothing; <em>retakes</em> &rarr; latest completed result wins (no history in v1).</p>
   </div>
 
   <div class="comp">
@@ -89,15 +90,15 @@
 └──────────────────────────────────────────┘
   → tally → "Solid on routing · revisit middleware"
   → marks this repo understood, saved to your library</pre>
-    <p>After all cards: <code>deriveCheckResult</code> sets the level + a <strong>Glows &amp; Grows</strong> summary from which questions you rated low, then persists to <code>mastery[repoId]</code>. Re-takeable; latest result wins. UI is DOM glue; all logic lives in <code>mastery.js</code>.</p>
+    <p><strong>One card at a time</strong> (reveal &rarr; rate &rarr; auto-advance). The <strong>completion screen leads with the level earned + Glows &amp; Grows</strong>, not a raw percentage (score is stored, not shown as the headline). <strong>Persist only on completion</strong> — write <code>mastery[repoId]</code> only when every question is rated; closing early writes nothing. Re-takeable; latest result wins. UI is DOM glue; all logic lives in <code>mastery.js</code>.</p>
   </div>
 
   <div class="comp">
     <span class="tag">&#9314; See — the Mastery Map (library)</span>
     <ul>
-      <li>Each card gets a subtle level indicator (small ring/dot — not a loud badge): new faint, explored half, understood full/accent.</li>
-      <li>One honest aggregate line: "Understood 12 of 40 &middot; 7 explored."</li>
-      <li>A level filter (All / Understood / Explored / New), reusing the existing library filter pattern.</li>
+      <li>A subtle level indicator left of the title (not a loud badge): new = <strong>&#9675;</strong> faint, explored = <strong>&#9680;</strong> half, understood = <strong>&#9679;</strong> accent. Text label on hover/focus only.</li>
+      <li>One honest aggregate line: "Understood 12 of 40 &middot; 7 explored." Never a "Mastery 82%" — implies precision the signal lacks.</li>
+      <li>A <strong>single-select</strong> level filter (All / Understood / Explored / New), reusing the existing library filter pattern (no multi-filter in v1).</li>
     </ul>
     <p>Rendered in <code>library.js</code> from the mastery records; stats from <code>aggregateMastery</code>.</p>
   </div>
@@ -106,7 +107,7 @@
   <ul>
     <li><strong>Create</strong> <code>mastery.js</code> — pure model + helpers (scoring, leveling, aggregation).</li>
     <li><strong>Create</strong> <code>tests/mastery.test.js</code>.</li>
-    <li><strong>Modify</strong> <code>store.js</code> — <code>getMastery</code>/<code>setMastery</code> (IDB, existing store patterns) + a store test.</li>
+    <li><strong>Modify</strong> <code>store.js</code> — <code>getAllMastery()</code> (read full map) + <code>setMastery(repoId, record)</code> (persist a computed record). CRUD only — no leveling/merge logic in the store (no <code>updateMastery</code> that computes); + a store test.</li>
     <li><strong>Modify</strong> <code>output-tab.js</code> (+ HTML styles) — flip-card check in the deep-dive panel.</li>
     <li><strong>Modify</strong> <code>library.js</code> (+ styles) — card indicators, aggregate line, level filter.</li>
   </ul>
@@ -125,9 +126,10 @@
   <h2>Acceptance criteria</h2>
   <ul>
     <li>After a deep dive, self-test questions render as an interactive self-graded check (reveal + Got it / Shaky / Missed).</li>
-    <li>Completing it persists <code>mastery[repoId]</code> + shows Glows &amp; Grows + the earned level.</li>
-    <li>understood requires score &ge; &#8532; (the <code>UNDERSTOOD_THRESHOLD</code> constant, ≈0.667; e.g. 2 of 3); else explored.</li>
-    <li>Library cards show their level; library shows an honest aggregate + a level filter.</li>
+    <li>Completing it (all questions rated) persists <code>mastery[repoId]</code> + shows Glows &amp; Grows + the earned level.</li>
+    <li>understood requires score &ge; &#8532; (the <code>UNDERSTOOD_THRESHOLD</code> constant, ≈0.667; 2 of 3 passes); else explored.</li>
+    <li><strong>Partial completion writes nothing</strong>; a <strong>zero-question</strong> deep dive can't earn mastery (stays new, no write).</li>
+    <li>Library cards show their level (○ / ◐ / ●); library shows an honest aggregate (never a %) + a single-select filter.</li>
     <li><code>mastery.js</code> fully unit-tested; persistence tested with fake-indexeddb.</li>
     <li>All existing tests pass + new; <code>eslint .</code> 0 errors; HTML gate passes; no AI calls / <code>background.js</code> changes added.</li>
   </ul>
