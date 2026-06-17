@@ -31,6 +31,20 @@ describe('applyFilters', () => {
     expect(out.map((r) => r.repoId).sort()).toEqual(['a/one', 'a/three']);
   });
 
+  it('mastery filter keeps only rows at that level; missing masteryLevel defaults to new', () => {
+    const masteryRows = [
+      mkRow('a/one', { masteryLevel: 'understood' }),
+      mkRow('a/two', { masteryLevel: 'explored' }),
+      mkRow('a/three'), // no masteryLevel → defaults to 'new'
+    ];
+    const understood = applyFilters(masteryRows, { ...base, mastery: 'understood' }, {});
+    expect(understood.map((r) => r.repoId)).toEqual(['a/one']);
+
+    // The `|| 'new'` default path: a row with no masteryLevel matches mastery='new'.
+    const fresh = applyFilters(masteryRows, { ...base, mastery: 'new' }, {});
+    expect(fresh.map((r) => r.repoId)).toEqual(['a/three']);
+  });
+
   it('decision=undecided hides rows that have a saved decision', () => {
     const decisionMap = new Map([['a/one', { decision: 'adopt', savedAt: '2026-01-01' }]]);
     const out = applyFilters(rows, { ...base, decision: 'undecided' }, { decisionMap });

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Mastery Loop — Implementation Plan</title>
+  <style>
+    :root { --ink:#0f1115; --surface:#fff; --paper:#f6f7f9; --grey:#6b7280; --line:#e5e7eb; --cobalt:#2563eb; --electric:#1d4ed8; --good:#15803d; --warn:#b45309; --radius:12px; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:880px; margin:0 auto; padding:56px 24px 96px; }
+    header.doc { border-left:4px solid var(--cobalt); padding:4px 0 4px 20px; margin-bottom:30px; }
+    header.doc h1 { font-size:1.9rem; line-height:1.15; margin:0 0 10px; letter-spacing:-0.02em; }
+    .meta { color:var(--grey); font-size:0.92rem; } .meta strong { color:var(--ink); }
+    .callout { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--cobalt); border-radius:8px; padding:12px 18px; margin:16px 0; font-size:0.94rem; }
+    h2 { font-size:1.3rem; margin:38px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line); letter-spacing:-0.01em; }
+    p { margin:10px 0; } ul { padding-left:22px; } li { margin:5px 0; }
+    code { background:var(--paper); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:0.84em; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .phase { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:6px 22px 16px; margin:16px 0; }
+    .phase .ph-tag { display:inline-block; margin:16px 0 2px; font-weight:700; letter-spacing:.03em; color:var(--electric); }
+    .task { border-top:1px solid var(--line); padding:11px 0; } .task:first-of-type { border-top:none; }
+    .task .t-name { font-weight:650; } .task .files { color:var(--grey); font-size:.84rem; margin-top:3px; } .task .what { margin-top:4px; font-size:.94rem; }
+    .pill { display:inline-block; font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--grey); margin-right:6px; }
+    .pill.new { color:var(--good); border-color:#bbf7d0; background:#f0fdf4; } .pill.mod { color:var(--warn); border-color:#fde68a; background:#fffbeb; }
+    footer { margin-top:48px; color:var(--grey); font-size:.85rem; border-top:1px solid var(--line); padding-top:16px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc">
+    <h1>The Mastery Loop</h1>
+    <div class="meta">
+      <strong>Implementation plan</strong> &middot; Pillar 3 / Spec 1 &middot; 2026-06-16 &middot; branch <code>feat/mastery-loop</code><br>
+      Overview for review. Full step-by-step code (TDD steps, commands, commits) lives in the companion <code>.md</code>.
+    </div>
+  </header>
+
+  <div class="callout">
+    <strong>Goal.</strong> A self-graded mastery loop: earn a per-repo signal from the deep-dive's existing self-test questions, persist it locally, and show coverage growing across the library. No <code>background.js</code> changes, no new AI calls, fully local.
+  </div>
+
+  <h2>Architecture</h2>
+  <p>New pure <code>mastery.js</code> (all scoring/leveling/aggregation, fully unit-tested). <code>store.js</code> gains CRUD for a new IDB <code>mastery</code> store. The deep-dive panel's existing "Test Yourself" block becomes an interactive flip-card check that computes a result via <code>mastery.js</code> and persists it. The library reads the mastery map for per-card indicators, an honest aggregate, and a single-select level filter.</p>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 1 &mdash; Pure model</span>
+    <div class="task">
+      <div class="t-name">Task 1 &middot; <code>mastery.js</code> + tests <span class="pill new">create</span></div>
+      <div class="files"><code>mastery.js</code>, <code>tests/mastery.test.js</code></div>
+      <div class="what">Full TDD: <code>MASTERY_LEVELS</code>, <code>UNDERSTOOD_THRESHOLD = 2/3</code>, <code>levelLabel</code>, <code>levelRank</code>, <code>deriveCheckResult</code>, <code>aggregateMastery</code>. Tests pin the 2/3 boundary (2-of-3 passes), glows/grows partition, zero-question &rarr; new, aggregate counts.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 2 &mdash; Persistence</span>
+    <div class="task">
+      <div class="t-name">Task 2 &middot; IDB <code>mastery</code> store + CRUD <span class="pill mod">modify</span></div>
+      <div class="files"><code>store/idb.js</code> (v5&rarr;v6 + store), <code>store.js</code>, <code>tests/store-mastery.test.js</code></div>
+      <div class="what"><code>getMastery</code> / <code>getAllMastery</code> / <code>setMastery(repoId, record)</code>, mirroring the <code>decisions</code> store; round-trip tested with fake-indexeddb. CRUD only &mdash; no compute in the store.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 3 &mdash; Earn</span>
+    <div class="task">
+      <div class="t-name">Task 3 &middot; Interactive flip-card check <span class="pill mod">modify</span></div>
+      <div class="files"><code>output-tab.js</code> (deep-dive render, ~L988), <code>output-tab.html</code> (styles)</div>
+      <div class="what">Replace the static "Test Yourself" block with one-card-at-a-time reveal &rarr; rate (Got it / Shaky / Missed) &rarr; auto-advance. On completion: compute via <code>deriveCheckResult</code>, show level + Glows/Grows (no %), persist via <code>setMastery</code>. Partial/zero-question &rarr; no write.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 4 &mdash; See (library)</span>
+    <div class="task">
+      <div class="t-name">Task 4 &middot; Per-card indicator <span class="pill mod">modify</span></div>
+      <div class="files"><code>library.js</code> (<code>card()</code>), <code>library-data.js</code>, <code>library.html</code></div>
+      <div class="what">Load the mastery map once on library load, merge <code>masteryLevel</code> onto rows, render ○ / ◐ / ● left of the title (label on hover).</div>
+    </div>
+    <div class="task">
+      <div class="t-name">Task 5 &middot; Aggregate line + level filter <span class="pill mod">modify</span></div>
+      <div class="files"><code>library.js</code>, <code>library-filters.js</code>, <code>library.html</code></div>
+      <div class="what">Honest aggregate ("Understood X of Y &middot; N explored", never a %) via <code>aggregateMastery</code>; a single-select All/Understood/Explored/New filter mirroring the existing filter pattern.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="ph-tag">Phase 5 &mdash; Verification</span>
+    <div class="task">
+      <div class="t-name">Task 6 &middot; Full pass</div>
+      <div class="what"><code>vitest run</code> (prior + 2 new test files) &middot; <code>eslint .</code> 0 errors &middot; <code>check:html</code> &middot; <code>node --check</code> &middot; manual smoke (deep dive &rarr; check &rarr; library indicator + aggregate + filter; partial/zero-question write nothing).</div>
+    </div>
+  </div>
+
+  <h2>Spec coverage</h2>
+  <ul>
+    <li>Shared mastery model + persistence: Tasks 1, 2. Self-graded check (no AI): Task 3.</li>
+    <li>Persist only on completion; zero-question &rarr; no write: Tasks 1 + 3. 2/3 threshold: Task 1.</li>
+    <li>Completion shows level + Glows/Grows (no %): Task 3. Indicators + aggregate (no %) + single-select filter: Tasks 4, 5.</li>
+    <li>Fully unit-tested model; persistence via fake-indexeddb: Tasks 1, 2. No <code>background.js</code>/AI changes: verified in Task 6.</li>
+  </ul>
+
+  <h2>Out of scope (per spec)</h2>
+  <p>AI-graded MCQ, spaced-repetition resurfacing UI, corkboard knowledge-graph (Spec 2), mastery in the backup envelope.</p>
+
+  <footer>RepoLens &middot; Pillar 3 / Spec 1 plan &middot; review, then execute task-by-task (subagent-driven).</footer>
+
+</div>
+</body>
+</html>

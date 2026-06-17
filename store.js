@@ -251,6 +251,36 @@ export async function listDecisions() {
   }
 }
 
+// ─── mastery: per-repo Knowledge-Game signal ─────────────────────────────────
+
+/** Persist a repo's mastery record (already computed by mastery.js). Throws on failure. */
+export async function setMastery(repoId, record) {
+  if (!repoId) throw new Error('setMastery needs a repoId');
+  await idbPut('mastery', { id: repoId, payload: record });
+}
+
+/** Get a repo's mastery record, or null if none / on store error. */
+export async function getMastery(repoId) {
+  try {
+    const row = await idbGet('mastery', repoId);
+    return (row && row.payload) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** All mastery records as a { repoId: record } map. Best-effort — {} on failure. */
+export async function getAllMastery() {
+  try {
+    const rows = await idbGetAll('mastery');
+    const out = {};
+    for (const r of rows || []) if (r && r.id) out[r.id] = r.payload;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 // ─── Canvas scenes ────────────────────────────────────────────────────────────
 
 /** Persist a canvas scene (upsert by id). Throws on failure. */

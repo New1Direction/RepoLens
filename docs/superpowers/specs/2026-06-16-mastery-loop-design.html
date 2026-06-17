@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Mastery Loop — Pillar 3, Spec 1</title>
+  <style>
+    :root {
+      --ink:#0f1115; --surface:#fff; --paper:#f6f7f9; --grey:#6b7280; --line:#e5e7eb;
+      --cobalt:#2563eb; --electric:#1d4ed8; --good:#15803d; --warn:#b45309; --radius:12px;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink);
+      font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:860px; margin:0 auto; padding:56px 24px 96px; }
+    header.doc { border-left:4px solid var(--cobalt); padding:4px 0 4px 20px; margin-bottom:30px; }
+    header.doc h1 { font-size:1.95rem; line-height:1.15; margin:0 0 10px; letter-spacing:-0.02em; }
+    .meta { color:var(--grey); font-size:0.92rem; } .meta strong { color:var(--ink); }
+    .loop { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 20px; margin:18px 0 0; font-weight:600; }
+    .loop .step { color:var(--electric); }
+    h2 { font-size:1.3rem; margin:40px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line); letter-spacing:-0.01em; }
+    h3 { font-size:1.04rem; margin:24px 0 8px; }
+    p { margin:10px 0; } ul { padding-left:22px; } li { margin:5px 0; }
+    code { background:var(--paper); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:0.84em; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    pre { background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--cobalt); border-radius:8px; padding:12px 16px; overflow:auto; font-size:0.85rem; line-height:1.5; }
+    .comp { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:6px 22px 16px; margin:14px 0; }
+    .comp .tag { display:inline-block; margin:14px 0 2px; font-weight:700; color:var(--electric); }
+    .lvl { display:inline-block; font-size:.75rem; font-weight:700; padding:2px 9px; border-radius:999px; border:1px solid var(--line); margin-right:6px; }
+    .lvl.n { color:var(--grey); } .lvl.e { color:var(--warn); border-color:#fde68a; background:#fffbeb; } .lvl.u { color:var(--good); border-color:#bbf7d0; background:#f0fdf4; }
+    .note { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--cobalt); border-radius:8px; padding:12px 18px; margin:16px 0; font-size:0.94rem; }
+    footer { margin-top:48px; color:var(--grey); font-size:.85rem; border-top:1px solid var(--line); padding-top:16px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc">
+    <h1>The Mastery Loop</h1>
+    <div class="meta">
+      <strong>Pillar 3 &middot; Spec 1</strong> &middot; 2026-06-16 &middot; Status: <strong>Approved (design)</strong> — pending plan<br>
+      Surface: the deep-dive panel of the output tab + the library.
+    </div>
+    <div class="loop">
+      <span class="step">learn</span> (run a deep dive) &rarr; <span class="step">prove it</span> (self-graded flip-card check) &rarr; <span class="step">see it grow</span> (mastery across your library)
+    </div>
+  </header>
+
+  <div class="note">
+    <strong>Research backbone.</strong> Informed by <em>"Towards an AI-Augmented Textbook"</em> / Google "Learn Your Way" (arxiv 2509.13348v4): personalize + multi-represent + <strong>embedded assessment</strong>, RCT-validated for better immediate <em>and</em> 3-day retention. RepoLens already has latent assessment — the deep-dive Feynman stage emits self-test questions. This spec turns that into an interactive mastery loop, adapted to a zero-backend, BYO-key extension: <strong>self-graded, no new AI calls.</strong>
+  </div>
+
+  <h2>Goals</h2>
+  <ul>
+    <li>A shared, persisted per-repo <strong>mastery signal</strong> the rest of Pillar 3 builds on.</li>
+    <li>An interactive, <strong>self-graded</strong> understand-check from the deep-dive's existing questions — no new AI calls.</li>
+    <li>A library <strong>mastery view</strong> showing coverage grow (the collection/progression payoff).</li>
+    <li>Tasteful: Mono Ink, no badge-soup, no confetti; fully local.</li>
+  </ul>
+
+  <h2>Non-goals</h2>
+  <ul>
+    <li>No AI-graded MCQ / distractor generation (self-graded flip cards only in v1).</li>
+    <li>No <code>background.js</code> / message changes; no new AI calls; no backend.</li>
+    <li>No corkboard knowledge-graph integration (Spec 2). No spaced-repetition UI yet (model leaves room via <code>lastCheckedAt</code>).</li>
+  </ul>
+
+  <h2>Components</h2>
+
+  <div class="comp">
+    <span class="tag">&#9312; The signal — mastery.js (new pure module) + IDB</span>
+    <p>Per-repo record persisted in IDB via <code>store.js</code>:</p>
+    <pre>mastery[repoId] = {
+  level: 'new' | 'explored' | 'understood',
+  lastCheckedAt: ISO | null,
+  lastResult: { gotIt, shaky, missed, total } | null,
+}</pre>
+    <p>Levels: <span class="lvl n">new</span> scanned, no check &middot; <span class="lvl e">explored</span> attempted, not passed &middot; <span class="lvl u">understood</span> passed.</p>
+    <p>Constants: <code>UNDERSTOOD_THRESHOLD = 2/3</code>, <code>MASTERY_LEVELS</code>. Pure exports (no DOM/network): <code>levelLabel()</code>; <code>deriveCheckResult(questions, ratings)</code> &rarr; <code>{ level, score, gotIt, shaky, missed, total, glows, grows }</code> (counts returned so the caller persists <code>lastResult</code> directly; score = gotIt/total; understood when score &ge; <strong>&#8532;</strong> — compare against the 2/3 constant, not a rounded 0.67, so 2-of-3 passes; glows = questions you got, grows = ones to revisit, pure reflection, no AI); <code>aggregateMastery(records)</code> &rarr; coverage counts (<code>coverage</code> left derived in UI).</p>
+    <p><strong>Edge cases:</strong> <em>zero questions</em> &rarr; <code>level: 'new'</code>, caller writes nothing (no accidental promotion); <em>partial completion</em> (closed before all rated) &rarr; persist nothing; <em>retakes</em> &rarr; latest completed result wins (no history in v1).</p>
+  </div>
+
+  <div class="comp">
+    <span class="tag">&#9313; Earn — the Understand-Check (Deep Dive panel)</span>
+    <p>The deep-dive already prints self-test questions. Make them interactive flip cards:</p>
+    <pre>┌─ Check your understanding ──────────────┐
+│  Q: What runs a Hono request?           │
+│              [ Reveal answer ]          │
+│  …answer…                               │
+│   [ Got it ]  [ Shaky ]  [ Missed ]     │
+└──────────────────────────────────────────┘
+  → tally → "Solid on routing · revisit middleware"
+  → marks this repo understood, saved to your library</pre>
+    <p><strong>One card at a time</strong> (reveal &rarr; rate &rarr; auto-advance). The <strong>completion screen leads with the level earned + Glows &amp; Grows</strong>, not a raw percentage (score is stored, not shown as the headline). <strong>Persist only on completion</strong> — write <code>mastery[repoId]</code> only when every question is rated; closing early writes nothing. Re-takeable; latest result wins. UI is DOM glue; all logic lives in <code>mastery.js</code>.</p>
+  </div>
+
+  <div class="comp">
+    <span class="tag">&#9314; See — the Mastery Map (library)</span>
+    <ul>
+      <li>A subtle level indicator left of the title (not a loud badge): new = <strong>&#9675;</strong> faint, explored = <strong>&#9680;</strong> half, understood = <strong>&#9679;</strong> accent. Text label on hover/focus only.</li>
+      <li>One honest aggregate line: "Understood 12 of 40 &middot; 7 explored." Never a "Mastery 82%" — implies precision the signal lacks.</li>
+      <li>A <strong>single-select</strong> level filter (All / Understood / Explored / New), reusing the existing library filter pattern (no multi-filter in v1).</li>
+    </ul>
+    <p>Rendered in <code>library.js</code> from the mastery records; stats from <code>aggregateMastery</code>.</p>
+  </div>
+
+  <h2>Architecture (files)</h2>
+  <ul>
+    <li><strong>Create</strong> <code>mastery.js</code> — pure model + helpers (scoring, leveling, aggregation).</li>
+    <li><strong>Create</strong> <code>tests/mastery.test.js</code>.</li>
+    <li><strong>Modify</strong> <code>store.js</code> — <code>getAllMastery()</code> (read full map) + <code>setMastery(repoId, record)</code> (persist a computed record). CRUD only — no leveling/merge logic in the store (no <code>updateMastery</code> that computes); + a store test.</li>
+    <li><strong>Modify</strong> <code>output-tab.js</code> (+ HTML styles) — flip-card check in the deep-dive panel.</li>
+    <li><strong>Modify</strong> <code>library.js</code> (+ styles) — card indicators, aggregate line, level filter.</li>
+  </ul>
+
+  <h2>Testing</h2>
+  <ul>
+    <li><strong>vitest (pure):</strong> <code>mastery.js</code> — threshold boundary (understood vs explored), glows/grows partition, aggregate counts, level ordering.</li>
+    <li><strong>vitest + fake-indexeddb:</strong> mastery get/set round-trip (matches existing <code>store-*.test.js</code>).</li>
+    <li><strong>DOM glue:</strong> <code>node --check</code>, <code>npm run check:html</code>, manual smoke.</li>
+    <li>Existing suite green; <code>eslint .</code> 0 errors; HTML gate passes.</li>
+  </ul>
+
+  <h2>Constraints</h2>
+  <p>Zero-build, zero-dep, vanilla ES modules. No new AI calls, no <code>background.js</code> changes, no backend — mastery is local IDB; BYO-key untouched. Mono Ink; no emoji; card-flip motion behind <code>prefers-reduced-motion</code>; tasteful (no confetti / badge-soup).</p>
+
+  <h2>Acceptance criteria</h2>
+  <ul>
+    <li>After a deep dive, self-test questions render as an interactive self-graded check (reveal + Got it / Shaky / Missed).</li>
+    <li>Completing it (all questions rated) persists <code>mastery[repoId]</code> + shows Glows &amp; Grows + the earned level.</li>
+    <li>understood requires score &ge; &#8532; (the <code>UNDERSTOOD_THRESHOLD</code> constant, ≈0.667; 2 of 3 passes); else explored.</li>
+    <li><strong>Partial completion writes nothing</strong>; a <strong>zero-question</strong> deep dive can't earn mastery (stays new, no write).</li>
+    <li>Library cards show their level (○ / ◐ / ●); library shows an honest aggregate (never a %) + a single-select filter.</li>
+    <li><code>mastery.js</code> fully unit-tested; persistence tested with fake-indexeddb.</li>
+    <li>All existing tests pass + new; <code>eslint .</code> 0 errors; HTML gate passes; no AI calls / <code>background.js</code> changes added.</li>
+  </ul>
+
+  <div class="note">
+    <strong>Resolved decisions:</strong> earn = self-graded flip cards (no AI MCQ in v1) &middot; 3 levels, understood = &ge;&#8532; "got it" (tunable) &middot; 3-way rating (Got it / Shaky / Missed), "Shaky" feeds grows &middot; mastery map v1 = indicators + aggregate + filter; corkboard/graph deferred to Spec 2.
+  </div>
+
+  <footer>RepoLens &middot; Pillar 3 / Spec 1 design &middot; review, then it becomes an implementation plan.</footer>
+
+</div>
+</body>
+</html>

@@ -11,7 +11,7 @@ const FIT_ORDER = ['strong', 'solid', 'care', 'risky'];
 /**
  * Filter + sort the library rows for display/export.
  * @param {Array} allRows every library row
- * @param {{ query?: string, sort?: string, collection?: string, decision?: string, lang?: string }} state
+ * @param {{ query?: string, sort?: string, collection?: string, decision?: string, lang?: string, mastery?: string }} state
  * @param {{ decisionMap?: Map, evalMap?: Map, rubric?: Array, collections?: Array, nlFilter?: object }} ctx
  * @returns {Array} the visible rows, ordered
  */
@@ -66,6 +66,8 @@ export function applyFilters(allRows, state, ctx = {}) {
     const lq = state.lang.toLowerCase();
     rows = rows.filter((r) => (r.language || r.languages?.[0]?.name || '').toLowerCase() === lq);
   }
+  // Mastery level filter — repos with no record default to 'new'.
+  if (state.mastery) rows = rows.filter((r) => (r.masteryLevel || 'new') === state.mastery);
   // NL filter: restrict to the AI-ranked id list, preserving the AI order.
   if (nlFilter?.ids?.length) {
     const idOrder = new Map(nlFilter.ids.map((id, i) => [id, i]));

@@ -40,6 +40,8 @@ import { introStageB, COPY } from './onboarding.js';
 import { startCoachmark } from './coachmark.js';
 import { clearDemoEverywhere, isDemo } from './demo-repo.js';
 import { ACTS, TAB_LABELS, actForTab, tabsForAct } from './output-acts.js';
+import { deriveCheckResult, levelLabel } from './mastery.js';
+import { setMastery } from './store.js';
 
 // Apply the saved theme ASAP (before render) to minimise flash.
 initTheme();
@@ -926,6 +928,69 @@ async function updateRunnerPill() {
     : `<span class="dot-off"></span>Runner offline — Deep Dive falls back to the README. Start it for measured facts: <code>cargo run --release -- serve</code>`;
 }
 
+// Self-graded "Check your understanding": one card at a time (reveal → rate →
+// auto-advance). Persists mastery only on completion. Pure scoring is in mastery.js.
+function renderUnderstandCheck(host, questions, repoId) {
+  if (!host || !questions?.length) return;           // zero questions → no check, no write
+  const ratings = [];
+  let i = 0;
+
+  const drawCard = () => {
+    const q = questions[i];
+    host.innerHTML = `<div class="uc">
+      <div class="uc-progress">Question ${i + 1} of ${questions.length}</div>
+      <div class="uc-q">${esc(q.q)}</div>
+      <button class="uc-btn" data-uc="reveal">Reveal answer</button>
+    </div>`;
+  };
+
+  const drawAnswer = () => {
+    const q = questions[i];
+    host.querySelector('.uc').innerHTML = `
+      <div class="uc-progress">Question ${i + 1} of ${questions.length}</div>
+      <div class="uc-q">${esc(q.q)}</div>
+      <div class="uc-a">${esc(q.a)}</div>
+      <button class="uc-btn" data-uc="gotIt">Got it</button>
+      <button class="uc-btn" data-uc="shaky">Shaky</button>
+      <button class="uc-btn" data-uc="missed">Missed</button>`;
+  };
+
+  const finish = async () => {
+    const result = deriveCheckResult(questions, ratings);
+    const record = {
+      level: result.level,
+      lastCheckedAt: new Date().toISOString(),
+      lastResult: { gotIt: result.gotIt, shaky: result.shaky, missed: result.missed, total: result.total },
+    };
+    const list = (items) => items.length ? `<ul class="uc-gg">${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : '';
+    host.innerHTML = `<div class="uc uc-done">
+      <span class="uc-level ${result.level}">${esc(levelLabel(result.level))}</span>
+      ${result.glows.length ? `<div class="uc-gg-title">Solid on</div>${list(result.glows)}` : ''}
+      ${result.grows.length ? `<div class="uc-gg-title">Revisit</div>${list(result.grows)}` : ''}
+      <div class="uc-saved" hidden>Saved to your library</div>
+    </div>`;
+    try {
+      await setMastery(repoId, record);
+      const saved = host.querySelector('.uc-saved');
+      if (saved) saved.hidden = false;
+    } catch (err) {
+      console.error('[mastery] save failed', err);
+    }
+  };
+
+  host.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-uc]')?.dataset.uc;
+    if (!action) return;
+    if (action === 'reveal') { drawAnswer(); return; }
+    ratings[i] = action;          // gotIt | shaky | missed
+    i++;
+    if (i < questions.length) drawCard();
+    else finish();                // persist only here, when every card is rated
+  });
+
+  drawCard();
+}
+
 function renderDeepDive(d) {
   const host = document.getElementById('t10');
   if (!host) return;
@@ -986,7 +1051,7 @@ function renderDeepDive(d) {
     ? `<div class="dd-section-title">${title}</div><ul class="dd-list">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
     : '';
   const questionsBlock = fey.questions?.length
-    ? `<div class="dd-section-title">Test Yourself</div>${fey.questions.map(q => `<div class="dd-q"><div class="q">${esc(q.q)}</div><div class="a">${esc(q.a)}</div></div>`).join('')}`
+    ? '<div class="dd-section-title">Check your understanding</div><div id="dd-understand-check"></div>'
     : '';
   const confBlock = fey.confidence?.length
     ? `<div class="dd-section-title">Confidence</div>${fey.confidence.map(c => `<div class="conf-row"><span class="conf-level conf-${esc(c.level)}">${esc(c.level)}</span><span>${esc(c.claim)}${c.note ? ` — <span style="color:var(--text-muted)">${esc(c.note)}</span>` : ''}</span></div>`).join('')}`
@@ -1006,6 +1071,9 @@ function renderDeepDive(d) {
     ${questionsBlock}
     ${confBlock}
   `;
+
+  const ucHost = document.getElementById('dd-understand-check');
+  renderUnderstandCheck(ucHost, fey.questions || [], lastData?.repoId);
 }
 
 // ─── Generic framework-lens shell (chip bar + guidance + primitive body) ──────

@@ -2,12 +2,11 @@
 // This is the only place that touches the raw IndexedDB API — everything else builds on idbPut/idbGet/etc.
 
 const DB_NAME = 'repolens';
-// v2 added the 'collections' store. v3 added the 'decisions' store. v4 added the
-// 'snapshots' store (the Scan Ledger). v5 added the 'scenes' store (Canvas Engine).
-// Each upgrade is additive — onupgradeneeded creates any store in STORES that
-// doesn't already exist, so existing data survives.
-const DB_VERSION = 5;
-const STORES = ['repos', 'nodes', 'edges', 'collections', 'decisions', 'snapshots', 'scenes'];
+// v2 added 'collections'. v3 added 'decisions'. v4 added 'snapshots'. v5 added
+// 'scenes'. v6 added 'mastery' (the Knowledge Game signal). Each upgrade is
+// additive — onupgradeneeded creates any new store, so existing data survives.
+const DB_VERSION = 6;
+const STORES = ['repos', 'nodes', 'edges', 'collections', 'decisions', 'snapshots', 'scenes', 'mastery'];
 
 let dbPromise = null;
 

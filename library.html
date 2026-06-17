@@ -166,6 +166,10 @@
   .lib-card:hover::before { opacity: 1; }
   .lc-top { display: flex; align-items: center; gap: 9px; }
   .lc-name { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .lib-mastery { display:inline-block; width:11px; text-align:center; margin-right:6px; vertical-align:baseline; }
+  .lib-mastery.m-new { color: var(--text-faint); }
+  .lib-mastery.m-explored { color: var(--warn-ink); }
+  .lib-mastery.m-understood { color: var(--accent); }
   .lc-owner { font: 500 11.5px/1 var(--mono); color: var(--muted); }
   .lc-platform { font: 700 9px/1 var(--mono); letter-spacing: .05em; color: #f97316; background: rgba(249,115,22,.1); border: 1px solid rgba(249,115,22,.3); padding: 2px 5px; border-radius: 4px; }
   .lc-chip { margin-left: auto; font: 800 11px/1 var(--sans); padding: 5px 9px; border-radius: 7px; white-space: nowrap; }
@@ -248,6 +252,7 @@
   .ls-pill.risky  { background: var(--fit-risky);  color: #250a08; }
   .ls-pill.unrated{ background: color-mix(in srgb, var(--text-muted) 18%, var(--surface)); color: var(--sub); }
   .ls-health { margin-left: auto; font: 600 12px var(--mono); color: var(--sub); }
+  .ls-mastery { font: 600 12px var(--mono); color: var(--sub); }
   .ls-bar { display: flex; height: 6px; border-radius: 999px; overflow: hidden; width: 80px; flex-shrink: 0; gap: 1px; }
   .ls-bar-seg { border-radius: 999px; }
   .ls-bar-strong { background: var(--fit-strong); }
@@ -610,6 +615,12 @@
       </select>
       <select class="lib-sort" id="lang-filter" title="Filter by primary language">
         <option value="">Language: All</option>
+      </select>
+      <select class="lib-sort" id="mastery-filter" title="Filter by how well you understand each repo">
+        <option value="">Mastery: All</option>
+        <option value="understood">Understood</option>
+        <option value="explored">Explored</option>
+        <option value="new">New</option>
       </select>
     </div>
     <form class="lib-ask" id="ask-bar" autocomplete="off" onsubmit="return false">

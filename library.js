@@ -3,7 +3,8 @@
 // show), and each card manages its repo: click to reopen the saved analysis, hover for
 // re-scan / source / remove actions.
 
-import { scrollPoints, deleteRepo, deleteSnapshots, exportStores, importStores, clearLibrary, listCollections, saveCollection, deleteCollection, listDecisions, saveDecision, listAllSnapshots, getLibraryGraph, getScene, saveScene, saveRepo, deleteScene } from './store.js';
+import { scrollPoints, deleteRepo, deleteSnapshots, exportStores, importStores, clearLibrary, listCollections, saveCollection, deleteCollection, listDecisions, saveDecision, listAllSnapshots, getLibraryGraph, getScene, saveScene, saveRepo, deleteScene, getAllMastery } from './store.js';
+import { levelLabel, aggregateMastery } from './mastery.js';
 import { introStageA, shouldOfferMilestone, milestoneSteps, COPY } from './onboarding.js';
 import { startCoachmark } from './coachmark.js';
 import { DEMO_REPO, demoScene, isDemo } from './demo-repo.js';
@@ -99,7 +100,11 @@ let allRows = [];
 let snapsByRepo = new Map(); // repoId → snaps[] (batch-loaded once in init)
 let cacheByRepo = new Map(); // repoId → full cached analysis (instant reopen)
 let decisionMap = new Map(); // repoId → decision payload
-const state = { query: '', sort: 'fit', capability: '', collection: '', decision: '', lang: '', view: 'list' };
+const state = { query: '', sort: 'fit', capability: '', collection: '', decision: '', lang: '', mastery: '', view: 'list' };
+
+// Mastery records (repoId → { level, ... }), loaded once in init. Drives the
+// header aggregate line and the level filter.
+let masteryMap = {};
 
 // Fit levels best→worst — module-level so cards, the compare modal, and the stats
 // bar share one source. (Was re-declared per-function, leaving the compare modal
@@ -189,10 +194,13 @@ function card(r, i = 0) {
   const evalBadge = evalScore !== null
     ? `<button class="lc-eval-badge" data-act="eval" title="Evaluation: ${evalScore.toFixed(1)}/5 — click to edit">▣ ${evalScore.toFixed(1)}</button>`
     : `<button class="lc-eval-badge lc-eval-empty" data-act="eval" title="Add evaluation scores">▣</button>`;
+  const M_GLYPH = { new: '○', explored: '◐', understood: '●' };
+  const mLevel = r.masteryLevel || 'new';
+  const masteryDot = `<span class="lib-mastery m-${mLevel}" title="${esc(levelLabel(mLevel))}">${M_GLYPH[mLevel]}</span>`;
   return `<div class="lib-card${sel ? ' is-selected' : ''}${isPinned ? ' is-pinned' : ''}" style="animation-delay:${revealDelay}ms" data-repo="${esc(r.repoId)}" title="${r.hasCache ? 'Open the saved analysis (instant, no AI call)' : 'Open the project page'}">
     <div class="lc-top">
       <input type="checkbox" class="lc-check"${sel ? ' checked' : ''} aria-label="Select ${esc(r.name)} for removal" title="Select for bulk removal">
-      <span class="lc-name">${hilite(r.name, hq)}</span>
+      ${masteryDot}<span class="lc-name">${hilite(r.name, hq)}</span>
       ${isDemo(r) ? '<span class="cm-badge-demo" title="A sample repo Vee seeded for the tour">DEMO</span>' : ''}
       ${owner ? `<span class="lc-owner">${hilite(owner, hq)}</span>` : ''}
       ${platformBadge}
@@ -901,6 +909,14 @@ function renderStats() {
   const triagePill = s.total > 0
     ? `<span class="ls-triage-pct" title="${totalDecided} of ${s.total} repos triaged">${triagePct}% triaged</span>`
     : '';
+  // Honest mastery coverage — counts, never a percentage.
+  const agg = aggregateMastery(masteryMap);
+  const masteryLine = agg.total
+    ? `Understood ${agg.understood} of ${agg.total}${agg.explored ? ` · ${agg.explored} explored` : ''}`
+    : '';
+  const masterySummary = masteryLine
+    ? `<span class="ls-mastery" title="Self-graded understanding from deep-dive checks">${masteryLine}</span>`
+    : '';
   host.innerHTML = String(html`
     <span class="ls-total"><span class="ls-total-n" data-count="${s.total}">${s.total}</span> repo${s.total === 1 ? '' : 's'}</span>
     ${triagePill}
@@ -909,6 +925,7 @@ function renderStats() {
     ${s.avgHealth != null ? html`<span class="ls-health">avg health <span class="ls-health-n" data-count="${s.avgHealth}">${s.avgHealth}</span></span>` : ''}
     ${stalePill}
     ${decSummary}
+    ${masterySummary}
   `);
   countUpStat(host.querySelector('.ls-total-n'));
   countUpStat(host.querySelector('.ls-health-n'));
@@ -2630,13 +2647,15 @@ async function init() {
   document.getElementById('lib-btn-corkboard')?.addEventListener('click', toggleCorkboardView);
   wireToolbar(); // before the empty-state return, so Import works on an empty library
 
-  const [points, cachedList, prefs, savedCollections, savedDecisions] = await Promise.all([
+  const [points, cachedList, prefs, savedCollections, savedDecisions, loadedMastery] = await Promise.all([
     scrollPoints(),
     listCached().catch(() => []),
     chrome.storage.local.get(['librarySort', 'mascotEnabled', 'repolens_pinned', SAVED_FILTERS_KEY]).catch(() => ({})),
     listCollections().catch(() => []),
     listDecisions().catch(() => []),
+    getAllMastery(),
   ]);
+  masteryMap = loadedMastery || {};
   decisionMap = new Map(savedDecisions.map((d) => [d.repoId, d]));
   pinned = new Set(Array.isArray(prefs?.repolens_pinned) ? prefs.repolens_pinned : []);
   savedFilters = Array.isArray(prefs?.[SAVED_FILTERS_KEY]) ? prefs[SAVED_FILTERS_KEY] : [];
@@ -2685,6 +2704,7 @@ async function init() {
       hasCache: !!cached,
       blurb: r.blurb || cached?.description || '',
       searchText: searchParts.join(' '),
+      masteryLevel: masteryMap[r.repoId]?.level || 'new',
     };
   });
 
@@ -2838,6 +2858,14 @@ async function init() {
     });
     langSel.addEventListener('change', (e) => {
       state.lang = e.target.value;
+      render();
+    });
+  }
+
+  const masterySel = document.getElementById('mastery-filter');
+  if (masterySel) {
+    masterySel.addEventListener('change', (e) => {
+      state.mastery = e.target.value;
       render();
     });
   }
