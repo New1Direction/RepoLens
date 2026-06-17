@@ -1932,7 +1932,7 @@ function verdictDashboard(d) {
     : '';
 
   const jump = (id, label) => `<button class="v-jump" data-jump="${id}">${label} <span class="arr">→</span></button>`;
-  const jumps = `<div class="v-jumps">${jump(7, "Why it's " + (score >= 70 ? 'healthy' : 'mixed'))}${jump(8, 'What to watch')}${jump(6, 'Alternatives')}${jump(10, 'Deep Dive')}</div>`;
+  const jumps = `<div class="v-jumps">${jump(7, "Why it's " + (score >= 70 ? 'healthy' : 'mixed'))}${jump(8, 'What to watch')}${jump(15, 'Tech Stack')}${jump(6, 'Alternatives')}${jump(10, 'Deep Dive')}</div>`;
 
   const diff = d.diff;
   const diffCallout = (() => {
