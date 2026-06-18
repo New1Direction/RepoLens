@@ -13,7 +13,7 @@ export function daysSince(isoTs) {
 function _fitLevel(d) {
   if (!d) return null;
   const score = Number(d.health?.score ?? d.health ?? 0);
-  const warns = ((d.red_flags) || []).filter(f => f?.severity !== 'ok').length;
+  const warns = (d.red_flags || []).filter((f) => f?.severity !== 'ok').length;
   if (score >= 85 && warns === 0) return 'strong';
   if (score >= 70 && warns <= 1) return 'solid';
   if (score >= 50 && warns <= 3) return 'care';
@@ -48,8 +48,8 @@ export function diffAnalyses(prev, next) {
   const fitRankPrev = FIT_RANK[fitPrev] ?? 2;
   const fitRankNext = FIT_RANK[fitNext] ?? 2;
 
-  const flagsPrev = new Set(((prev.red_flags) || []).map(f => f?.title).filter(Boolean));
-  const flagsNext = new Set(((next.red_flags) || []).map(f => f?.title).filter(Boolean));
+  const flagsPrev = new Set((prev.red_flags || []).map((f) => f?.title).filter(Boolean));
+  const flagsNext = new Set((next.red_flags || []).map((f) => f?.title).filter(Boolean));
 
   return {
     days_since_prev: daysSince(prev.cachedAt),
@@ -61,8 +61,8 @@ export function diffAnalyses(prev, next) {
       changed: fitPrev !== fitNext,
       direction: fitRankNext < fitRankPrev ? 'up' : fitRankNext > fitRankPrev ? 'down' : 'same',
     },
-    new_flags: [...flagsNext].filter(t => !flagsPrev.has(t)),
-    removed_flags: [...flagsPrev].filter(t => !flagsNext.has(t)),
+    new_flags: [...flagsNext].filter((t) => !flagsPrev.has(t)),
+    removed_flags: [...flagsPrev].filter((t) => !flagsNext.has(t)),
     version_delta: _versionDelta(prev.version, next.version),
   };
 }

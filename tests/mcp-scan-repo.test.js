@@ -5,7 +5,13 @@ describe('buildScanResult', () => {
   const repoData = { repoId: 'a/b', language: 'JS', license: 'MIT', stars: 5, description: 'x' };
 
   it('derives fit — the field parseClaudeResponse never produces', () => {
-    const analysis = { health: { score: 90 }, red_flags: [], pros: ['p1', 'p2'], cons: [], bottom_line: 'Good.' };
+    const analysis = {
+      health: { score: 90 },
+      red_flags: [],
+      pros: ['p1', 'p2'],
+      cons: [],
+      bottom_line: 'Good.',
+    };
     const out = buildScanResult('github', repoData, analysis);
     expect(out.repoId).toBe('a/b');
     expect(out.platform).toBe('github');
@@ -35,7 +41,13 @@ describe('runScanRepo (offline, mocked GitHub + Anthropic)', () => {
 
   it('runs end-to-end and threads GITHUB_TOKEN into the GitHub call', async () => {
     process.env.GITHUB_TOKEN = 'ghp_abc';
-    const scanJson = JSON.stringify({ health: { score: 80 }, red_flags: [], pros: ['a'], cons: [], bottom_line: 'Solid.' });
+    const scanJson = JSON.stringify({
+      health: { score: 80 },
+      red_flags: [],
+      pros: ['a'],
+      cons: [],
+      bottom_line: 'Solid.',
+    });
     global.fetch = vi.fn((url) => {
       const u = String(url);
       if (u.includes('api.anthropic.com')) {
@@ -43,7 +55,15 @@ describe('runScanRepo (offline, mocked GitHub + Anthropic)', () => {
       }
       if (u.includes('/readme') || u.includes('/languages')) return Promise.resolve({ ok: false });
       if (u.endsWith('/repos/facebook/react')) {
-        return Promise.resolve({ ok: true, json: async () => ({ description: 'UI', stargazers_count: 1, language: 'JavaScript', license: { spdx_id: 'MIT' } }) });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            description: 'UI',
+            stargazers_count: 1,
+            language: 'JavaScript',
+            license: { spdx_id: 'MIT' },
+          }),
+        });
       }
       return Promise.resolve({ ok: false });
     });
@@ -63,9 +83,18 @@ describe('runScanRepo (offline, mocked GitHub + Anthropic)', () => {
     const scanJson = JSON.stringify({ health: { score: 60 }, red_flags: [], pros: [], cons: [] });
     global.fetch = vi.fn((url) => {
       const u = String(url);
-      if (u.includes('api.anthropic.com')) return Promise.resolve({ ok: true, json: async () => ({ content: [{ text: scanJson }] }) });
+      if (u.includes('api.anthropic.com'))
+        return Promise.resolve({ ok: true, json: async () => ({ content: [{ text: scanJson }] }) });
       if (u.includes('/readme') || u.includes('/languages')) return Promise.resolve({ ok: false });
-      return Promise.resolve({ ok: true, json: async () => ({ description: '', stargazers_count: 0, language: 'JavaScript', license: { spdx_id: 'MIT' } }) });
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          description: '',
+          stargazers_count: 0,
+          language: 'JavaScript',
+          license: { spdx_id: 'MIT' },
+        }),
+      });
     });
     await runScanRepo({ repo: 'x/y' });
     const ghCall = global.fetch.mock.calls.find((c) => String(c[0]).endsWith('/repos/x/y'));

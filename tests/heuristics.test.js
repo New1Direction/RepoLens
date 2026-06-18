@@ -1,12 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { HEURISTICS_FRAMEWORKS, isHeuristicFramework, buildHeuristicsPrompt, parseHeuristics } from '../heuristics.js';
+import {
+  HEURISTICS_FRAMEWORKS,
+  isHeuristicFramework,
+  buildHeuristicsPrompt,
+  parseHeuristics,
+} from '../heuristics.js';
 
 const repo = { repoId: 'facebook/react', description: 'UI lib', language: 'JavaScript' };
 const source = { tree: ['src/index.js'], files: [{ path: 'src/index.js', content: 'export const x=1' }] };
 
 describe('HEURISTICS_FRAMEWORKS / isHeuristicFramework', () => {
   it('exposes the two frameworks', () => {
-    expect(HEURISTICS_FRAMEWORKS.map(f => f.key)).toEqual(['pareto', 'eisenhower']);
+    expect(HEURISTICS_FRAMEWORKS.map((f) => f.key)).toEqual(['pareto', 'eisenhower']);
   });
   it('validates keys', () => {
     expect(isHeuristicFramework('pareto')).toBe(true);
@@ -32,7 +37,10 @@ describe('buildHeuristicsPrompt', () => {
 
 describe('parseHeuristics', () => {
   it('pareto — parses vital_few + trivial_many with defaults', () => {
-    const r = parseHeuristics('pareto', '```json\n{"vital_few":[{"factor":"reconciler","impact":"most bugs","share":"~50%"}],"trivial_many":"the rest"}\n```');
+    const r = parseHeuristics(
+      'pareto',
+      '```json\n{"vital_few":[{"factor":"reconciler","impact":"most bugs","share":"~50%"}],"trivial_many":"the rest"}\n```'
+    );
     expect(r.vital_few[0].factor).toBe('reconciler');
     expect(r.vital_few[0].share).toBe('~50%');
     expect(r.trivial_many).toBe('the rest');
@@ -43,7 +51,10 @@ describe('parseHeuristics', () => {
     expect(r.trivial_many).toBe('');
   });
   it('eisenhower — four quadrant arrays', () => {
-    const r = parseHeuristics('eisenhower', '{"do":["a"],"schedule":["b"],"delegate":["c"],"eliminate":["d"]}');
+    const r = parseHeuristics(
+      'eisenhower',
+      '{"do":["a"],"schedule":["b"],"delegate":["c"],"eliminate":["d"]}'
+    );
     expect(r.do).toEqual(['a']);
     expect(r.schedule).toEqual(['b']);
     expect(r.delegate).toEqual(['c']);

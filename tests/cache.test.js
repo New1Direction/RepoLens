@@ -12,8 +12,12 @@ beforeEach(() => {
           if (typeof k === 'string') return { [k]: store[k] };
           return {};
         }),
-        set: vi.fn(async (obj) => { Object.assign(store, obj); }),
-        remove: vi.fn(async (k) => { delete store[k]; }),
+        set: vi.fn(async (obj) => {
+          Object.assign(store, obj);
+        }),
+        remove: vi.fn(async (k) => {
+          delete store[k];
+        }),
       },
     },
   };
@@ -28,14 +32,19 @@ describe('cacheKey', () => {
 describe('cacheAnalysis / getCached', () => {
   it('stores a trimmed analysis (no README or lens results) and round-trips', async () => {
     await cacheAnalysis('github', 'facebook/react', {
-      eli5: 'x', readme: 'HUGE'.repeat(1000), deepDive: { status: 'done' }, sktpg: { status: 'done' }, loading: true, status: 'thinking',
+      eli5: 'x',
+      readme: 'HUGE'.repeat(1000),
+      deepDive: { status: 'done' },
+      sktpg: { status: 'done' },
+      loading: true,
+      status: 'thinking',
     });
     const got = await getCached('github', 'facebook/react');
     expect(got.eli5).toBe('x');
-    expect(got.readme).toBeUndefined();   // README stripped
+    expect(got.readme).toBeUndefined(); // README stripped
     expect(got.deepDive).toBeUndefined(); // lens results stripped
     expect(got.sktpg).toBeUndefined();
-    expect(got.loading).toBeUndefined();  // transient stripped
+    expect(got.loading).toBeUndefined(); // transient stripped
     expect(got.platform).toBe('github');
     expect(got.repoId).toBe('facebook/react');
     expect(typeof got.cachedAt).toBe('number');
@@ -53,8 +62,8 @@ describe('listCached', () => {
     store['rlcache:npm:a'].cachedAt = 100;
     store['rlcache:npm:b'].cachedAt = 200;
     const list = await listCached();
-    expect(list.map(x => x.repoId)).toEqual(['b', 'a']); // newest first
-    expect(list.some(x => x.foo)).toBe(false);           // unrelated key excluded
+    expect(list.map((x) => x.repoId)).toEqual(['b', 'a']); // newest first
+    expect(list.some((x) => x.foo)).toBe(false); // unrelated key excluded
   });
 });
 

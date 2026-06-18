@@ -5,7 +5,11 @@
  */
 export function detectPlatform(url) {
   let u;
-  try { u = new URL(url); } catch { return null; }
+  try {
+    u = new URL(url);
+  } catch {
+    return null;
+  }
 
   if (u.hostname === 'github.com') {
     const parts = u.pathname.split('/').filter(Boolean);

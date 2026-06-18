@@ -11,9 +11,7 @@ describe('withRetry', () => {
   });
 
   it('retries a retryable failure and then succeeds', async () => {
-    const fn = vi.fn()
-      .mockRejectedValueOnce(new Error('503'))
-      .mockResolvedValueOnce('ok');
+    const fn = vi.fn().mockRejectedValueOnce(new Error('503')).mockResolvedValueOnce('ok');
     expect(await withRetry(fn, { sleep: noSleep })).toBe('ok');
     expect(fn).toHaveBeenCalledTimes(2);
   });
@@ -32,7 +30,10 @@ describe('withRetry', () => {
 
   it('uses exponential backoff delays', async () => {
     const delays = [];
-    const sleep = (ms) => { delays.push(ms); return Promise.resolve(); };
+    const sleep = (ms) => {
+      delays.push(ms);
+      return Promise.resolve();
+    };
     const fn = vi.fn().mockRejectedValue(new Error('503'));
     await expect(withRetry(fn, { retries: 3, baseDelayMs: 100, factor: 2, sleep })).rejects.toThrow();
     expect(delays).toEqual([100, 200, 400]);
@@ -40,15 +41,24 @@ describe('withRetry', () => {
 
   it('caps the delay at maxDelayMs', async () => {
     const delays = [];
-    const sleep = (ms) => { delays.push(ms); return Promise.resolve(); };
+    const sleep = (ms) => {
+      delays.push(ms);
+      return Promise.resolve();
+    };
     const fn = vi.fn().mockRejectedValue(new Error('503'));
-    await expect(withRetry(fn, { retries: 4, baseDelayMs: 1000, factor: 10, maxDelayMs: 5000, sleep })).rejects.toThrow();
+    await expect(
+      withRetry(fn, { retries: 4, baseDelayMs: 1000, factor: 10, maxDelayMs: 5000, sleep })
+    ).rejects.toThrow();
     expect(delays.every((d) => d <= 5000)).toBe(true);
   });
 
   it('passes the attempt index to fn', async () => {
     const seen = [];
-    const fn = vi.fn(async (attempt) => { seen.push(attempt); if (attempt < 2) throw new Error('retry'); return 'done'; });
+    const fn = vi.fn(async (attempt) => {
+      seen.push(attempt);
+      if (attempt < 2) throw new Error('retry');
+      return 'done';
+    });
     expect(await withRetry(fn, { retries: 3, sleep: noSleep })).toBe('done');
     expect(seen).toEqual([0, 1, 2]);
   });

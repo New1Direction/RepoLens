@@ -16,8 +16,12 @@ export function esc(str) {
  * a paragraph become <br>.
  */
 export function paras(text, cls) {
-  const blocks = String(text ?? '').trim().split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
-  return blocks.map(b => `<p class="${cls}">${esc(b).replace(/\n/g, '<br>')}</p>`).join('');
+  const blocks = String(text ?? '')
+    .trim()
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+  return blocks.map((b) => `<p class="${cls}">${esc(b).replace(/\n/g, '<br>')}</p>`).join('');
 }
 
 /** Compact, accurate star count: 850 → "850", 1234 → "1.2k", 15000 → "15k", 1.2M. */

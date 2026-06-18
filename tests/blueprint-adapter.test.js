@@ -11,7 +11,12 @@ const deepDive = {
 
 describe('buildBlueprintScene', () => {
   it('produces a blueprint scene with placed nodes and an edge', () => {
-    const s = buildBlueprintScene({ deepDive, repoId: 'evanw/esbuild', title: 'esbuild', scanAt: '2026-06-15T00:00:00Z' });
+    const s = buildBlueprintScene({
+      deepDive,
+      repoId: 'evanw/esbuild',
+      title: 'esbuild',
+      scanAt: '2026-06-15T00:00:00Z',
+    });
     expect(s.scope).toBe('blueprint');
     expect(s.nodes).toHaveLength(2);
     expect(s.edges).toHaveLength(1);
@@ -26,7 +31,12 @@ describe('buildBlueprintScene', () => {
 
   it('returns repair issues alongside the scene', () => {
     const dd = { atoms: [{ id: 'a', name: 'A' }], lineage: { links: [{ from: 'a', to: 'ghost' }] } };
-    const { scene, issues } = buildBlueprintScene({ deepDive: dd, repoId: 'r', title: 't', withIssues: true });
+    const { scene, issues } = buildBlueprintScene({
+      deepDive: dd,
+      repoId: 'r',
+      title: 't',
+      withIssues: true,
+    });
     expect(scene.edges).toHaveLength(0);
     expect(issues.length).toBeGreaterThan(0);
   });

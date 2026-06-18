@@ -52,7 +52,10 @@ export async function callAnthropic(prompt) {
   }
 
   const data = await res.json();
-  const text = (data.content || []).map((b) => b.text || '').join('').trim();
+  const text = (data.content || [])
+    .map((b) => b.text || '')
+    .join('')
+    .trim();
   if (!text) throw new Error('Anthropic returned an empty response');
   return text;
 }

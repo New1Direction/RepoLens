@@ -80,7 +80,9 @@ export function validateSettingsBackup(obj) {
   if (!Number.isFinite(version) || version < 1) {
     errors.push('Missing or invalid settings version.');
   } else if (version > SETTINGS_BACKUP_VERSION) {
-    errors.push(`This settings file is from a newer RepoLens (v${version}); update the extension to import it.`);
+    errors.push(
+      `This settings file is from a newer RepoLens (v${version}); update the extension to import it.`
+    );
   }
   return { ok: errors.length === 0, errors, value: pickSafe(obj.settings) };
 }

@@ -30,7 +30,8 @@ export function applyFilters(allRows, state, ctx = {}) {
   // 'delta' sort: repos with a fitDelta float up; improved before regressed.
   if (state.sort === 'delta') {
     rows = [...rows].sort((a, b) => {
-      const ad = a.fitDelta, bd = b.fitDelta;
+      const ad = a.fitDelta,
+        bd = b.fitDelta;
       if (ad && !bd) return -1;
       if (!ad && bd) return 1;
       if (ad && bd) {
@@ -71,7 +72,9 @@ export function applyFilters(allRows, state, ctx = {}) {
   // NL filter: restrict to the AI-ranked id list, preserving the AI order.
   if (nlFilter?.ids?.length) {
     const idOrder = new Map(nlFilter.ids.map((id, i) => [id, i]));
-    rows = rows.filter((r) => idOrder.has(r.repoId)).sort((a, b) => idOrder.get(a.repoId) - idOrder.get(b.repoId));
+    rows = rows
+      .filter((r) => idOrder.has(r.repoId))
+      .sort((a, b) => idOrder.get(a.repoId) - idOrder.get(b.repoId));
   } else if (nlFilter && !nlFilter.ids?.length && !nlFilter.error) {
     rows = []; // AI ran but found nothing
   }

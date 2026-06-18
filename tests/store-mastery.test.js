@@ -4,7 +4,11 @@ import { setMastery, getMastery, getAllMastery } from '../store.js';
 
 describe('mastery persistence', () => {
   it('round-trips a record by repoId', async () => {
-    const rec = { level: 'understood', lastCheckedAt: '2026-06-16T00:00:00.000Z', lastResult: { gotIt: 2, shaky: 1, missed: 0, total: 3 } };
+    const rec = {
+      level: 'understood',
+      lastCheckedAt: '2026-06-16T00:00:00.000Z',
+      lastResult: { gotIt: 2, shaky: 1, missed: 0, total: 3 },
+    };
     await setMastery('honojs/hono', rec);
     expect(await getMastery('honojs/hono')).toEqual(rec);
   });

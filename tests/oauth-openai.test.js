@@ -33,8 +33,12 @@ beforeEach(() => {
           }
           return {};
         }),
-        set: vi.fn(async (obj) => { Object.assign(store, obj); }),
-        remove: vi.fn(async (k) => { for (const key of [].concat(k)) delete store[key]; }),
+        set: vi.fn(async (obj) => {
+          Object.assign(store, obj);
+        }),
+        remove: vi.fn(async (k) => {
+          for (const key of [].concat(k)) delete store[key];
+        }),
       },
     },
   };
@@ -47,7 +51,7 @@ function mockFetchOnce({ ok = true, status = 200, json = {}, text = '' } = {}) {
     ok,
     status,
     json: async () => json,
-    text: async () => (text || JSON.stringify(json)),
+    text: async () => text || JSON.stringify(json),
   });
 }
 
@@ -146,7 +150,11 @@ describe('exchangeOpenAICode', () => {
   });
 
   it('throws a readable message when the exchange fails', async () => {
-    mockFetchOnce({ ok: false, status: 400, json: { error: 'invalid_grant', error_description: 'bad code' } });
+    mockFetchOnce({
+      ok: false,
+      status: 400,
+      json: { error: 'invalid_grant', error_description: 'bad code' },
+    });
     await expect(
       exchangeOpenAICode({ code: 'x', state: 's', verifier: 'v', storedState: 's' })
     ).rejects.toThrow(/bad code/);
@@ -155,14 +163,24 @@ describe('exchangeOpenAICode', () => {
 
 describe('refreshOpenAIToken', () => {
   it('returns the cached creds without a network call when still fresh', async () => {
-    store[OPENAI_CREDENTIALS_KEY] = { access_token: 'A', refresh_token: 'R', id_token: 'I', expires_at: Date.now() + 3_600_000 };
+    store[OPENAI_CREDENTIALS_KEY] = {
+      access_token: 'A',
+      refresh_token: 'R',
+      id_token: 'I',
+      expires_at: Date.now() + 3_600_000,
+    };
     const creds = await refreshOpenAIToken();
     expect(creds.access_token).toBe('A');
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('refreshes when expired and preserves the prior refresh/id token if omitted', async () => {
-    store[OPENAI_CREDENTIALS_KEY] = { access_token: 'old', refresh_token: 'R', id_token: 'OLD_ID', expires_at: Date.now() - 1000 };
+    store[OPENAI_CREDENTIALS_KEY] = {
+      access_token: 'old',
+      refresh_token: 'R',
+      id_token: 'OLD_ID',
+      expires_at: Date.now() - 1000,
+    };
     mockFetchOnce({ json: { access_token: 'new', expires_in: 3600 } }); // no rotated refresh/id token
     const creds = await refreshOpenAIToken();
 
@@ -170,12 +188,17 @@ describe('refreshOpenAIToken', () => {
     expect(opts.body.get('grant_type')).toBe('refresh_token');
     expect(opts.body.get('refresh_token')).toBe('R');
     expect(creds.access_token).toBe('new');
-    expect(creds.refresh_token).toBe('R');     // carried over
-    expect(creds.id_token).toBe('OLD_ID');     // carried over
+    expect(creds.refresh_token).toBe('R'); // carried over
+    expect(creds.id_token).toBe('OLD_ID'); // carried over
   });
 
   it('dedups concurrent refreshes into a single network call', async () => {
-    store[OPENAI_CREDENTIALS_KEY] = { access_token: 'old', refresh_token: 'R', id_token: 'I', expires_at: Date.now() - 1000 };
+    store[OPENAI_CREDENTIALS_KEY] = {
+      access_token: 'old',
+      refresh_token: 'R',
+      id_token: 'I',
+      expires_at: Date.now() - 1000,
+    };
     mockFetchOnce({ json: { access_token: 'new', expires_in: 3600 } }); // only one response queued
     const [a, b] = await Promise.all([refreshOpenAIToken(), refreshOpenAIToken()]);
     expect(a.access_token).toBe('new');

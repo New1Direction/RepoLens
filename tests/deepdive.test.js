@@ -1,20 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  selectKeyFiles, fetchSource,
-  buildAtomsPrompt, parseAtoms,
-  buildLineagePrompt, parseLineage,
-  buildFeynmanPrompt, parseFeynman,
+  selectKeyFiles,
+  fetchSource,
+  buildAtomsPrompt,
+  parseAtoms,
+  buildLineagePrompt,
+  parseLineage,
+  buildFeynmanPrompt,
+  parseFeynman,
 } from '../deepdive.js';
 
-beforeEach(() => { vi.restoreAllMocks(); });
+beforeEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('selectKeyFiles', () => {
   it('prioritises known manifest/entry files and skips deep non-code files', () => {
     const picked = selectKeyFiles(['docs/x.md', 'package.json', 'src/index.js', 'a/b/c/deep.ts']);
     expect(picked).toContain('package.json');
     expect(picked).toContain('src/index.js');
-    expect(picked).not.toContain('docs/x.md');     // not code
-    expect(picked).not.toContain('a/b/c/deep.ts');  // too deep
+    expect(picked).not.toContain('docs/x.md'); // not code
+    expect(picked).not.toContain('a/b/c/deep.ts'); // too deep
   });
   it('caps at 8 files', () => {
     const many = Array.from({ length: 30 }, (_, i) => `f${i}.ts`);
@@ -33,25 +39,30 @@ describe('fetchSource', () => {
 
   it('fetches the tree + key file contents for GitHub', async () => {
     global.fetch = vi.fn(async (url) => {
-      const body =
-        url.endsWith('/repos/facebook/react') ? { default_branch: 'main' }
-        : url.includes('/git/trees/') ? { tree: [
-            { path: 'package.json', type: 'blob' },
-            { path: 'src/index.js', type: 'blob' },
-            { path: 'docs/readme.md', type: 'blob' },
-          ] }
-        : url.includes('/contents/package.json') ? { encoding: 'base64', content: btoa('{"name":"react"}') }
-        : url.includes('/contents/src/index.js') ? { encoding: 'base64', content: btoa('export const x = 1;') }
-        : {};
+      const body = url.endsWith('/repos/facebook/react')
+        ? { default_branch: 'main' }
+        : url.includes('/git/trees/')
+          ? {
+              tree: [
+                { path: 'package.json', type: 'blob' },
+                { path: 'src/index.js', type: 'blob' },
+                { path: 'docs/readme.md', type: 'blob' },
+              ],
+            }
+          : url.includes('/contents/package.json')
+            ? { encoding: 'base64', content: btoa('{"name":"react"}') }
+            : url.includes('/contents/src/index.js')
+              ? { encoding: 'base64', content: btoa('export const x = 1;') }
+              : {};
       return { ok: true, json: async () => body };
     });
 
     const res = await fetchSource('github', 'facebook/react');
     expect(res.tree).toContain('package.json');
     expect(res.tree).toContain('src/index.js');
-    const pkg = res.files.find(f => f.path === 'package.json');
+    const pkg = res.files.find((f) => f.path === 'package.json');
     expect(pkg.content).toContain('"name": "react"'.replace(': ', ':')); // tolerant of spacing
-    expect(res.files.some(f => f.path === 'src/index.js')).toBe(true);
+    expect(res.files.some((f) => f.path === 'src/index.js')).toBe(true);
   });
 });
 
@@ -74,10 +85,12 @@ describe('buildAtomsPrompt', () => {
 
 describe('parseAtoms', () => {
   it('parses atoms and fills defaults for missing fields', () => {
-    const { atoms } = parseAtoms('```json\n{"atoms":[{"name":"Reconciler","purpose":"diffs the tree"}]}\n```');
+    const { atoms } = parseAtoms(
+      '```json\n{"atoms":[{"name":"Reconciler","purpose":"diffs the tree"}]}\n```'
+    );
     expect(atoms).toHaveLength(1);
-    expect(atoms[0].id).toBe('atom-1');     // defaulted
-    expect(atoms[0].kind).toBe('module');   // defaulted
+    expect(atoms[0].id).toBe('atom-1'); // defaulted
+    expect(atoms[0].kind).toBe('module'); // defaulted
     expect(atoms[0].files).toEqual([]);
   });
   it('throws on non-JSON', () => {
@@ -89,8 +102,10 @@ describe('buildLineagePrompt + parseLineage', () => {
   it('lists the atom ids and parses links, dropping malformed ones', () => {
     const prompt = buildLineagePrompt([{ id: 'sched', name: 'Scheduler', purpose: 'schedules work' }]);
     expect(prompt).toContain('sched');
-    const out = parseLineage('{"links":[{"from":"a","to":"b","relation":"enables","why":"x"},{"to":"c"}],"roots":["a"],"leaves":["b"]}');
-    expect(out.links).toHaveLength(1);                 // the {to:"c"} link is dropped (no from)
+    const out = parseLineage(
+      '{"links":[{"from":"a","to":"b","relation":"enables","why":"x"},{"to":"c"}],"roots":["a"],"leaves":["b"]}'
+    );
+    expect(out.links).toHaveLength(1); // the {to:"c"} link is dropped (no from)
     expect(out.links[0].relation).toBe('enables');
     expect(out.roots).toEqual(['a']);
   });
@@ -102,7 +117,9 @@ describe('buildLineagePrompt + parseLineage', () => {
 
 describe('buildFeynmanPrompt + parseFeynman', () => {
   it('asks for explanation/gaps/questions and parses them with defaults', () => {
-    const prompt = buildFeynmanPrompt({ repoId: 'x/y' }, [{ id: 'a', name: 'A', purpose: 'p' }], { links: [] });
+    const prompt = buildFeynmanPrompt({ repoId: 'x/y' }, [{ id: 'a', name: 'A', purpose: 'p' }], {
+      links: [],
+    });
     expect(prompt).toMatch(/explanation/);
     const out = parseFeynman('{"explanation":"It does X.","questions":[{"q":"Why?","a":"Because."}]}');
     expect(out.explanation).toBe('It does X.');
@@ -117,10 +134,14 @@ import { factsBlock } from '../deepdive.js';
 describe('factsBlock + facts-aware atoms prompt', () => {
   const facts = {
     fileCount: 13,
-    languages: [{ name: 'JavaScript', code: 315 }, { name: 'JSON', code: 62 }],
+    languages: [
+      { name: 'JavaScript', code: 315 },
+      { name: 'JSON', code: 62 },
+    ],
     manifests: ['package.json'],
     dependencies: { npm: ['react', 'scheduler'], cargo: [], pip: [], go: [] },
-    tests: { present: false }, ci: { present: true, files: ['.github/workflows/main.yml'] },
+    tests: { present: false },
+    ci: { present: true, files: ['.github/workflows/main.yml'] },
     secrets: [],
   };
   const source = { tree: ['a.js'], files: [], degraded: false };
@@ -148,13 +169,39 @@ describe('factsBlock + facts-aware atoms prompt', () => {
     const rich = {
       ...facts,
       license: { spdx: 'Apache-2.0', file: 'LICENSE-APACHE' },
-      depGraph: { cargo: { direct: 39, total: 240, lockfile: 'Cargo.lock' }, npm: { direct: 0, total: 0, lockfile: '' } },
-      architecture: { monorepo: true, workspaces: ['crates/*'], entryPoints: ['src/lib.rs'], containerized: true },
+      depGraph: {
+        cargo: { direct: 39, total: 240, lockfile: 'Cargo.lock' },
+        npm: { direct: 0, total: 0, lockfile: '' },
+      },
+      architecture: {
+        monorepo: true,
+        workspaces: ['crates/*'],
+        entryPoints: ['src/lib.rs'],
+        containerized: true,
+      },
     };
     const b = factsBlock(rich);
     expect(b).toContain('License: Apache-2.0');
     expect(b).toContain('cargo 39 direct / 240 total');
     expect(b).toContain('monorepo');
     expect(b).toContain('containerized');
+  });
+  it('factsBlock includes optional code graph evidence from advanced runners', () => {
+    const b = factsBlock({
+      ...facts,
+      codeGraph: {
+        nodes: 1200,
+        edges: 3400,
+        symbols: { functions: 210, classes: 18, routes: 7 },
+        routes: ['GET /api/repos'],
+        hotspots: [{ name: 'scanRepository', file: 'src/scan.ts', inbound: 14 }],
+        deadCode: [{ name: 'legacyParser', file: 'src/legacy.ts' }],
+      },
+    });
+    expect(b).toContain('Code graph: 1200 nodes; 3400 edges');
+    expect(b).toContain('210 functions');
+    expect(b).toContain('GET /api/repos');
+    expect(b).toContain('Graph hotspots: scanRepository');
+    expect(b).toContain('Potential dead code: 1 symbols flagged');
   });
 });

@@ -45,7 +45,10 @@ function formatSignals(signals, today) {
     const top1 = signals.topContributors[0];
     const top1Pct = total ? Math.round((top1.contributions / total) * 100) : 0;
     lines.push(`Top contributor share: ${top1.login} — ${top1.contributions} commits (${top1Pct}% of top-5)`);
-    const others = signals.topContributors.slice(1).map(c => c.login).join(', ');
+    const others = signals.topContributors
+      .slice(1)
+      .map((c) => c.login)
+      .join(', ');
     if (others) lines.push(`Other top contributors: ${others}`);
   } else {
     lines.push('Contributor data: unavailable');
@@ -57,17 +60,22 @@ function formatSignals(signals, today) {
 /** Detect CI and project-health signals from the file tree. */
 export function ciSignals(tree) {
   if (!Array.isArray(tree) || !tree.length) return 'No file tree available.';
-  const has = (p) => tree.some(f => String(f).toLowerCase().includes(p));
+  const has = (p) => tree.some((f) => String(f).toLowerCase().includes(p));
   return [
     ['GitHub Actions (.github/workflows)', has('.github/workflows')],
     ['CircleCI (.circleci)', has('.circleci')],
     ['Travis CI (.travis.yml)', has('.travis')],
     ['Jenkins (Jenkinsfile)', has('jenkinsfile')],
-    ['Test files (test/ or tests/ or *.test.* or *.spec.*)', has('test/') || has('tests/') || has('.test.') || has('.spec.')],
+    [
+      'Test files (test/ or tests/ or *.test.* or *.spec.*)',
+      has('test/') || has('tests/') || has('.test.') || has('.spec.'),
+    ],
     ['CONTRIBUTING guide', has('contributing')],
     ['SECURITY policy', has('security')],
     ['CHANGELOG', has('changelog') || has('changes.md') || has('history.md')],
-  ].map(([label, present]) => `${present ? '✓' : '✗'} ${label}`).join('\n');
+  ]
+    .map(([label, present]) => `${present ? '✓' : '✗'} ${label}`)
+    .join('\n');
 }
 
 /**

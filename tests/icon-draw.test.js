@@ -7,15 +7,41 @@ import { drawVeeIcon, ICON_COLORS, BASE_GRID } from '../icon-draw.js';
 function recordingCtx() {
   const calls = { arcs: [], fills: [], strokes: [], rects: [], setLineDash: [] };
   const ctx = {
-    fillStyle: '', strokeStyle: '', lineWidth: 0,
-    save() {}, restore() {}, beginPath() {}, closePath() {},
-    translate() {}, rotate() {}, clearRect() {},
-    rect(x, y, w, h) { calls.rects.push({ x, y, w, h, fillStyle: ctx.fillStyle }); },
-    roundRect(x, y, w, h, r) { calls.rects.push({ x, y, w, h, r, fillStyle: ctx.fillStyle }); },
-    arc(x, y, radius) { calls.arcs.push({ x, y, radius, fillStyle: ctx.fillStyle, strokeStyle: ctx.strokeStyle, lineWidth: ctx.lineWidth }); },
-    setLineDash(d) { calls.setLineDash.push(d); },
-    fill() { calls.fills.push({ fillStyle: ctx.fillStyle }); },
-    stroke() { calls.strokes.push({ strokeStyle: ctx.strokeStyle, lineWidth: ctx.lineWidth }); },
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 0,
+    save() {},
+    restore() {},
+    beginPath() {},
+    closePath() {},
+    translate() {},
+    rotate() {},
+    clearRect() {},
+    rect(x, y, w, h) {
+      calls.rects.push({ x, y, w, h, fillStyle: ctx.fillStyle });
+    },
+    roundRect(x, y, w, h, r) {
+      calls.rects.push({ x, y, w, h, r, fillStyle: ctx.fillStyle });
+    },
+    arc(x, y, radius) {
+      calls.arcs.push({
+        x,
+        y,
+        radius,
+        fillStyle: ctx.fillStyle,
+        strokeStyle: ctx.strokeStyle,
+        lineWidth: ctx.lineWidth,
+      });
+    },
+    setLineDash(d) {
+      calls.setLineDash.push(d);
+    },
+    fill() {
+      calls.fills.push({ fillStyle: ctx.fillStyle });
+    },
+    stroke() {
+      calls.strokes.push({ strokeStyle: ctx.strokeStyle, lineWidth: ctx.lineWidth });
+    },
   };
   return { ctx, calls };
 }

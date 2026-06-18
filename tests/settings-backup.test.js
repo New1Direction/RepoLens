@@ -77,7 +77,10 @@ describe('validateSettingsBackup', () => {
     expect(validateSettingsBackup({ format: 'nope', version: 1 }).ok).toBe(false);
   });
   it('rejects a newer-than-supported version', () => {
-    const res = validateSettingsBackup({ format: SETTINGS_BACKUP_FORMAT, version: SETTINGS_BACKUP_VERSION + 1 });
+    const res = validateSettingsBackup({
+      format: SETTINGS_BACKUP_FORMAT,
+      version: SETTINGS_BACKUP_VERSION + 1,
+    });
     expect(res.ok).toBe(false);
     expect(res.errors.join(' ')).toMatch(/newer RepoLens/);
   });

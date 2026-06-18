@@ -106,7 +106,7 @@ behavioural changes to features, just fixes and guardrails.
 
 ### Removed
 
-- **The Claude *subscription* sign-in ("Sign in with Claude").** It never reliably
+- **The Claude _subscription_ sign-in ("Sign in with Claude").** It never reliably
   worked, and it can't: Anthropic binds Claude Pro/Max OAuth tokens to their own
   **Claude Code** client (validated server-side via an identity system prompt + beta
   flags) and, as of 2026, its terms **prohibit using subscription authentication in
@@ -118,7 +118,7 @@ behavioural changes to features, just fixes and guardrails.
 ### Changed
 
 - **Claude now connects with a Console API key only** (`sk-ant-api…` from
-  console.anthropic.com). The Anthropic card's *Connect* opens the key field directly;
+  console.anthropic.com). The Anthropic card's _Connect_ opens the key field directly;
   `callAnthropic` is a clean `x-api-key` request with no OAuth/exchange branches.
 - Dropped the now-unused `claude.ai`, `platform.claude.com`, and
   `console.anthropic.com` host permissions (kept `api.anthropic.com` for inference).
@@ -128,7 +128,7 @@ behavioural changes to features, just fixes and guardrails.
 
 - **This does not affect the working sign-ins.** **Grok** (Grok CLI device flow),
   **OpenRouter**, and **OpenAI** (Sign in with ChatGPT, added in 1.5.0) still use
-  one-click OAuth — those vendors *support* third-party OAuth. Anthropic is the one
+  one-click OAuth — those vendors _support_ third-party OAuth. Anthropic is the one
   that doesn't.
 - **Free is still easy:** local **Ollama** (no key) or **Gemini's** free tier.
 
@@ -137,8 +137,8 @@ behavioural changes to features, just fixes and guardrails.
 ### Added
 
 - **Sign in with ChatGPT for OpenAI.** Connect OpenAI without pasting a key —
-  RepoLens performs the **same OAuth login the Codex CLI uses**. Click *Sign in
-  with ChatGPT*, approve it on OpenAI's page, and RepoLens captures the redirect
+  RepoLens performs the **same OAuth login the Codex CLI uses**. Click _Sign in
+  with ChatGPT_, approve it on OpenAI's page, and RepoLens captures the redirect
   and turns it into a working OpenAI key for you, behind the scenes. This rounds
   out the one-click sign-ins: **Claude** already uses the Claude Code login and
   **Grok** the Grok CLI login, so the three big coding-CLI logins are now all here.
@@ -152,7 +152,7 @@ behavioural changes to features, just fixes and guardrails.
   access. If it doesn't, RepoLens tells you plainly and you can paste an OpenAI
   API key — or use any other provider — instead.
 - Still **no spawning of a local `claude` / `codex` binary** — a browser extension
-  can't launch a process. What's new is the *OAuth* those CLIs use, not the CLI.
+  can't launch a process. What's new is the _OAuth_ those CLIs use, not the CLI.
   Your ChatGPT credentials never touch RepoLens; the login happens on OpenAI's site
   and only tokens come back, stored in this browser and never exported.
 
@@ -173,17 +173,17 @@ behavioural changes to features, just fixes and guardrails.
   exported with your settings.
 - **Per-vendor model pickers** (with a recommended ★) plus a free-form Custom
   model, and an **Advanced endpoint override** for proxies/regional gateways.
-- **Provider self-tests** — *Test connection* checks the endpoint answers;
-  *Test function* asks the model to follow a tiny instruction.
+- **Provider self-tests** — _Test connection_ checks the endpoint answers;
+  _Test function_ asks the model to follow a tiny instruction.
 - Compatible providers also appear in the **per-scan-part router**, and any one
-  you connect becomes a valid fallback in the smart chain — so connecting *only*
+  you connect becomes a valid fallback in the smart chain — so connecting _only_
   (say) DeepSeek or a local Ollama just works.
 
 ### Notes
 
 - When you connect a custom AI address, Chrome asks you to approve that site once —
   that's expected. Only secure `http(s)` addresses are accepted.
-- Local *CLI* providers (a `claude` / `codex` binary) aren't offered: a browser
+- Local _CLI_ providers (a `claude` / `codex` binary) aren't offered: a browser
   extension is sandboxed and cannot launch a local process. Local **Ollama**
   (an HTTP server) is supported instead.
 

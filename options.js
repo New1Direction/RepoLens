@@ -1,12 +1,19 @@
 import { createPkcePair } from './oauth-pkce.js';
 import {
-  pollXaiDeviceToken,
-  requestXaiDeviceCode,
-  storeXaiOAuthTokens,
-} from './oauth-xai.js';
+  ANTHROPIC_ACCESS_KEY,
+  ANTHROPIC_EXPIRY_KEY,
+  ANTHROPIC_OAUTH_VERIFIER_KEY,
+  ANTHROPIC_REFRESH_KEY,
+  buildAnthropicAuthorizeUrl,
+  clearAnthropicOAuthTokens,
+  createAnthropicPkcePair,
+  exchangeAnthropicCode,
+  saveAnthropicOAuthTokens,
+} from './oauth-anthropic.js';
+import { pollXaiDeviceToken, requestXaiDeviceCode, storeXaiOAuthTokens } from './oauth-xai.js';
 import { importFromVelesdb } from './migrate/velesdb-import.js';
 import { SAFE_SETTING_KEYS, buildSettingsBackup, validateSettingsBackup } from './settings-backup.js';
-import { PARTS, CATALOG } from './models.js';
+import { PARTS, CATALOG, canonicalModel } from './models.js';
 import { renderCompatProviders, compatPartGroups, anyCompatConnected } from './options-providers.js';
 import { THEMES, initTheme, saveTheme } from './theme.js';
 import { TONES, DEFAULT_TONE } from './tone.js';
@@ -15,23 +22,33 @@ import { listCached, removeCached, openCachedAnalysis } from './cache.js';
 // ─── Core settings ───────────────────────────────────────────────────────────
 
 const autoSaveInput = document.getElementById('autoSave');
-const saveBtn       = document.getElementById('save');
-const statusEl      = document.getElementById('status');
+const saveBtn = document.getElementById('save');
+const statusEl = document.getElementById('status');
 
-const orModelSel    = document.getElementById('openrouterModel');
+const CUSTOM = '__custom__';
+
+const orModelSel = document.getElementById('openrouterModel');
 const orCustomPanel = document.getElementById('custom-openrouter');
 const orCustomInput = document.getElementById('openrouterModelCustom');
 
 function syncOpenrouterCustom() {
-  orCustomPanel.classList.toggle('open', orModelSel.value === '__custom__');
+  orCustomPanel.classList.toggle('open', orModelSel.value === CUSTOM);
 }
 
-const nousModelSel   = document.getElementById('nousModel');
+const googleModelSel = document.getElementById('googleModel');
+const googleCustomPanel = document.getElementById('custom-google');
+const googleCustomInput = document.getElementById('googleModelCustom');
+
+function syncGoogleCustom() {
+  googleCustomPanel?.classList.toggle('open', googleModelSel.value === CUSTOM);
+}
+
+const nousModelSel = document.getElementById('nousModel');
 const nousCustomPanel = document.getElementById('custom-nous');
 const nousCustomInput = document.getElementById('nousModelCustom');
 
 function syncNousCustom() {
-  nousCustomPanel.classList.toggle('open', nousModelSel.value === '__custom__');
+  nousCustomPanel.classList.toggle('open', nousModelSel.value === CUSTOM);
 }
 
 chrome.storage.local.get(['autoSave'], ({ autoSave }) => {
@@ -40,7 +57,8 @@ chrome.storage.local.get(['autoSave'], ({ autoSave }) => {
 
 // ─── History (cached analyses) ───────────────────────────────────────────────
 const historySearch = document.getElementById('historySearch');
-const escH = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const escH = (s) =>
+  String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 let historyItems = [];
 
 async function loadHistory() {
@@ -52,7 +70,7 @@ function renderHistory() {
   const host = document.getElementById('history-list');
   if (!host) return;
   const q = (historySearch?.value || '').toLowerCase();
-  const items = historyItems.filter(it => !q || (it.repoId || '').toLowerCase().includes(q));
+  const items = historyItems.filter((it) => !q || (it.repoId || '').toLowerCase().includes(q));
   if (!items.length) {
     host.innerHTML = `<div class="hist-empty">${historyItems.length ? 'No matches.' : "Nothing analyzed yet — scan a repo and it'll show up here."}</div>`;
     return;
@@ -64,7 +82,10 @@ function renderHistory() {
     row.className = 'hist-row';
     row.innerHTML = `<button class="hist-open">${escH(it.repoId)}</button><span class="hist-meta">${escH(it.platform || '')} · ${escH(date)}</span><button class="hist-del" title="Remove from history">×</button>`;
     row.querySelector('.hist-open').addEventListener('click', () => openCachedAnalysis(it));
-    row.querySelector('.hist-del').addEventListener('click', async () => { await removeCached(it.platform, it.repoId); loadHistory(); });
+    row.querySelector('.hist-del').addEventListener('click', async () => {
+      await removeCached(it.platform, it.repoId);
+      loadHistory();
+    });
     host.appendChild(row);
   }
 }
@@ -73,13 +94,18 @@ historySearch?.addEventListener('input', renderHistory);
 loadHistory();
 
 // ─── Library link ────────────────────────────────────────────────────────────
-document.getElementById('open-library-link')
+document
+  .getElementById('open-library-link')
   ?.addEventListener('click', () => openTab(chrome.runtime.getURL('library.html')));
 
 // ─── Replay onboarding ────────────────────────────────────────────────────────
 // Reset the onboarding flags and open the Library, where the first-run tour fires.
 document.getElementById('replayOnboardingBtn')?.addEventListener('click', async () => {
-  await chrome.storage.local.set({ onboardingSeen: false, milestoneTourSeen: false, milestoneSnoozeAt10: false });
+  await chrome.storage.local.set({
+    onboardingSeen: false,
+    milestoneTourSeen: false,
+    milestoneSnoozeAt10: false,
+  });
   openTab(chrome.runtime.getURL('library.html'));
 });
 
@@ -126,7 +152,9 @@ animateIconInput.addEventListener('change', () => {
 
 // Persist the user's OS reduced-motion preference so the service worker (which has
 // no DOM / matchMedia) can honor it before animating the toolbar icon.
-chrome.storage.local.set({ reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches });
+chrome.storage.local.set({
+  reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+});
 
 // ─── Voice / tone ────────────────────────────────────────────────────────────
 chrome.storage.local.get('tone', ({ tone }) => renderTonePicker(tone || DEFAULT_TONE));
@@ -141,7 +169,7 @@ function renderTonePicker(current) {
     chip.innerHTML = `${t.label}<span class="tone-blurb">${t.blurb}</span>`;
     chip.addEventListener('click', () => {
       chrome.storage.local.set({ tone: t.key });
-      host.querySelectorAll('.tone-chip').forEach(c => c.classList.remove('active'));
+      host.querySelectorAll('.tone-chip').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
     });
     host.appendChild(chip);
@@ -162,7 +190,7 @@ function renderThemePicker() {
     chip.innerHTML = `<span class="dot" style="background:${t.swatch}"></span>${t.label}`;
     chip.addEventListener('click', async () => {
       await saveTheme(t.key);
-      host.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
+      host.querySelectorAll('.theme-chip').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
     });
     host.appendChild(chip);
@@ -184,9 +212,12 @@ if (importBtn) {
     importStatus.style.color = 'var(--text-sub)';
     importStatus.textContent = 'Connecting to VelesDB…';
     try {
-      const { imported, failed, total } = await importFromVelesdb(importUrlInput.value, ({ imported, total }) => {
-        importStatus.textContent = `Importing… ${imported}/${total}`;
-      });
+      const { imported, failed, total } = await importFromVelesdb(
+        importUrlInput.value,
+        ({ imported, total }) => {
+          importStatus.textContent = `Importing… ${imported}/${total}`;
+        }
+      );
       importStatus.style.color = '#4ade80';
       importStatus.textContent =
         total === 0
@@ -238,7 +269,10 @@ settingsFile?.addEventListener('change', async (e) => {
   const file = e.target.files?.[0];
   e.target.value = '';
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { setSettingsStatus('✗ That file is too large.', '#f87171'); return; }
+  if (file.size > 5 * 1024 * 1024) {
+    setSettingsStatus('✗ That file is too large.', '#f87171');
+    return;
+  }
   let parsed;
   try {
     parsed = JSON.parse(await file.text());
@@ -247,8 +281,14 @@ settingsFile?.addEventListener('change', async (e) => {
     return;
   }
   const { ok, errors, value } = validateSettingsBackup(parsed);
-  if (!ok) { setSettingsStatus(`✗ ${errors[0]}`, '#f87171'); return; }
-  if (!Object.keys(value).length) { setSettingsStatus('Nothing importable in that file.', 'var(--text-sub)'); return; }
+  if (!ok) {
+    setSettingsStatus(`✗ ${errors[0]}`, '#f87171');
+    return;
+  }
+  if (!Object.keys(value).length) {
+    setSettingsStatus('Nothing importable in that file.', 'var(--text-sub)');
+    return;
+  }
   await chrome.storage.local.set(value);
   setSettingsStatus('✓ Settings imported. Reloading…', '#4ade80');
   setTimeout(() => location.reload(), 700);
@@ -256,8 +296,159 @@ settingsFile?.addEventListener('change', async (e) => {
 
 // ─── Models per scan part ──────────────────────────────────────────────────────
 const partModelsHost = document.getElementById('part-models');
+const liveCatalog = {};
+
+const LIVE_MODEL_SOURCES = {
+  google: {
+    endpoint: (stored) =>
+      stored.googleKey
+        ? `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(stored.googleKey)}`
+        : '',
+    select: () => googleModelSel,
+    customInput: () => googleCustomInput,
+    storageKey: 'googleModel',
+  },
+  nous: {
+    endpoint: 'https://inference-api.nousresearch.com/v1/models',
+    select: () => nousModelSel,
+    customInput: () => nousCustomInput,
+    storageKey: 'nousModel',
+  },
+  openrouter: {
+    endpoint: 'https://openrouter.ai/api/v1/models',
+    select: () => orModelSel,
+    customInput: () => orCustomInput,
+    storageKey: 'openrouterModel',
+  },
+};
+
+function normalizeLiveModel(provider, raw) {
+  let value = String(raw?.id || raw?.name || '').trim();
+  if (provider === 'google') {
+    if (
+      !Array.isArray(raw?.supportedGenerationMethods) ||
+      !raw.supportedGenerationMethods.includes('generateContent')
+    ) {
+      return null;
+    }
+    value = value.replace(/^models\//, '');
+  }
+  if (!value) return null;
+
+  // RepoLens sends text prompts and expects text back. Hide embedding/audio/image-only
+  // entries, but keep multimodal models that can still return text.
+  const inMods = raw?.architecture?.input_modalities;
+  const outMods = raw?.architecture?.output_modalities;
+  if (Array.isArray(inMods) && inMods.length && !inMods.includes('text')) return null;
+  if (Array.isArray(outMods) && outMods.length && !outMods.includes('text')) return null;
+
+  const aliases = [raw?.canonical_slug, raw?.name, ...(Array.isArray(raw?.aliases) ? raw.aliases : [])]
+    .filter(Boolean)
+    .map((x) => String(x).replace(/^models\//, ''));
+  const rec = CATALOG[provider]?.models.find((m) => m.recommended)?.value;
+  const canonicalRec = canonicalModel(provider, rec);
+  return {
+    value,
+    label: String(raw?.displayName || raw?.name || value)
+      .replace(/^models\//, '')
+      .trim(),
+    aliases,
+    recommended: value === canonicalRec || aliases.includes(rec) || aliases.includes(canonicalRec),
+  };
+}
+
+function liveOptionText(model) {
+  const id = model.value && model.label !== model.value ? ` — ${model.value}` : '';
+  return `${model.label}${id}${model.recommended ? ' — ★ Recommended' : ''}`;
+}
+
+function applyLiveModelList(provider, models, storedModel) {
+  const cfg = LIVE_MODEL_SOURCES[provider];
+  const sel = cfg.select();
+  const customInput = cfg.customInput();
+  const hasStoredModel = !!storedModel;
+  const previous = storedModel || (sel.value === CUSTOM ? customInput.value.trim() : sel.value) || '';
+  const canonicalPrevious = canonicalModel(provider, previous);
+  const match = models.find(
+    (m) =>
+      m.value === canonicalPrevious || m.aliases.includes(previous) || m.aliases.includes(canonicalPrevious)
+  );
+
+  sel.textContent = '';
+  for (const model of models) {
+    const opt = document.createElement('option');
+    opt.value = model.value;
+    opt.textContent = liveOptionText(model);
+    sel.appendChild(opt);
+  }
+  const custom = document.createElement('option');
+  custom.value = CUSTOM;
+  custom.textContent = 'Custom…';
+  sel.appendChild(custom);
+
+  if (match) {
+    sel.value = match.value;
+    customInput.value = '';
+    if (previous && previous !== match.value) chrome.storage.local.set({ [cfg.storageKey]: match.value });
+  } else if (hasStoredModel && previous && previous !== CUSTOM) {
+    sel.value = CUSTOM;
+    customInput.value = previous;
+  } else {
+    sel.value = models.find((m) => m.recommended)?.value || models[0]?.value || CUSTOM;
+    customInput.value = '';
+  }
+
+  if (provider === 'google') syncGoogleCustom();
+  if (provider === 'openrouter') syncOpenrouterCustom();
+  if (provider === 'nous') syncNousCustom();
+}
+
+async function loadLiveModelCatalog(provider, stored = {}) {
+  const cfg = LIVE_MODEL_SOURCES[provider];
+  const endpoint = typeof cfg.endpoint === 'function' ? cfg.endpoint(stored) : cfg.endpoint;
+  if (!endpoint) return [];
+  const res = await fetch(endpoint, { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error(`${provider} models ${res.status}`);
+  const json = await res.json();
+  const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json?.models) ? json.models : [];
+  const seen = new Set();
+  const models = rows
+    .map((row) => normalizeLiveModel(provider, row))
+    .filter((model) => model && !seen.has(model.value) && seen.add(model.value));
+  if (!models.length) throw new Error(`${provider} returned no text models`);
+  liveCatalog[provider] = models;
+  return models;
+}
+
+async function loadLiveModelCatalogs() {
+  const stored = await chrome.storage.local.get([
+    'googleKey',
+    ...Object.values(LIVE_MODEL_SOURCES).map((cfg) => cfg.storageKey),
+  ]);
+  await Promise.all(
+    Object.keys(LIVE_MODEL_SOURCES).map(async (provider) => {
+      try {
+        const models = await loadLiveModelCatalog(provider, stored);
+        if (models.length)
+          applyLiveModelList(provider, models, stored[LIVE_MODEL_SOURCES[provider].storageKey]);
+      } catch (err) {
+        console.warn('[RepoLens] live model catalog failed', provider, err);
+      }
+    })
+  );
+  renderPartModels();
+}
+
+function canonicalPartRouting(value) {
+  if (!value || value === 'default') return 'default';
+  const i = value.indexOf(':');
+  if (i <= 0) return value;
+  const provider = value.slice(0, i);
+  return `${provider}:${canonicalModel(provider, value.slice(i + 1))}`;
+}
 
 function buildPartSelect(part, current) {
+  const currentValue = canonicalPartRouting(current);
   const sel = document.createElement('select');
   sel.className = 'model-select';
   sel.dataset.part = part.id;
@@ -269,7 +460,11 @@ function buildPartSelect(part, current) {
   sel.appendChild(def);
 
   const groups = [
-    ...Object.entries(CATALOG).map(([provider, { label, models }]) => ({ provider, label, models })),
+    ...Object.entries(CATALOG).map(([provider, { label, models }]) => ({
+      provider,
+      label,
+      models: liveCatalog[provider] || models,
+    })),
     ...compatPartGroups(), // OpenAI/Anthropic-compatible registry providers
   ];
   for (const { provider, label, models } of groups) {
@@ -278,13 +473,13 @@ function buildPartSelect(part, current) {
     for (const m of models) {
       const opt = document.createElement('option');
       opt.value = `${provider}:${m.value}`;
-      opt.textContent = `${m.recommended ? '★ ' : ''}${m.label}`;
+      opt.textContent = liveCatalog[provider] ? liveOptionText(m) : `${m.recommended ? '★ ' : ''}${m.label}`;
       group.appendChild(opt);
     }
     sel.appendChild(group);
   }
 
-  sel.value = current && current !== 'default' ? current : 'default';
+  sel.value = currentValue && currentValue !== 'default' ? currentValue : 'default';
   if (!sel.value) sel.value = 'default'; // current pointed at a model no longer in the catalog
   return sel;
 }
@@ -313,22 +508,30 @@ async function renderPartModels() {
   }
 }
 renderPartModels();
+loadLiveModelCatalogs();
 
 // More providers (OpenAI/Anthropic-compatible registry) + dismiss the first-run
 // nudge if one of them is the connected provider.
 renderCompatProviders(document.getElementById('compat-providers'));
 anyCompatConnected().then((on) => {
-  if (on) { const gs = document.getElementById('getting-started'); if (gs) gs.style.display = 'none'; }
+  if (on) {
+    const gs = document.getElementById('getting-started');
+    if (gs) gs.style.display = 'none';
+  }
 });
 
 function showStatus(msg, color) {
-  statusEl.textContent    = msg;
-  statusEl.style.color    = color;
-  statusEl.style.display  = 'block';
-  setTimeout(() => { statusEl.style.display = 'none'; }, 2200);
+  statusEl.textContent = msg;
+  statusEl.style.color = color;
+  statusEl.style.display = 'block';
+  setTimeout(() => {
+    statusEl.style.display = 'none';
+  }, 2200);
 }
 
-function openTab(url) { chrome.tabs.create({ url }); }
+function openTab(url) {
+  chrome.tabs.create({ url });
+}
 
 // ─── Service card helpers ─────────────────────────────────────────────────────
 
@@ -351,13 +554,13 @@ function setButtonBusy(btn, busy, busyLabel = 'Connecting…') {
 }
 
 function setConnected(service, key, { method } = {}) {
-  const dot    = document.getElementById(`dot-${service}`);
+  const dot = document.getElementById(`dot-${service}`);
   const status = document.getElementById(`status-${service}`);
-  const btn    = document.getElementById(`btn-${service}`);
-  const card   = document.getElementById(`card-${service}`);
-  const panel  = document.getElementById(`panel-${service}`);
+  const btn = document.getElementById(`btn-${service}`);
+  const card = document.getElementById(`card-${service}`);
+  const panel = document.getElementById(`panel-${service}`);
   const modelRow = document.getElementById(`model-row-${service}`);
-  const toggle   = document.getElementById(`toggle-${service}`);
+  const toggle = document.getElementById(`toggle-${service}`);
 
   setButtonBusy(btn, false);
 
@@ -384,46 +587,84 @@ function setConnected(service, key, { method } = {}) {
 }
 
 chrome.storage.local.get(
-  ['anthropicKey', 'anthropicModel', 'googleKey', 'googleModel', 'openrouterKey', 'openrouterModel', 'xaiKey', 'xaiRefresh', 'xaiCredentials', 'xaiModel', 'nousKey', 'nousModel'],
+  [
+    'anthropicKey',
+    ANTHROPIC_ACCESS_KEY,
+    ANTHROPIC_REFRESH_KEY,
+    ANTHROPIC_EXPIRY_KEY,
+    'anthropicModel',
+    'googleKey',
+    'googleModel',
+    'openrouterKey',
+    'openrouterModel',
+    'xaiKey',
+    'xaiRefresh',
+    'xaiCredentials',
+    'xaiModel',
+    'nousKey',
+    'nousModel',
+  ],
   (s) => {
-    setConnected('anthropic', s.anthropicKey, { method: 'apikey' });
+    setConnected('anthropic', s.anthropicKey || s[ANTHROPIC_ACCESS_KEY] || s[ANTHROPIC_REFRESH_KEY], {
+      method: s.anthropicKey ? 'apikey' : 'oauth',
+    });
     setConnected('google', s.googleKey, { method: 'apikey' });
     setConnected('openrouter', s.openrouterKey, { method: 'oauth' });
-    setConnected('xai', s.xaiKey || s.xaiRefresh, { method: s.xaiRefresh || (s.xaiCredentials && s.xaiCredentials.refresh_token) ? 'oauth' : 'apikey' });
+    setConnected('xai', s.xaiKey || s.xaiRefresh, {
+      method: s.xaiRefresh || (s.xaiCredentials && s.xaiCredentials.refresh_token) ? 'oauth' : 'apikey',
+    });
     setConnected('nous', s.nousKey, { method: 'apikey' });
 
     // First run: walk the user in until any provider is connected.
-    const anyProvider = !!(s.anthropicKey || s.googleKey || s.openrouterKey || s.xaiKey || s.xaiRefresh || s.nousKey);
+    const anyProvider = !!(
+      s.anthropicKey ||
+      s[ANTHROPIC_ACCESS_KEY] ||
+      s[ANTHROPIC_REFRESH_KEY] ||
+      s.googleKey ||
+      s.openrouterKey ||
+      s.xaiKey ||
+      s.xaiRefresh ||
+      s.nousKey
+    );
     const gettingStarted = document.getElementById('getting-started');
     if (gettingStarted) gettingStarted.style.display = anyProvider ? 'none' : '';
 
     if (s.anthropicModel) document.getElementById('anthropicModel').value = s.anthropicModel;
-    if (s.googleModel) document.getElementById('googleModel').value = s.googleModel;
+    if (s.googleModel) {
+      const known = [...googleModelSel.options].some((o) => o.value === s.googleModel);
+      if (known) {
+        googleModelSel.value = s.googleModel;
+      } else {
+        googleModelSel.value = CUSTOM;
+        googleCustomInput.value = s.googleModel;
+      }
+    }
+    syncGoogleCustom();
     if (s.xaiModel) document.getElementById('xaiModel').value = s.xaiModel;
 
     if (s.openrouterModel) {
-      const known = [...orModelSel.options].some(o => o.value === s.openrouterModel);
+      const canonical = canonicalModel('openrouter', s.openrouterModel);
+      if (canonical !== s.openrouterModel) chrome.storage.local.set({ openrouterModel: canonical });
+      s.openrouterModel = canonical;
+      const known = [...orModelSel.options].some((o) => o.value === s.openrouterModel);
       if (known) {
         orModelSel.value = s.openrouterModel;
       } else {
-        orModelSel.value = '__custom__';
+        orModelSel.value = CUSTOM;
         orCustomInput.value = s.openrouterModel;
       }
     }
     syncOpenrouterCustom();
 
-    // Heal the legacy bare slug that an earlier build saved — the API wants the
-    // OpenRouter-catalog id for Step 3.7.
-    if (s.nousModel === 'Step-3.7-Flash' || s.nousModel === 'step-3.7-flash') {
-      s.nousModel = 'stepfun/step-3.7-flash';
-      chrome.storage.local.set({ nousModel: s.nousModel });
-    }
     if (s.nousModel) {
-      const known = [...nousModelSel.options].some(o => o.value === s.nousModel);
+      const canonical = canonicalModel('nous', s.nousModel);
+      if (canonical !== s.nousModel) chrome.storage.local.set({ nousModel: canonical });
+      s.nousModel = canonical;
+      const known = [...nousModelSel.options].some((o) => o.value === s.nousModel);
       if (known) {
         nousModelSel.value = s.nousModel;
       } else {
-        nousModelSel.value = '__custom__';
+        nousModelSel.value = CUSTOM;
         nousCustomInput.value = s.nousModel;
       }
     }
@@ -435,8 +676,15 @@ document.getElementById('anthropicModel').addEventListener('change', (e) => {
   chrome.storage.local.set({ anthropicModel: e.target.value });
 });
 
-document.getElementById('googleModel').addEventListener('change', (e) => {
-  chrome.storage.local.set({ googleModel: e.target.value });
+googleModelSel.addEventListener('change', () => {
+  syncGoogleCustom();
+  if (googleModelSel.value !== CUSTOM) chrome.storage.local.set({ googleModel: googleModelSel.value });
+});
+
+document.getElementById('save-google-model')?.addEventListener('click', () => {
+  const v = googleCustomInput.value.trim().replace(/^models\//, '');
+  if (!v) return;
+  chrome.storage.local.set({ googleModel: v }, () => showStatus('✓ Model set: ' + v, '#4ade80'));
 });
 
 document.getElementById('xaiModel').addEventListener('change', (e) => {
@@ -447,36 +695,38 @@ document.getElementById('xaiModel').addEventListener('change', (e) => {
 
 orModelSel.addEventListener('change', () => {
   syncOpenrouterCustom();
-  if (orModelSel.value !== '__custom__') {
-    chrome.storage.local.set({ openrouterModel: orModelSel.value });
+  if (orModelSel.value !== CUSTOM) {
+    chrome.storage.local.set({ openrouterModel: canonicalModel('openrouter', orModelSel.value) });
   }
 });
 
 document.getElementById('save-openrouter-model').addEventListener('click', () => {
-  const v = orCustomInput.value.trim();
+  const v = canonicalModel('openrouter', orCustomInput.value);
   if (!v) return;
   chrome.storage.local.set({ openrouterModel: v }, () => showStatus('✓ Model set: ' + v, '#4ade80'));
 });
 
-document.getElementById('link-openrouter')
+document
+  .getElementById('link-openrouter')
   ?.addEventListener('click', () => openTab('https://openrouter.ai/models'));
 
 // ─── Nous Research — model selector + API key ────────────────────────────────
 
 nousModelSel.addEventListener('change', () => {
   syncNousCustom();
-  if (nousModelSel.value !== '__custom__') {
-    chrome.storage.local.set({ nousModel: nousModelSel.value });
+  if (nousModelSel.value !== CUSTOM) {
+    chrome.storage.local.set({ nousModel: canonicalModel('nous', nousModelSel.value) });
   }
 });
 
 document.getElementById('save-nous-model').addEventListener('click', () => {
-  const v = nousCustomInput.value.trim();
+  const v = canonicalModel('nous', nousCustomInput.value);
   if (!v) return;
   chrome.storage.local.set({ nousModel: v }, () => showStatus('✓ Model set: ' + v, '#4ade80'));
 });
 
-document.getElementById('link-nous-models')
+document
+  .getElementById('link-nous-models')
   ?.addEventListener('click', () => openTab('https://portal.nousresearch.com'));
 
 document.getElementById('btn-nous').addEventListener('click', () => {
@@ -489,7 +739,8 @@ document.getElementById('btn-nous').addEventListener('click', () => {
   });
 });
 
-document.getElementById('link-nous')
+document
+  .getElementById('link-nous')
   ?.addEventListener('click', () => openTab('https://portal.nousresearch.com'));
 
 document.getElementById('save-nous').addEventListener('click', () => {
@@ -507,7 +758,9 @@ document.getElementById('btn-xai').addEventListener('click', async () => {
   const btn = document.getElementById('btn-xai');
   const { xaiKey, xaiRefresh } = await chrome.storage.local.get(['xaiKey', 'xaiRefresh']);
   if (xaiKey || xaiRefresh) {
-    chrome.storage.local.remove(['xaiKey', 'xaiRefresh', 'xaiExpiry', 'xaiCredentials'], () => setConnected('xai', null));
+    chrome.storage.local.remove(['xaiKey', 'xaiRefresh', 'xaiExpiry', 'xaiCredentials'], () =>
+      setConnected('xai', null)
+    );
     return;
   }
 
@@ -531,7 +784,9 @@ document.getElementById('btn-xai').addEventListener('click', async () => {
     `;
 
     const verifyUrl = dc.verification_uri_complete || dc.verification_uri;
-    document.getElementById('xai-verify-link').addEventListener('click', () => chrome.tabs.create({ url: verifyUrl }));
+    document
+      .getElementById('xai-verify-link')
+      .addEventListener('click', () => chrome.tabs.create({ url: verifyUrl }));
     chrome.tabs.create({ url: verifyUrl });
 
     document.getElementById('xai-copy-code').addEventListener('click', () => {
@@ -543,11 +798,14 @@ document.getElementById('btn-xai').addEventListener('click', async () => {
     const token = await pollXaiDeviceToken(dc.device_code, {
       intervalSec: dc.interval || 5,
       expiresInSec: dc.expires_in,
-      onPending: () => { pollStatus.textContent = '● Still waiting…'; },
+      onPending: () => {
+        pollStatus.textContent = '● Still waiting…';
+      },
     });
 
     const accessToken = await storeXaiOAuthTokens(token);
-    panel.innerHTML = '<p class="token-instruction" style="color:#4ade80">✓ Connected to Grok via SuperGrok</p>';
+    panel.innerHTML =
+      '<p class="token-instruction" style="color:#4ade80">✓ Connected to Grok via SuperGrok</p>';
     setConnected('xai', accessToken, { method: 'oauth' });
   } catch (err) {
     setButtonBusy(btn, false);
@@ -555,11 +813,11 @@ document.getElementById('btn-xai').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('toggle-xai')
+document
+  .getElementById('toggle-xai')
   ?.addEventListener('click', () => document.getElementById('panel-xai').classList.toggle('open'));
 
-document.getElementById('link-xai')
-  ?.addEventListener('click', () => openTab('https://console.x.ai'));
+document.getElementById('link-xai')?.addEventListener('click', () => openTab('https://console.x.ai'));
 
 document.getElementById('save-xai')?.addEventListener('click', () => {
   const key = document.getElementById('xaiKey').value.trim();
@@ -584,7 +842,8 @@ document.getElementById('btn-google').addEventListener('click', () => {
   });
 });
 
-document.getElementById('link-aistudio')
+document
+  .getElementById('link-aistudio')
   ?.addEventListener('click', () => openTab('https://aistudio.google.com/app/apikey'));
 
 document.getElementById('save-google').addEventListener('click', () => {
@@ -593,43 +852,74 @@ document.getElementById('save-google').addEventListener('click', () => {
   chrome.storage.local.set({ googleKey: key }, () => {
     document.getElementById('googleKey').value = '';
     setConnected('google', key, { method: 'apikey' });
+    loadLiveModelCatalogs();
   });
 });
 
-// ─── Anthropic — Console API key (sk-ant-api…) ───────────────────────────────
-// Subscription "Sign in with Claude" was removed: Anthropic locks Claude-subscription
-// tokens to the Claude Code client and prohibits subscription auth in third-party apps,
-// so a Console API key is the only supported path.
+// ─── Anthropic — Claude OAuth or Console API key ─────────────────────────────
 
 document.getElementById('btn-anthropic').addEventListener('click', () => {
-  chrome.storage.local.get('anthropicKey', ({ anthropicKey }) => {
-    if (anthropicKey) {
-      // Also sweep any legacy OAuth keys left by an older build.
-      chrome.storage.local.remove(
-        ['anthropicKey', 'anthropicRefresh', 'anthropicExpiry', 'anthropicCredentials'],
-        () => setConnected('anthropic', null)
-      );
+  chrome.storage.local.get(['anthropicKey', ANTHROPIC_ACCESS_KEY, ANTHROPIC_REFRESH_KEY], async (s) => {
+    if (s.anthropicKey || s[ANTHROPIC_ACCESS_KEY] || s[ANTHROPIC_REFRESH_KEY]) {
+      await chrome.storage.local.remove(['anthropicKey']);
+      await clearAnthropicOAuthTokens();
+      setConnected('anthropic', null);
       return;
     }
     document.getElementById('panel-anthropic').classList.toggle('open');
   });
 });
 
-document.getElementById('toggle-anthropic')
+document
+  .getElementById('toggle-anthropic')
   ?.addEventListener('click', () => document.getElementById('panel-anthropic').classList.toggle('open'));
 
-document.getElementById('link-anthropic')
+document
+  .getElementById('link-anthropic')
   ?.addEventListener('click', () => openTab('https://console.anthropic.com/settings/keys'));
 
-document.getElementById('save-anthropic')?.addEventListener('click', () => {
+document.getElementById('anthropic-oauth-start')?.addEventListener('click', async () => {
+  const btn = document.getElementById('anthropic-oauth-start');
+  try {
+    setButtonBusy(btn, true, 'Opening…');
+    const { verifier, challenge } = await createAnthropicPkcePair();
+    await chrome.storage.local.set({ [ANTHROPIC_OAUTH_VERIFIER_KEY]: verifier });
+    openTab(buildAnthropicAuthorizeUrl({ verifier, challenge }));
+    showStatus('Paste the Claude code here after approving sign-in.', '#818cf8');
+    document.getElementById('anthropicOAuthCode')?.focus();
+  } catch (err) {
+    showStatus('✗ Claude sign-in: ' + (err?.message || err), '#f87171');
+  } finally {
+    setButtonBusy(btn, false);
+  }
+});
+
+document.getElementById('save-anthropic-oauth')?.addEventListener('click', async () => {
+  const input = document.getElementById('anthropicOAuthCode');
+  const authCode = input.value.trim();
+  if (!authCode) return;
+  try {
+    const s = await chrome.storage.local.get(ANTHROPIC_OAUTH_VERIFIER_KEY);
+    const verifier = s[ANTHROPIC_OAUTH_VERIFIER_KEY];
+    if (!verifier) throw new Error('Start Claude sign-in first.');
+    const tokens = await exchangeAnthropicCode({ authCode, verifier });
+    await saveAnthropicOAuthTokens(tokens);
+    await chrome.storage.local.remove(['anthropicKey', ANTHROPIC_OAUTH_VERIFIER_KEY]);
+    input.value = '';
+    setConnected('anthropic', tokens.access, { method: 'oauth' });
+    showStatus('✓ Connected to Claude', '#4ade80');
+  } catch (err) {
+    showStatus('✗ Claude sign-in: ' + (err?.message || err), '#f87171');
+  }
+});
+
+document.getElementById('save-anthropic')?.addEventListener('click', async () => {
   const key = document.getElementById('anthropicApiKey').value.trim();
   if (!key) return;
-  chrome.storage.local.set({ anthropicKey: key }, () => {
-    chrome.storage.local.remove(['anthropicRefresh', 'anthropicExpiry', 'anthropicCredentials'], () => {
-      document.getElementById('anthropicApiKey').value = '';
-      setConnected('anthropic', key, { method: 'apikey' });
-    });
-  });
+  await chrome.storage.local.set({ anthropicKey: key });
+  await clearAnthropicOAuthTokens();
+  document.getElementById('anthropicApiKey').value = '';
+  setConnected('anthropic', key, { method: 'apikey' });
 });
 
 // ─── OpenRouter — OAuth via chrome.identity ──────────────────────────────────
@@ -647,7 +937,8 @@ document.getElementById('btn-openrouter').addEventListener('click', async () => 
 
     const { verifier, challenge } = await createPkcePair();
     const redirectUrl = chrome.identity.getRedirectURL();
-    const authUrl = `https://openrouter.ai/auth?callback_url=${encodeURIComponent(redirectUrl)}` +
+    const authUrl =
+      `https://openrouter.ai/auth?callback_url=${encodeURIComponent(redirectUrl)}` +
       `&code_challenge=${challenge}&code_challenge_method=S256`;
 
     const responseUrl = await new Promise((resolve, reject) => {
@@ -675,7 +966,9 @@ document.getElementById('btn-openrouter').addEventListener('click', async () => 
     const { key } = await res.json();
     if (!key) throw new Error('OpenRouter returned no key');
 
-    chrome.storage.local.set({ openrouterKey: key }, () => setConnected('openrouter', key, { method: 'oauth' }));
+    chrome.storage.local.set({ openrouterKey: key }, () =>
+      setConnected('openrouter', key, { method: 'oauth' })
+    );
   } catch (err) {
     setButtonBusy(btn, false);
     showStatus('✗ OpenRouter: ' + err.message, '#f87171');

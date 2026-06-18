@@ -4,25 +4,51 @@
 
 const KNOWN_KINDS = new Set(['subsystem', 'module', 'concept', 'entrypoint', 'data']);
 const KIND_ALIASES = {
-  function: 'module', fn: 'module', method: 'module', file: 'module', class: 'module',
-  service: 'subsystem', package: 'subsystem', pkg: 'subsystem', mod: 'subsystem',
-  config: 'data', table: 'data', schema: 'data', endpoint: 'data',
-  entry: 'entrypoint', main: 'entrypoint', idea: 'concept',
+  function: 'module',
+  fn: 'module',
+  method: 'module',
+  file: 'module',
+  class: 'module',
+  service: 'subsystem',
+  package: 'subsystem',
+  pkg: 'subsystem',
+  mod: 'subsystem',
+  config: 'data',
+  table: 'data',
+  schema: 'data',
+  endpoint: 'data',
+  entry: 'entrypoint',
+  main: 'entrypoint',
+  idea: 'concept',
 };
 const KNOWN_RELS = new Set(['depends-on', 'enables', 'triggers', 'derives-from']);
 const REL_ALIASES = {
-  depends_on: 'depends-on', dependson: 'depends-on', imports: 'depends-on', uses: 'depends-on',
-  requires: 'depends-on', calls: 'triggers', invokes: 'triggers', publishes: 'triggers',
-  extends: 'derives-from', inherits: 'derives-from', implements: 'derives-from', enables: 'enables',
+  depends_on: 'depends-on',
+  dependson: 'depends-on',
+  imports: 'depends-on',
+  uses: 'depends-on',
+  requires: 'depends-on',
+  calls: 'triggers',
+  invokes: 'triggers',
+  publishes: 'triggers',
+  extends: 'derives-from',
+  inherits: 'derives-from',
+  implements: 'derives-from',
+  enables: 'enables',
 };
 
 const coerceKind = (k) => {
-  const v = String(k || '').trim().toLowerCase();
+  const v = String(k || '')
+    .trim()
+    .toLowerCase();
   if (KNOWN_KINDS.has(v)) return v;
   return KIND_ALIASES[v] || 'module';
 };
 const coerceRel = (r) => {
-  const v = String(r || '').trim().toLowerCase().replace(/\s+/g, '-');
+  const v = String(r || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-');
   if (KNOWN_RELS.has(v)) return v;
   return REL_ALIASES[v] || 'depends-on';
 };
@@ -42,16 +68,23 @@ export function repairGraph(raw, opts = {}) {
   const seen = new Set();
   const nodes = [];
   for (const n of (raw && raw.nodes) || []) {
-    if (!n || n.id == null || n.id === '') { add('dropped', 'missing-id', 'node without id'); continue; }
+    if (!n || n.id == null || n.id === '') {
+      add('dropped', 'missing-id', 'node without id');
+      continue;
+    }
     const id = String(n.id);
-    if (seen.has(id)) { add('auto-corrected', 'dedupe', `duplicate node id ${id}`); continue; }
+    if (seen.has(id)) {
+      add('auto-corrected', 'dedupe', `duplicate node id ${id}`);
+      continue;
+    }
     seen.add(id);
     const kind = coerceKind(n.kind);
     if (n.kind && coerceKind(n.kind) !== String(n.kind).toLowerCase())
       add('auto-corrected', 'kind-alias', `kind "${n.kind}" → ${kind}`);
     // Coerce first: Number.isFinite('100') is false, so a pinned node with string
     // coords (e.g. from JSON) would otherwise collapse to (0,0).
-    const nx = Number(n.x), ny = Number(n.y);
+    const nx = Number(n.x),
+      ny = Number(n.y);
     nodes.push({
       id,
       label: String(n.name ?? n.label ?? id),
@@ -70,7 +103,10 @@ export function repairGraph(raw, opts = {}) {
   for (const e of (raw && raw.edges) || []) {
     const from = String((e && (e.from ?? e.source)) ?? '');
     const to = String((e && (e.to ?? e.target)) ?? '');
-    if (!ids.has(from) || !ids.has(to)) { add('dropped', 'dangling-edge', `edge ${from}→${to} has a missing endpoint`); continue; }
+    if (!ids.has(from) || !ids.has(to)) {
+      add('dropped', 'dangling-edge', `edge ${from}→${to} has a missing endpoint`);
+      continue;
+    }
     const rel = coerceRel(e.rel ?? e.relation ?? e.type);
     const key = `${from}|${rel}|${to}`;
     if (edgeSeen.has(key)) continue;
@@ -81,4 +117,8 @@ export function repairGraph(raw, opts = {}) {
   return { nodes, edges, issues };
 }
 
-function hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) & 0xffffffff; return Math.abs(h) || 1; }
+function hash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) & 0xffffffff;
+  return Math.abs(h) || 1;
+}

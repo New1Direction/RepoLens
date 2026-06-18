@@ -10,14 +10,16 @@ export const STACK_LAYERS = ['frontend', 'backend', 'data', 'infra', 'testing', 
 export function buildStackPrompt(repos) {
   if (!Array.isArray(repos) || repos.length < 2) return '';
 
-  const repoBlock = repos.map((r, i) => {
-    const lines = [`${i + 1}. ${r.repoId}`];
-    if (r.eli5) lines.push(`   What: ${String(r.eli5).slice(0, 100)}`);
-    if (r.capabilities?.length) lines.push(`   Capabilities: ${r.capabilities.slice(0, 5).join(', ')}`);
-    if (r.category) lines.push(`   Category: ${r.category}`);
-    if (r.language) lines.push(`   Language: ${r.language}`);
-    return lines.join('\n');
-  }).join('\n\n');
+  const repoBlock = repos
+    .map((r, i) => {
+      const lines = [`${i + 1}. ${r.repoId}`];
+      if (r.eli5) lines.push(`   What: ${String(r.eli5).slice(0, 100)}`);
+      if (r.capabilities?.length) lines.push(`   Capabilities: ${r.capabilities.slice(0, 5).join(', ')}`);
+      if (r.category) lines.push(`   Category: ${r.category}`);
+      if (r.language) lines.push(`   Language: ${r.language}`);
+      return lines.join('\n');
+    })
+    .join('\n\n');
 
   return `You are a software architect designing a cohesive tech stack from a hand-picked set of repos.
 
@@ -53,16 +55,20 @@ export function parseStack(rawText) {
     const r = JSON.parse(m[0]);
     return {
       title: String(r.title || 'Custom Stack').trim(),
-      roles: Array.isArray(r.roles) ? r.roles.map(x => ({
-        repoId: String(x.repoId || ''),
-        role: String(x.role || ''),
-        layer: STACK_LAYERS.includes(x.layer) ? x.layer : 'tooling',
-      })) : [],
-      integrations: Array.isArray(r.integrations) ? r.integrations.map(x => ({
-        from: String(x.from || ''),
-        to: String(x.to || ''),
-        glue: String(x.glue || ''),
-      })) : [],
+      roles: Array.isArray(r.roles)
+        ? r.roles.map((x) => ({
+            repoId: String(x.repoId || ''),
+            role: String(x.role || ''),
+            layer: STACK_LAYERS.includes(x.layer) ? x.layer : 'tooling',
+          }))
+        : [],
+      integrations: Array.isArray(r.integrations)
+        ? r.integrations.map((x) => ({
+            from: String(x.from || ''),
+            to: String(x.to || ''),
+            glue: String(x.glue || ''),
+          }))
+        : [],
       gaps: Array.isArray(r.gaps) ? r.gaps.map(String) : [],
       order: Array.isArray(r.order) ? r.order.map(String) : [],
       summary: String(r.summary || '').trim(),

@@ -16,10 +16,15 @@ import { drawVeeIcon } from './icon-draw.js';
 /** Sizes Chrome needs for the action icon imageData map. */
 export const ANIM_SIZES = [16, 32, 48];
 
-const TICK_MS = 90;          // frame interval (worker-friendly)
-const GROW_MS = 600;         // aperture grow-in duration
-const MAX_RUN_MS = 90_000;   // safety cap: never animate longer than this
-const STATIC_PATH = { 16: 'icons/icon16.png', 32: 'icons/icon32.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' };
+const TICK_MS = 90; // frame interval (worker-friendly)
+const GROW_MS = 600; // aperture grow-in duration
+const MAX_RUN_MS = 90_000; // safety cap: never animate longer than this
+const STATIC_PATH = {
+  16: 'icons/icon16.png',
+  32: 'icons/icon32.png',
+  48: 'icons/icon48.png',
+  128: 'icons/icon128.png',
+};
 
 export const RING_GREY = '#cbd5e1';
 export const RING_BLUE = '#3b82f6';
@@ -46,20 +51,20 @@ export function scanFrameParams(elapsedMs) {
   // Aperture grow-in with a slight overshoot, then settle at 1.0.
   let apertureScale;
   if (t < GROW_MS) {
-    const p = t / GROW_MS;                 // 0 → 1
-    const eased = 1 - Math.pow(1 - p, 3);  // easeOutCubic
+    const p = t / GROW_MS; // 0 → 1
+    const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
     apertureScale = 0.5 + (1.1 - 0.5) * eased; // 0.5 → 1.1 (overshoot)
   } else {
     const settle = clamp((t - GROW_MS) / 200, 0, 1);
-    apertureScale = 1.1 - 0.1 * settle;    // 1.1 → 1.0
+    apertureScale = 1.1 - 0.1 * settle; // 1.1 → 1.0
   }
 
   // Spin accelerates: angle grows with the square of time-after-grow.
   const spinT = Math.max(0, t - GROW_MS) / 1000; // seconds spinning
-  const apertureRotation = 0.6 * spinT * spinT;   // rad; quadratic = slow → fast
+  const apertureRotation = 0.6 * spinT * spinT; // rad; quadratic = slow → fast
 
   // Ring breathe: gentle sinusoid for both scale and grey→blue blend.
-  const phase = (t % 2400) / 2400;               // 2.4s loop
+  const phase = (t % 2400) / 2400; // 2.4s loop
   const wave = (1 - Math.cos(phase * Math.PI * 2)) / 2; // 0 → 1 → 0
   const ringScale = 1.0 + 0.08 * wave;
   const ringColor = mixHex(RING_GREY, RING_BLUE, wave);
@@ -74,7 +79,7 @@ const timers = new Map(); // tabId → { id, started }
 async function shouldAnimate() {
   try {
     const { animateIcon, reduceMotion } = await chrome.storage.local.get(['animateIcon', 'reduceMotion']);
-    if (animateIcon === false) return false;   // default ON
+    if (animateIcon === false) return false; // default ON
     if (reduceMotion === true) return false;
     return true;
   } catch {
@@ -101,19 +106,28 @@ function renderImageData(elapsedMs) {
  */
 export async function startScanAnim(tabId) {
   if (typeof tabId !== 'number') return;
-  if (timers.has(tabId)) return;          // already animating this tab
+  if (timers.has(tabId)) return; // already animating this tab
   if (!(await shouldAnimate())) return;
 
   const started = Date.now();
   const tick = () => {
     const elapsed = Date.now() - started;
-    if (elapsed > MAX_RUN_MS) { stopScanAnim(tabId); return; }
+    if (elapsed > MAX_RUN_MS) {
+      stopScanAnim(tabId);
+      return;
+    }
     try {
       chrome.action.setIcon({ tabId, imageData: renderImageData(elapsed) }).catch(() => {});
-    } catch { /* tab gone / OffscreenCanvas unavailable — stop quietly */ stopScanAnim(tabId); return; }
+    } catch {
+      /* tab gone / OffscreenCanvas unavailable — stop quietly */ stopScanAnim(tabId);
+      return;
+    }
     const id = setTimeout(tick, TICK_MS);
     const entry = timers.get(tabId);
-    if (entry) entry.id = id; else { clearTimeout(id); }
+    if (entry) entry.id = id;
+    else {
+      clearTimeout(id);
+    }
   };
 
   timers.set(tabId, { id: 0, started });
@@ -128,6 +142,13 @@ export async function startScanAnim(tabId) {
 export function stopScanAnim(tabId) {
   if (typeof tabId !== 'number') return;
   const entry = timers.get(tabId);
-  if (entry) { clearTimeout(entry.id); timers.delete(tabId); }
-  try { chrome.action.setIcon({ tabId, path: STATIC_PATH }).catch(() => {}); } catch { /* tab gone */ }
+  if (entry) {
+    clearTimeout(entry.id);
+    timers.delete(tabId);
+  }
+  try {
+    chrome.action.setIcon({ tabId, path: STATIC_PATH }).catch(() => {});
+  } catch {
+    /* tab gone */
+  }
 }

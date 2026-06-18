@@ -5,10 +5,13 @@
 
 import { layerOf, layersAdjacent } from './taxonomy.js';
 
-function layersOf(caps) { return new Set((caps || []).map(layerOf)); }
+function layersOf(caps) {
+  return new Set((caps || []).map(layerOf));
+}
 
 function pairAdjacent(a, b) {
-  const la = layersOf(a.capabilities), lb = layersOf(b.capabilities);
+  const la = layersOf(a.capabilities),
+    lb = layersOf(b.capabilities);
   if (!la.size || !lb.size) return false;
   for (const x of la) for (const y of lb) if (layersAdjacent(x, y)) return true;
   return false;
@@ -17,23 +20,32 @@ function pairAdjacent(a, b) {
 function disjointness(combo) {
   const counts = {};
   let total = 0;
-  for (const r of combo) for (const t of (r.capabilities || [])) { counts[t] = (counts[t] || 0) + 1; total++; }
+  for (const r of combo)
+    for (const t of r.capabilities || []) {
+      counts[t] = (counts[t] || 0) + 1;
+      total++;
+    }
   if (!total) return 0;
-  const shared = Object.values(counts).filter(c => c > 1).reduce((s, c) => s + c, 0);
+  const shared = Object.values(counts)
+    .filter((c) => c > 1)
+    .reduce((s, c) => s + c, 0);
   return 1 - shared / total;
 }
 
 function adjacency(combo) {
-  let pairs = 0, adj = 0;
-  for (let i = 0; i < combo.length; i++) for (let j = i + 1; j < combo.length; j++) {
-    pairs++; if (pairAdjacent(combo[i], combo[j])) adj++;
-  }
+  let pairs = 0,
+    adj = 0;
+  for (let i = 0; i < combo.length; i++)
+    for (let j = i + 1; j < combo.length; j++) {
+      pairs++;
+      if (pairAdjacent(combo[i], combo[j])) adj++;
+    }
   return pairs ? adj / pairs : 0;
 }
 
 function distinctLayers(combo) {
   const set = new Set();
-  for (const r of combo) for (const t of (r.capabilities || [])) set.add(layerOf(t));
+  for (const r of combo) for (const t of r.capabilities || []) set.add(layerOf(t));
   return set.size;
 }
 
@@ -48,7 +60,9 @@ function spread(combo) {
  * gives the ranking resolution instead of saturating at 1.0 when repos carry one tag each.
  */
 export function scoreCombo(combo, wildness = 0) {
-  const a = adjacency(combo), d = disjointness(combo), s = spread(combo);
+  const a = adjacency(combo),
+    d = disjointness(combo),
+    s = spread(combo);
   // wildness 0 rewards adjacency (coherent combos); wildness 1 rewards non-adjacency
   // (surprising combos); a linear blend between, so the dial actually changes the ranking.
   const coherence = (1 - wildness) * a + wildness * (1 - a);
@@ -67,12 +81,16 @@ export function diversifyTopK(ranked, { seed = null, topK = 6, penalty = 0.7 } =
   const picked = [];
   const used = new Set();
   while (picked.length < topK && pool.length) {
-    let bestIdx = 0, bestAdj = -Infinity;
+    let bestIdx = 0,
+      bestAdj = -Infinity;
     for (let i = 0; i < pool.length; i++) {
-      const others = pool[i].repoIds.filter(r => r !== seed);
-      const reused = others.length ? others.filter(r => used.has(r)).length / others.length : 0;
+      const others = pool[i].repoIds.filter((r) => r !== seed);
+      const reused = others.length ? others.filter((r) => used.has(r)).length / others.length : 0;
       const adj = pool[i].score * (1 - penalty * reused);
-      if (adj > bestAdj) { bestAdj = adj; bestIdx = i; }
+      if (adj > bestAdj) {
+        bestAdj = adj;
+        bestIdx = i;
+      }
     }
     const [chosen] = pool.splice(bestIdx, 1);
     picked.push(chosen);
@@ -84,8 +102,15 @@ export function diversifyTopK(ranked, { seed = null, topK = 6, penalty = 0.7 } =
 function combosOf(arr, k) {
   const res = [];
   const rec = (start, acc) => {
-    if (acc.length === k) { res.push(acc.slice()); return; }
-    for (let i = start; i < arr.length; i++) { acc.push(arr[i]); rec(i + 1, acc); acc.pop(); }
+    if (acc.length === k) {
+      res.push(acc.slice());
+      return;
+    }
+    for (let i = start; i < arr.length; i++) {
+      acc.push(arr[i]);
+      rec(i + 1, acc);
+      acc.pop();
+    }
   };
   rec(0, []);
   return res;
@@ -97,28 +122,32 @@ function combosOf(arr, k) {
  * [{ repoIds, rows, score, adjacency, disjointness }], best first, deterministically.
  */
 export function combineCandidates(rows, { seed = null, sizes = [2, 3], wildness = 0, topK = 6 } = {}) {
-  const byId = new Map(rows.map(r => [r.repoId, r]));
+  const byId = new Map(rows.map((r) => [r.repoId, r]));
   const seedRow = seed ? byId.get(seed) : null;
   if (seed && !seedRow) return [];
-  const pool = rows.filter(r => r.repoId !== seed);
+  const pool = rows.filter((r) => r.repoId !== seed);
 
   const out = [];
   const seen = new Set();
-  const extraSizes = seed ? sizes.map(s => s - 1) : sizes; // seed fills one slot
+  const extraSizes = seed ? sizes.map((s) => s - 1) : sizes; // seed fills one slot
   for (const k of extraSizes) {
     if (k < 1) continue;
     for (const c of combosOf(pool, k)) {
       const combo = seed ? [seedRow, ...c] : c;
-      const key = combo.map(r => r.repoId).slice().sort().join('|');
+      const key = combo
+        .map((r) => r.repoId)
+        .slice()
+        .sort()
+        .join('|');
       if (seen.has(key)) continue;
       seen.add(key);
       const sc = scoreCombo(combo, wildness);
-      out.push({ repoIds: combo.map(r => r.repoId), rows: combo, ...sc });
+      out.push({ repoIds: combo.map((r) => r.repoId), rows: combo, ...sc });
     }
   }
-  out.sort((x, y) =>
-    y.score - x.score ||
-    y.disjointness - x.disjointness ||
-    x.repoIds.join().localeCompare(y.repoIds.join()));
+  out.sort(
+    (x, y) =>
+      y.score - x.score || y.disjointness - x.disjointness || x.repoIds.join().localeCompare(y.repoIds.join())
+  );
   return diversifyTopK(out, { seed, topK });
 }

@@ -10,9 +10,12 @@
 import { fetchRepoData } from '../fetcher.js';
 import {
   fetchSource,
-  buildAtomsPrompt, parseAtoms,
-  buildLineagePrompt, parseLineage,
-  buildFeynmanPrompt, parseFeynman,
+  buildAtomsPrompt,
+  parseAtoms,
+  buildLineagePrompt,
+  parseLineage,
+  buildFeynmanPrompt,
+  parseFeynman,
 } from '../deepdive.js';
 import { parseRepoInput } from './repo-input.js';
 import { callAnthropic } from './anthropic.js';
@@ -21,7 +24,7 @@ import { ghOpts } from './github-auth.js';
 export const DEEP_DIVE_TOOL = {
   name: 'deep_dive',
   description:
-    "Explain how a GitHub repo actually works, in plain language, with its weak spots named. " +
+    'Explain how a GitHub repo actually works, in plain language, with its weak spots named. ' +
     'Returns a from-scratch explanation, the gaps/assumptions behind it, self-test questions, ' +
     'per-claim confidence, and the underlying atoms + causal lineage. Use this when the user ' +
     'wants to *understand* a codebase, not just judge it. Heaviest tool (reads source, three model calls).',
@@ -38,7 +41,11 @@ export const DEEP_DIVE_TOOL = {
       degraded: { type: 'boolean', description: 'true when no source tree was available (README-only read)' },
       explanation: { type: 'string', description: 'Plain-language explanation from scratch.' },
       gaps: { type: 'array', items: { type: 'string' }, description: 'Where the explanation is weakest.' },
-      assumptions: { type: 'array', items: { type: 'string' }, description: 'Inferred, not directly verified.' },
+      assumptions: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Inferred, not directly verified.',
+      },
       questions: {
         type: 'array',
         items: {

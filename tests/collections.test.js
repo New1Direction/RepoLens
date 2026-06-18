@@ -16,7 +16,13 @@ import {
 describe('makeCollection', () => {
   it('trims the name and starts empty with injected id/timestamp', () => {
     const c = makeCollection('  My Stack  ', { id: 'c1', now: '2026-01-01T00:00:00Z' });
-    expect(c).toMatchObject({ id: 'c1', name: 'My Stack', repoIds: [], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' });
+    expect(c).toMatchObject({
+      id: 'c1',
+      name: 'My Stack',
+      repoIds: [],
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    });
     expect(COLLECTION_COLORS).toContain(c.color);
   });
 });
@@ -40,7 +46,7 @@ describe('membership (immutable)', () => {
   it('adds a repo without mutating the original', () => {
     const c = makeCollection('x', { id: 'c1', now: 't0' });
     const c2 = addRepoToCollection(c, 'owner/repo', { now: 't1' });
-    expect(c.repoIds).toEqual([]);             // original untouched
+    expect(c.repoIds).toEqual([]); // original untouched
     expect(c2.repoIds).toEqual(['owner/repo']);
     expect(c2.updatedAt).toBe('t1');
   });

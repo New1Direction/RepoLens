@@ -5,34 +5,52 @@
 /** Canonical SPDX id → compatibility bucket. */
 export const SPDX_BUCKETS = {
   // Permissive
-  'MIT': 'permissive', 'ISC': 'permissive', 'Unlicense': 'permissive',
-  '0BSD': 'permissive', 'BSD-2-Clause': 'permissive', 'BSD-3-Clause': 'permissive',
-  'Apache-2.0': 'permissive', 'Zlib': 'permissive', 'WTFPL': 'permissive',
-  'CC0-1.0': 'permissive', 'BlueOak-1.0.0': 'permissive',
+  MIT: 'permissive',
+  ISC: 'permissive',
+  Unlicense: 'permissive',
+  '0BSD': 'permissive',
+  'BSD-2-Clause': 'permissive',
+  'BSD-3-Clause': 'permissive',
+  'Apache-2.0': 'permissive',
+  Zlib: 'permissive',
+  WTFPL: 'permissive',
+  'CC0-1.0': 'permissive',
+  'BlueOak-1.0.0': 'permissive',
   // Weak copyleft — modifications must be shared, but you can link freely
-  'LGPL-2.0-only': 'weak-copyleft', 'LGPL-2.0-or-later': 'weak-copyleft',
-  'LGPL-2.1-only': 'weak-copyleft', 'LGPL-2.1-or-later': 'weak-copyleft',
-  'LGPL-3.0-only': 'weak-copyleft', 'LGPL-3.0-or-later': 'weak-copyleft',
-  'MPL-2.0': 'weak-copyleft', 'CDDL-1.0': 'weak-copyleft',
-  'EPL-1.0': 'weak-copyleft', 'EPL-2.0': 'weak-copyleft',
+  'LGPL-2.0-only': 'weak-copyleft',
+  'LGPL-2.0-or-later': 'weak-copyleft',
+  'LGPL-2.1-only': 'weak-copyleft',
+  'LGPL-2.1-or-later': 'weak-copyleft',
+  'LGPL-3.0-only': 'weak-copyleft',
+  'LGPL-3.0-or-later': 'weak-copyleft',
+  'MPL-2.0': 'weak-copyleft',
+  'CDDL-1.0': 'weak-copyleft',
+  'EPL-1.0': 'weak-copyleft',
+  'EPL-2.0': 'weak-copyleft',
   // Strong copyleft — derivative works must use the same license
-  'GPL-2.0-only': 'strong-copyleft', 'GPL-2.0-or-later': 'strong-copyleft',
-  'GPL-3.0-only': 'strong-copyleft', 'GPL-3.0-or-later': 'strong-copyleft',
-  'AGPL-3.0-only': 'strong-copyleft', 'AGPL-3.0-or-later': 'strong-copyleft',
+  'GPL-2.0-only': 'strong-copyleft',
+  'GPL-2.0-or-later': 'strong-copyleft',
+  'GPL-3.0-only': 'strong-copyleft',
+  'GPL-3.0-or-later': 'strong-copyleft',
+  'AGPL-3.0-only': 'strong-copyleft',
+  'AGPL-3.0-or-later': 'strong-copyleft',
 };
 
 // Short aliases the GitHub API commonly returns (not always valid SPDX)
 const ALIASES = {
-  'GPL-2.0': 'GPL-2.0-only', 'GPL-3.0': 'GPL-3.0-only',
-  'LGPL-2.0': 'LGPL-2.0-only', 'LGPL-2.1': 'LGPL-2.1-only', 'LGPL-3.0': 'LGPL-3.0-only',
+  'GPL-2.0': 'GPL-2.0-only',
+  'GPL-3.0': 'GPL-3.0-only',
+  'LGPL-2.0': 'LGPL-2.0-only',
+  'LGPL-2.1': 'LGPL-2.1-only',
+  'LGPL-3.0': 'LGPL-3.0-only',
   'AGPL-3.0': 'AGPL-3.0-only',
 };
 
 const BUCKET_LABELS = {
-  'permissive': 'Permissive',
+  permissive: 'Permissive',
   'weak-copyleft': 'Weak Copyleft',
   'strong-copyleft': 'Strong Copyleft',
-  'unknown': 'Unknown',
+  unknown: 'Unknown',
 };
 
 /**
@@ -72,23 +90,41 @@ export function checkPairCompat(licenseA, licenseB) {
     return { status: 'ok', note: 'Weak copyleft + permissive — OK to link; modified files must be shared.' };
   }
   if (bA === 'permissive' && bB === 'strong-copyleft') {
-    return { status: 'conflict', note: 'Permissive + strong copyleft — distribution of proprietary code alongside this is restricted. Review use-case carefully.' };
+    return {
+      status: 'conflict',
+      note: 'Permissive + strong copyleft — distribution of proprietary code alongside this is restricted. Review use-case carefully.',
+    };
   }
   if (bA === 'strong-copyleft' && bB === 'permissive') {
-    return { status: 'conflict', note: 'Strong copyleft + permissive — the strong-copyleft license may require your entire project to be open-sourced on distribution.' };
+    return {
+      status: 'conflict',
+      note: 'Strong copyleft + permissive — the strong-copyleft license may require your entire project to be open-sourced on distribution.',
+    };
   }
   if (bA === 'weak-copyleft' && bB === 'weak-copyleft') {
-    return { status: 'warn', note: 'Both weak copyleft — usually compatible, but verify the specific licenses allow combination.' };
+    return {
+      status: 'warn',
+      note: 'Both weak copyleft — usually compatible, but verify the specific licenses allow combination.',
+    };
   }
-  if ((bA === 'weak-copyleft' && bB === 'strong-copyleft') || (bA === 'strong-copyleft' && bB === 'weak-copyleft')) {
-    return { status: 'warn', note: 'Weak + strong copyleft — the strong-copyleft license may pull the weak-copyleft code under its terms. Legal review recommended.' };
+  if (
+    (bA === 'weak-copyleft' && bB === 'strong-copyleft') ||
+    (bA === 'strong-copyleft' && bB === 'weak-copyleft')
+  ) {
+    return {
+      status: 'warn',
+      note: 'Weak + strong copyleft — the strong-copyleft license may pull the weak-copyleft code under its terms. Legal review recommended.',
+    };
   }
   if (bA === 'strong-copyleft' && bB === 'strong-copyleft') {
     // Same license = OK; different = potentially incompatible
     const a = (ALIASES[licenseA] || licenseA).replace(/-only$/, '').replace(/-or-later$/, '');
     const b = (ALIASES[licenseB] || licenseB).replace(/-only$/, '').replace(/-or-later$/, '');
     if (a === b) return { status: 'ok', note: 'Same strong-copyleft license family — compatible.' };
-    return { status: 'conflict', note: 'Two different strong-copyleft licenses — typically incompatible. Legal review required.' };
+    return {
+      status: 'conflict',
+      note: 'Two different strong-copyleft licenses — typically incompatible. Legal review required.',
+    };
   }
   return { status: 'warn', note: 'Unable to determine compatibility automatically — review manually.' };
 }
@@ -101,7 +137,7 @@ export function checkPairCompat(licenseA, licenseB) {
  */
 export function checkLibraryCompat(currentLicense, libraryRepos) {
   const currentBucket = bucketFor(currentLicense);
-  const repos = (libraryRepos || []).filter(r => r && r.repoId && r.license && r.license !== 'Unknown');
+  const repos = (libraryRepos || []).filter((r) => r && r.repoId && r.license && r.license !== 'Unknown');
 
   const bucketCounts = { permissive: 0, 'weak-copyleft': 0, 'strong-copyleft': 0, unknown: 0 };
   const concerns = [];
@@ -115,8 +151,8 @@ export function checkLibraryCompat(currentLicense, libraryRepos) {
     }
   }
 
-  const conflicts = concerns.filter(c => c.status === 'conflict').length;
-  const warns = concerns.filter(c => c.status === 'warn').length;
+  const conflicts = concerns.filter((c) => c.status === 'conflict').length;
+  const warns = concerns.filter((c) => c.status === 'warn').length;
 
   let summary;
   if (!repos.length) {

@@ -1,12 +1,17 @@
 // tests/concepts.test.js
 import { describe, it, expect } from 'vitest';
 import {
-  normalizeConcept, cosineSimilarity, conceptIndex,
-  lexicalMatcher, bestEmbeddingMatch, deriveConceptLinks,
+  normalizeConcept,
+  cosineSimilarity,
+  conceptIndex,
+  lexicalMatcher,
+  bestEmbeddingMatch,
+  deriveConceptLinks,
 } from '../concepts.js';
 
 const rec = (repoId, names, vectors = null) => ({
-  repoId, vectors,
+  repoId,
+  vectors,
   atoms: names.map((n, i) => ({ id: `a${i}`, name: n, purpose: `does ${n}` })),
 });
 
@@ -70,8 +75,8 @@ describe('deriveConceptLinks (per-pair hybrid)', () => {
 
   it('falls back to lexical when either repo lacks vectors', () => {
     const recs = {
-      x: rec('a/x', ['Cache'], [[1, 0]]),   // has vectors
-      y: rec('c/y', ['Cache'], null),        // no vectors → lexical for this pair
+      x: rec('a/x', ['Cache'], [[1, 0]]), // has vectors
+      y: rec('c/y', ['Cache'], null), // no vectors → lexical for this pair
     };
     const links = deriveConceptLinks(recs, { threshold: 0.82 });
     expect(links).toHaveLength(1);

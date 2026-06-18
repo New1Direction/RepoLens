@@ -3,7 +3,10 @@ import { categorizeError, rankErrors, errorActions } from '../errors.js';
 
 describe('categorizeError', () => {
   it('classifies auth failures as fixable, not retryable', () => {
-    const a = categorizeError(new Error('Anthropic session expired — please reconnect in Settings'), 'Anthropic');
+    const a = categorizeError(
+      new Error('Anthropic session expired — please reconnect in Settings'),
+      'Anthropic'
+    );
     expect(a.kind).toBe('auth');
     expect(a.retryable).toBe(false);
     expect(a.fixable).toBe(true);

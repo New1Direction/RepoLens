@@ -1,8 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { buildVersusPrompt, parseVersus } from '../versus.js';
 
-const a = { repoId: 'facebook/react', description: 'UI lib', language: 'JavaScript', stars: 228000, readme: '# React' };
-const b = { repoId: 'vuejs/vue', description: 'Progressive framework', language: 'JavaScript', stars: 200000, readme: '# Vue' };
+const a = {
+  repoId: 'facebook/react',
+  description: 'UI lib',
+  language: 'JavaScript',
+  stars: 228000,
+  readme: '# React',
+};
+const b = {
+  repoId: 'vuejs/vue',
+  description: 'Progressive framework',
+  language: 'JavaScript',
+  stars: 200000,
+  readme: '# Vue',
+};
 
 describe('buildVersusPrompt', () => {
   it('includes both repos and asks for the comparison JSON', () => {

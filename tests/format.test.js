@@ -16,8 +16,7 @@ describe('esc', () => {
 
 describe('paras', () => {
   it('splits blank-line-separated text into <p> blocks', () => {
-    expect(paras('one\n\ntwo', 'body-text'))
-      .toBe('<p class="body-text">one</p><p class="body-text">two</p>');
+    expect(paras('one\n\ntwo', 'body-text')).toBe('<p class="body-text">one</p><p class="body-text">two</p>');
   });
   it('keeps a single paragraph as one block', () => {
     expect(paras('just one', 'big-text')).toBe('<p class="big-text">just one</p>');

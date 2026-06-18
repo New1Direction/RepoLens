@@ -1,68 +1,108 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>RepoLens — icon export</title>
-  <style>
-    body { margin: 0; padding: 24px; background: #f4f6f9; color: #0f1115;
-           font-family: system-ui, -apple-system, sans-serif; }
-    h1 { font-size: 18px; margin: 0 0 4px; }
-    p { font-size: 13px; color: #6b7280; margin: 0 0 18px; max-width: 560px; }
-    .row { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 18px; }
-    .cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-    .cell span { font-size: 12px; color: #6b7280; }
-    canvas { background:
-      repeating-conic-gradient(#e9edf3 0% 25%, #ffffff 0% 50%) 50% / 16px 16px;
-      border: 1px solid #d7dde6; image-rendering: pixelated; }
-    button { padding: 8px 14px; border: 1px solid #0f1115; border-radius: 8px;
-             background: #fff; color: #0f1115; font-size: 13px; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <h1>RepoLens icon export</h1>
-  <p>Renders the Mono Ink Vee icon at 16/32/48/128 from <code>icon-draw.js</code>.
-     Click "Download all" and move the four <code>iconNN.png</code> files into
-     <code>../icons/</code>. The checkerboard behind each canvas is page CSS only,
-     not part of the icon (the tile is opaque).</p>
-  <div class="row" id="row"></div>
-  <button id="download">Download all</button>
+  <head>
+    <meta charset="utf-8" />
+    <title>RepoLens — icon export</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #f4f6f9;
+        color: #0f1115;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+      }
+      p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0 0 18px;
+        max-width: 560px;
+      }
+      .row {
+        display: flex;
+        gap: 24px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+      }
+      .cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .cell span {
+        font-size: 12px;
+        color: #6b7280;
+      }
+      canvas {
+        background: repeating-conic-gradient(#e9edf3 0% 25%, #ffffff 0% 50%) 50% / 16px 16px;
+        border: 1px solid #d7dde6;
+        image-rendering: pixelated;
+      }
+      button {
+        padding: 8px 14px;
+        border: 1px solid #0f1115;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f1115;
+        font-size: 13px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>RepoLens icon export</h1>
+    <p>
+      Renders the Mono Ink Vee icon at 16/32/48/128 from <code>icon-draw.js</code>. Click "Download all" and
+      move the four <code>iconNN.png</code> files into <code>../icons/</code>. The checkerboard behind each
+      canvas is page CSS only, not part of the icon (the tile is opaque).
+    </p>
+    <div class="row" id="row"></div>
+    <button id="download">Download all</button>
 
-  <script type="module">
-    import { drawVeeIcon } from '../icon-draw.js';
+    <script type="module">
+      import { drawVeeIcon } from '../icon-draw.js';
 
-    const SIZES = [16, 32, 48, 128];
-    const row = document.getElementById('row');
-    const canvases = {};
+      const SIZES = [16, 32, 48, 128];
+      const row = document.getElementById('row');
+      const canvases = {};
 
-    for (const size of SIZES) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      // Upscale tiny canvases for visibility without changing the bitmap.
-      canvas.style.width = Math.max(size, 64) + 'px';
-      canvas.style.height = Math.max(size, 64) + 'px';
-      const label = document.createElement('span');
-      label.textContent = `icon${size}.png`;
-      cell.append(canvas, label);
-      row.append(cell);
-      drawVeeIcon(canvas.getContext('2d'), size);
-      canvases[size] = canvas;
-    }
+      for (const size of SIZES) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        // Upscale tiny canvases for visibility without changing the bitmap.
+        canvas.style.width = Math.max(size, 64) + 'px';
+        canvas.style.height = Math.max(size, 64) + 'px';
+        const label = document.createElement('span');
+        label.textContent = `icon${size}.png`;
+        cell.append(canvas, label);
+        row.append(cell);
+        drawVeeIcon(canvas.getContext('2d'), size);
+        canvases[size] = canvas;
+      }
 
-    function downloadCanvas(canvas, name) {
-      const a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
-      a.download = name;
-      document.body.append(a);
-      a.click();
-      a.remove();
-    }
+      function downloadCanvas(canvas, name) {
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = name;
+        document.body.append(a);
+        a.click();
+        a.remove();
+      }
 
-    document.getElementById('download').onclick = () => {
-      for (const size of SIZES) downloadCanvas(canvases[size], `icon${size}.png`);
-    };
-  </script>
-</body>
+      document.getElementById('download').onclick = () => {
+        for (const size of SIZES) downloadCanvas(canvases[size], `icon${size}.png`);
+      };
+    </script>
+  </body>
 </html>

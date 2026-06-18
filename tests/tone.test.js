@@ -3,8 +3,18 @@ import { TONES, DEFAULT_TONE, isTone, tonePreamble, withTone } from '../tone.js'
 
 describe('TONES', () => {
   it('exposes the default + five named tones', () => {
-    expect(TONES.map(t => t.key)).toEqual(['neutral', 'director', 'catalyst', 'guide', 'nurturer', 'copilot']);
-    for (const t of TONES) { expect(t.label).toBeTruthy(); expect(t.blurb).toBeTruthy(); }
+    expect(TONES.map((t) => t.key)).toEqual([
+      'neutral',
+      'director',
+      'catalyst',
+      'guide',
+      'nurturer',
+      'copilot',
+    ]);
+    for (const t of TONES) {
+      expect(t.label).toBeTruthy();
+      expect(t.blurb).toBeTruthy();
+    }
   });
   it('defaults to neutral', () => {
     expect(DEFAULT_TONE).toBe('neutral');

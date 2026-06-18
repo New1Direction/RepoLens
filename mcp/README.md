@@ -52,9 +52,20 @@ component. Heavier than `scan_repo`: it reads source and makes two model calls
 
 ```json
 {
-  "id": "repo:...", "scope": "blueprint", "repoId": "honojs/hono",
-  "nodes": [{ "id": "app", "label": "Hono app", "kind": "entrypoint", "x": 120, "y": 40,
-              "layer": "entrypoint", "ref": { "root": true, "purpose": "...", "files": ["src/hono.ts"] } }],
+  "id": "repo:...",
+  "scope": "blueprint",
+  "repoId": "honojs/hono",
+  "nodes": [
+    {
+      "id": "app",
+      "label": "Hono app",
+      "kind": "entrypoint",
+      "x": 120,
+      "y": 40,
+      "layer": "entrypoint",
+      "ref": { "root": true, "purpose": "...", "files": ["src/hono.ts"] }
+    }
+  ],
   "edges": [{ "id": "e123", "from": "app", "to": "router", "rel": "depends-on" }],
   "camera": { "x": 0, "y": 0, "zoom": 1 }
 }
@@ -78,7 +89,11 @@ self-test `questions`, per-claim `confidence`, plus the underlying `atoms` and
   "questions": [{ "q": "What runs a request?", "a": "..." }],
   "confidence": [{ "claim": "...", "level": "high", "note": "..." }],
   "atoms": [{ "id": "router", "name": "Router", "kind": "subsystem", "purpose": "..." }],
-  "lineage": { "links": [{ "from": "app", "to": "router", "relation": "depends-on" }], "roots": ["app"], "leaves": [] }
+  "lineage": {
+    "links": [{ "from": "app", "to": "router", "relation": "depends-on" }],
+    "roots": ["app"],
+    "leaves": []
+  }
 }
 ```
 

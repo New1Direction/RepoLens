@@ -19,9 +19,15 @@ describe('buildCombinatorPrompt', () => {
 
 describe('parseCombinator', () => {
   const good = JSON.stringify({
-    title: 'Self-tuning Search', pitch: 'A search kit that fine-tunes itself.',
-    contributions: [{ repoId: 'o/vec', role: 'the index' }, { repoId: 'ghost/x', role: 'not in input' }],
-    novelty: 4, feasibility: 3, first_step: 'wire the index to the trainer',
+    title: 'Self-tuning Search',
+    pitch: 'A search kit that fine-tunes itself.',
+    contributions: [
+      { repoId: 'o/vec', role: 'the index' },
+      { repoId: 'ghost/x', role: 'not in input' },
+    ],
+    novelty: 4,
+    feasibility: 3,
+    first_step: 'wire the index to the trainer',
   });
   it('parses fields and clamps scores to 0–5', () => {
     const r = parseCombinator(JSON.stringify({ title: 'T', novelty: 9, feasibility: -2 }), ['o/vec']);

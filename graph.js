@@ -5,7 +5,10 @@
 import { hashRepoId } from './store.js';
 import { escapeHtml as esc } from './safe-html.js';
 
-const truncate = (s, n) => { s = String(s); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+const truncate = (s, n) => {
+  s = String(s);
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+};
 
 /**
  * Numeric node id for a name or canonical repoId. A canonical "owner/repo"
@@ -24,7 +27,7 @@ export function edgeIdFor(source, label, target) {
   const key = `${source}|${label}|${target}`;
   let hash = 5381;
   for (let i = 0; i < key.length; i++) {
-    hash = ((hash << 5) + hash) + key.charCodeAt(i);
+    hash = (hash << 5) + hash + key.charCodeAt(i);
     hash = hash & hash;
   }
   return Math.abs(hash) || 1;
@@ -35,13 +38,15 @@ export function ideaIdFor(sources) {
   const key = (sources || []).map(String).slice().sort().join('+');
   let hash = 5381;
   for (let i = 0; i < key.length; i++) {
-    hash = ((hash << 5) + hash) + key.charCodeAt(i);
+    hash = (hash << 5) + hash + key.charCodeAt(i);
     hash = hash & hash;
   }
   return Math.abs(hash) || 1;
 }
 
-const CX = 200, CY = 150, RADIUS = 110;
+const CX = 200,
+  CY = 150,
+  RADIUS = 110;
 
 /**
  * Radial layout: center at (CX,CY) ring 0; neighbors evenly spaced on a circle
@@ -53,7 +58,7 @@ export function egoLayout(centerId, neighbors) {
   const out = [{ id: String(centerId), x: CX, y: CY, ring: 0 }];
   const n = list.length;
   list.forEach((nb, i) => {
-    const angle = -Math.PI / 2 + (i * 2 * Math.PI / n);
+    const angle = -Math.PI / 2 + (i * 2 * Math.PI) / n;
     out.push({
       id: String(nb.id),
       x: +(CX + RADIUS * Math.cos(angle)).toFixed(1),
@@ -78,25 +83,33 @@ const EDGE_CLASS = {
  */
 export function egoGraphSvg(center, neighbors, edges) {
   if (!center || !neighbors?.length) return '';
-  const pos = Object.fromEntries(egoLayout(center.id, neighbors).map(p => [p.id, p]));
+  const pos = Object.fromEntries(egoLayout(center.id, neighbors).map((p) => [p.id, p]));
   const c = pos[String(center.id)];
 
-  const lines = (edges || []).map((e) => {
-    const a = pos[String(e.source)], b = pos[String(e.target)];
-    if (!a || !b) return '';
-    const cls = EDGE_CLASS[e.label] || 'cn-alt';
-    return `<line class="cn-edge ${cls}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
-  }).join('');
+  const lines = (edges || [])
+    .map((e) => {
+      const a = pos[String(e.source)],
+        b = pos[String(e.target)];
+      if (!a || !b) return '';
+      const cls = EDGE_CLASS[e.label] || 'cn-alt';
+      return `<line class="cn-edge ${cls}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
+    })
+    .join('');
 
-  const ring = neighbors.map((nb) => {
-    const p = pos[String(nb.id)];
-    const cls = nb.kind === 'idea' ? 'cn-idea' : (nb.analyzed ? 'cn-analyzed' : 'cn-stub');
-    return `<g class="cn-node ${cls}" data-node="${esc(nb.id)}" data-analyzed="${nb.analyzed ? '1' : '0'}" data-kind="${esc(nb.kind || 'repo')}">` +
-      `<circle cx="${p.x}" cy="${p.y}" r="13"/>` +
-      `<text x="${p.x}" y="${p.y + 25}" text-anchor="middle">${esc(truncate(nb.name, 12))}</text></g>`;
-  }).join('');
+  const ring = neighbors
+    .map((nb) => {
+      const p = pos[String(nb.id)];
+      const cls = nb.kind === 'idea' ? 'cn-idea' : nb.analyzed ? 'cn-analyzed' : 'cn-stub';
+      return (
+        `<g class="cn-node ${cls}" data-node="${esc(nb.id)}" data-analyzed="${nb.analyzed ? '1' : '0'}" data-kind="${esc(nb.kind || 'repo')}">` +
+        `<circle cx="${p.x}" cy="${p.y}" r="13"/>` +
+        `<text x="${p.x}" y="${p.y + 25}" text-anchor="middle">${esc(truncate(nb.name, 12))}</text></g>`
+      );
+    })
+    .join('');
 
-  const centerNode = `<g class="cn-node cn-center" data-node="${esc(center.id)}">` +
+  const centerNode =
+    `<g class="cn-node cn-center" data-node="${esc(center.id)}">` +
     `<circle cx="${c.x}" cy="${c.y}" r="22"/>` +
     `<text x="${c.x}" y="${c.y}" text-anchor="middle" dominant-baseline="central">${esc(truncate(center.name, 14))}</text></g>`;
 

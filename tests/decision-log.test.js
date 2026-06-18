@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { DECISIONS, DECISION_META, buildDecision, normalizeDecision, isValidDecision } from '../decision-log.js';
+import {
+  DECISIONS,
+  DECISION_META,
+  buildDecision,
+  normalizeDecision,
+  isValidDecision,
+} from '../decision-log.js';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -23,7 +29,12 @@ describe('DECISION_META', () => {
 
 describe('buildDecision', () => {
   it('builds a valid decision record', () => {
-    const d = buildDecision({ repoId: 'acme/widget', decision: 'adopt', note: 'Great lib', timestamp: '2026-06-13T00:00:00.000Z' });
+    const d = buildDecision({
+      repoId: 'acme/widget',
+      decision: 'adopt',
+      note: 'Great lib',
+      timestamp: '2026-06-13T00:00:00.000Z',
+    });
     expect(d.repoId).toBe('acme/widget');
     expect(d.decision).toBe('adopt');
     expect(d.note).toBe('Great lib');
@@ -91,7 +102,12 @@ describe('normalizeDecision', () => {
   });
 
   it('normalizes a valid raw object', () => {
-    const raw = { repoId: 'acme/widget', decision: 'trial', note: 'testing it', timestamp: '2026-06-13T00:00:00.000Z' };
+    const raw = {
+      repoId: 'acme/widget',
+      decision: 'trial',
+      note: 'testing it',
+      timestamp: '2026-06-13T00:00:00.000Z',
+    };
     const n = normalizeDecision(raw);
     expect(n).not.toBeNull();
     expect(n.repoId).toBe('acme/widget');

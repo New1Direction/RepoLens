@@ -112,13 +112,21 @@ describe('parseCompareResult', () => {
   });
 
   it('strips markdown code fences', () => {
-    const wrapped = '```json\n{"winner":"b","reason":"Beta wins.","verdict":"Beta is bigger.","pickA":"n/a","pickB":"everyone","tradeoffs":[]}\n```';
+    const wrapped =
+      '```json\n{"winner":"b","reason":"Beta wins.","verdict":"Beta is bigger.","pickA":"n/a","pickB":"everyone","tradeoffs":[]}\n```';
     const r = parseCompareResult(wrapped);
     expect(r?.winner).toBe('b');
   });
 
   it('normalizes an unknown winner to tie', () => {
-    const json = JSON.stringify({ winner: 'unknown', reason: '', verdict: '', pickA: '', pickB: '', tradeoffs: [] });
+    const json = JSON.stringify({
+      winner: 'unknown',
+      reason: '',
+      verdict: '',
+      pickA: '',
+      pickB: '',
+      tradeoffs: [],
+    });
     const r = parseCompareResult(json);
     expect(r.winner).toBe('tie');
   });
@@ -133,7 +141,14 @@ describe('parseCompareResult', () => {
   });
 
   it('filters empty strings from tradeoffs', () => {
-    const json = JSON.stringify({ winner: 'tie', reason: '', verdict: '', pickA: '', pickB: '', tradeoffs: ['A', '', 'B'] });
+    const json = JSON.stringify({
+      winner: 'tie',
+      reason: '',
+      verdict: '',
+      pickA: '',
+      pickB: '',
+      tradeoffs: ['A', '', 'B'],
+    });
     const r = parseCompareResult(json);
     expect(r.tradeoffs).toEqual(['A', 'B']);
   });

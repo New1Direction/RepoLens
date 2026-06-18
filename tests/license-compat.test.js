@@ -5,17 +5,21 @@ describe('bucketFor', () => {
   it('classifies MIT as permissive', () => expect(bucketFor('MIT')).toBe('permissive'));
   it('classifies Apache-2.0 as permissive', () => expect(bucketFor('Apache-2.0')).toBe('permissive'));
   it('classifies BSD-3-Clause as permissive', () => expect(bucketFor('BSD-3-Clause')).toBe('permissive'));
-  it('classifies LGPL-2.1-only as weak-copyleft', () => expect(bucketFor('LGPL-2.1-only')).toBe('weak-copyleft'));
+  it('classifies LGPL-2.1-only as weak-copyleft', () =>
+    expect(bucketFor('LGPL-2.1-only')).toBe('weak-copyleft'));
   it('classifies MPL-2.0 as weak-copyleft', () => expect(bucketFor('MPL-2.0')).toBe('weak-copyleft'));
-  it('classifies GPL-3.0-only as strong-copyleft', () => expect(bucketFor('GPL-3.0-only')).toBe('strong-copyleft'));
-  it('classifies AGPL-3.0-only as strong-copyleft', () => expect(bucketFor('AGPL-3.0-only')).toBe('strong-copyleft'));
+  it('classifies GPL-3.0-only as strong-copyleft', () =>
+    expect(bucketFor('GPL-3.0-only')).toBe('strong-copyleft'));
+  it('classifies AGPL-3.0-only as strong-copyleft', () =>
+    expect(bucketFor('AGPL-3.0-only')).toBe('strong-copyleft'));
   it('normalizes GPL-3.0 alias', () => expect(bucketFor('GPL-3.0')).toBe('strong-copyleft'));
   it('normalizes LGPL-2.1 alias', () => expect(bucketFor('LGPL-2.1')).toBe('weak-copyleft'));
   it('returns unknown for unrecognized license', () => expect(bucketFor('Proprietary')).toBe('unknown'));
   it('returns unknown for empty string', () => expect(bucketFor('')).toBe('unknown'));
   it('returns unknown for null', () => expect(bucketFor(null)).toBe('unknown'));
   it('returns unknown for "Unknown"', () => expect(bucketFor('Unknown')).toBe('unknown'));
-  it('SPDX_BUCKETS has at least 10 entries', () => expect(Object.keys(SPDX_BUCKETS).length).toBeGreaterThan(10));
+  it('SPDX_BUCKETS has at least 10 entries', () =>
+    expect(Object.keys(SPDX_BUCKETS).length).toBeGreaterThan(10));
 });
 
 describe('checkPairCompat', () => {
@@ -63,14 +67,17 @@ describe('checkLibraryCompat', () => {
 
   it('finds conflicts with GPL-licensed repos', () => {
     const r = checkLibraryCompat('Proprietary', library);
-    const gplConflict = r.concerns.some(c => c.repoId === 'c/linuxpkg');
+    const gplConflict = r.concerns.some((c) => c.repoId === 'c/linuxpkg');
     expect(gplConflict).toBe(true);
   });
 
   it('no conflicts for all-permissive library', () => {
-    const permLib = [{ repoId: 'a/x', license: 'MIT' }, { repoId: 'b/y', license: 'Apache-2.0' }];
+    const permLib = [
+      { repoId: 'a/x', license: 'MIT' },
+      { repoId: 'b/y', license: 'Apache-2.0' },
+    ];
     const r = checkLibraryCompat('MIT', permLib);
-    expect(r.concerns.filter(c => c.status === 'conflict')).toHaveLength(0);
+    expect(r.concerns.filter((c) => c.status === 'conflict')).toHaveLength(0);
   });
 
   it('totalChecked excludes Unknown licenses', () => {

@@ -31,8 +31,8 @@ describe('filterRows', () => {
 
   it('matches on blurb', () => {
     const res = filterRows(rows, { query: 'framework' });
-    expect(res.map(r => r.repoId)).toContain('vuejs/vue');
-    expect(res.map(r => r.repoId)).toContain('django/django');
+    expect(res.map((r) => r.repoId)).toContain('vuejs/vue');
+    expect(res.map((r) => r.repoId)).toContain('django/django');
   });
 
   it('matches on capability', () => {

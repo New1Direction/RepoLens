@@ -5,12 +5,12 @@
 import { extractJsonObject } from './deepdive.js';
 
 export const HEURISTICS_FRAMEWORKS = [
-  { key: 'pareto',     label: 'Pareto (80/20)',    blurb: 'The 20% causing 80% of the friction.' },
-  { key: 'eisenhower', label: 'Eisenhower Matrix',  blurb: 'Urgent × Important — do, plan, delegate, drop.' },
+  { key: 'pareto', label: 'Pareto (80/20)', blurb: 'The 20% causing 80% of the friction.' },
+  { key: 'eisenhower', label: 'Eisenhower Matrix', blurb: 'Urgent × Important — do, plan, delegate, drop.' },
 ];
 
 export function isHeuristicFramework(key) {
-  return HEURISTICS_FRAMEWORKS.some(f => f.key === key);
+  return HEURISTICS_FRAMEWORKS.some((f) => f.key === key);
 }
 
 function sourceContext(repoData, source) {
@@ -18,7 +18,7 @@ function sourceContext(repoData, source) {
     ? `File tree (truncated):\n${source.tree.join('\n')}`
     : '(no file tree — work from the README + description)';
   const files = source?.files?.length
-    ? source.files.map(f => `=== ${f.path} ===\n${f.content}`).join('\n\n')
+    ? source.files.map((f) => `=== ${f.path} ===\n${f.content}`).join('\n\n')
     : '(no source files available)';
   return `Repository: ${repoData.repoId}
 Description: ${repoData.description || '—'}
@@ -64,7 +64,11 @@ const arr = (v) => (Array.isArray(v) ? v : []);
 const FRAMEWORK_PARSERS = {
   pareto(d) {
     return {
-      vital_few: arr(d.vital_few).map(v => ({ factor: v.factor || '', impact: v.impact || '', share: v.share || '' })),
+      vital_few: arr(d.vital_few).map((v) => ({
+        factor: v.factor || '',
+        impact: v.impact || '',
+        share: v.share || '',
+      })),
       trivial_many: d.trivial_many || '',
     };
   },

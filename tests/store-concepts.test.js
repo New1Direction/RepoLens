@@ -5,7 +5,13 @@ import { setConcepts, getConcepts, getAllConcepts } from '../store.js';
 
 describe('concepts persistence', () => {
   it('round-trips a record by repoId', async () => {
-    const rec = { repoId: 'honojs/hono', atoms: [{ id: 'r', name: 'Router' }], vectors: null, embedModel: null, computedAt: '2026-06-16T00:00:00.000Z' };
+    const rec = {
+      repoId: 'honojs/hono',
+      atoms: [{ id: 'r', name: 'Router' }],
+      vectors: null,
+      embedModel: null,
+      computedAt: '2026-06-16T00:00:00.000Z',
+    };
     await setConcepts('honojs/hono', rec);
     expect(await getConcepts('honojs/hono')).toEqual(rec);
   });

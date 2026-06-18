@@ -2,9 +2,27 @@ import { describe, it, expect } from 'vitest';
 import { buildStackPrompt, parseStack, STACK_LAYERS } from '../stack-prompt.js';
 
 const repos = [
-  { repoId: 'trpc/trpc', eli5: 'End-to-end typesafe APIs.', capabilities: ['api', 'rpc', 'typescript'], category: 'API layer', language: 'TypeScript' },
-  { repoId: 'prisma/prisma', eli5: 'Next-gen Node.js ORM.', capabilities: ['orm', 'database', 'migrations'], category: 'database', language: 'TypeScript' },
-  { repoId: 'vercel/next.js', eli5: 'The React framework for the web.', capabilities: ['react', 'ssr', 'routing'], category: 'frontend framework', language: 'TypeScript' },
+  {
+    repoId: 'trpc/trpc',
+    eli5: 'End-to-end typesafe APIs.',
+    capabilities: ['api', 'rpc', 'typescript'],
+    category: 'API layer',
+    language: 'TypeScript',
+  },
+  {
+    repoId: 'prisma/prisma',
+    eli5: 'Next-gen Node.js ORM.',
+    capabilities: ['orm', 'database', 'migrations'],
+    category: 'database',
+    language: 'TypeScript',
+  },
+  {
+    repoId: 'vercel/next.js',
+    eli5: 'The React framework for the web.',
+    capabilities: ['react', 'ssr', 'routing'],
+    category: 'frontend framework',
+    language: 'TypeScript',
+  },
 ];
 
 describe('STACK_LAYERS', () => {
@@ -99,7 +117,10 @@ describe('parseStack', () => {
     const raw = JSON.stringify({
       title: 'Stack',
       roles: [{ repoId: 'owner/a', role: 'unknown type', layer: 'UNKNOWN_LAYER' }],
-      integrations: [], gaps: [], order: [], summary: '',
+      integrations: [],
+      gaps: [],
+      order: [],
+      summary: '',
     });
     const result = parseStack(raw);
     expect(result?.roles[0].layer).toBe('tooling');

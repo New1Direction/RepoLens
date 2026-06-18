@@ -14,17 +14,25 @@ const nowIso = () => new Date().toISOString();
 /** Build an empty scene for a scope. id derives from scope + repoId. */
 export function createScene({ scope, repoId = null, title = '' }) {
   const id =
-    scope === 'corkboard' ? 'library'
-    : scope === 'stack' ? 'stack:' + hashId(repoId || title)
-    : 'repo:' + hashId(repoId || title);
+    scope === 'corkboard'
+      ? 'library'
+      : scope === 'stack'
+        ? 'stack:' + hashId(repoId || title)
+        : 'repo:' + hashId(repoId || title);
   const ts = nowIso();
   return {
-    id, scope, repoId, title,
-    nodes: [], edges: [], annotations: [],
+    id,
+    scope,
+    repoId,
+    title,
+    nodes: [],
+    edges: [],
+    annotations: [],
     camera: { x: 0, y: 0, zoom: 1 },
     tour: null,
     source: { lens: 'deepDive', generatedAt: ts, scanAt: null },
-    createdAt: ts, updatedAt: ts,
+    createdAt: ts,
+    updatedAt: ts,
   };
 }
 

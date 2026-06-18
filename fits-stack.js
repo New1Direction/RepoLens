@@ -16,11 +16,16 @@ export function buildFitsStackPrompt(repoData, nearestRepos) {
     repoData.language ? `Language: ${repoData.language}` : '',
     repoData.category ? `Category: ${repoData.category}` : '',
     repoData.capabilities?.length ? `Capabilities: ${repoData.capabilities.join(', ')}` : '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
-  const libBlock = nearestRepos.map(r =>
-    `- ${r.repoId}${r.eli5 ? ': ' + r.eli5.slice(0, 100) : ''}${r.capabilities?.length ? ' [' + r.capabilities.slice(0, 4).join(', ') + ']' : ''}`
-  ).join('\n');
+  const libBlock = nearestRepos
+    .map(
+      (r) =>
+        `- ${r.repoId}${r.eli5 ? ': ' + r.eli5.slice(0, 100) : ''}${r.capabilities?.length ? ' [' + r.capabilities.slice(0, 4).join(', ') + ']' : ''}`
+    )
+    .join('\n');
 
   return `You are a senior software architect helping a developer decide whether a new repo fits their existing tech stack.
 

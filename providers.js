@@ -18,11 +18,15 @@
 export const COMPAT_PROVIDERS = [
   // ── OpenAI-compatible, API-key (Bearer) ──────────────────────────────────────
   {
-    id: 'openai', label: 'OpenAI (GPT)', protocol: 'openai',
-    hint: 'Official OpenAI API', keyHint: 'sk-…',
+    id: 'openai',
+    label: 'OpenAI (GPT)',
+    protocol: 'openai',
+    hint: 'Official OpenAI API',
+    keyHint: 'sk-…',
     endpoint: 'https://api.openai.com/v1/chat/completions',
     embeddingsModel: 'text-embedding-3-small',
-    host: 'https://api.openai.com/*', docsUrl: 'https://platform.openai.com/api-keys',
+    host: 'https://api.openai.com/*',
+    docsUrl: 'https://platform.openai.com/api-keys',
     models: [
       { value: 'gpt-4.1', label: 'GPT-4.1', recommended: true },
       { value: 'gpt-4.1-mini', label: 'GPT-4.1 mini — fast' },
@@ -31,20 +35,28 @@ export const COMPAT_PROVIDERS = [
     ],
   },
   {
-    id: 'deepseek', label: 'DeepSeek', protocol: 'openai',
-    hint: 'api.deepseek.com', keyHint: 'sk-…',
+    id: 'deepseek',
+    label: 'DeepSeek',
+    protocol: 'openai',
+    hint: 'api.deepseek.com',
+    keyHint: 'sk-…',
     endpoint: 'https://api.deepseek.com/v1/chat/completions',
-    host: 'https://api.deepseek.com/*', docsUrl: 'https://platform.deepseek.com/api_keys',
+    host: 'https://api.deepseek.com/*',
+    docsUrl: 'https://platform.deepseek.com/api_keys',
     models: [
       { value: 'deepseek-chat', label: 'DeepSeek-V3 (chat)', recommended: true },
       { value: 'deepseek-reasoner', label: 'DeepSeek-R1 (reasoner)' },
     ],
   },
   {
-    id: 'groq', label: 'Groq', protocol: 'openai',
-    hint: 'api.groq.com — very fast inference', keyHint: 'gsk_…',
+    id: 'groq',
+    label: 'Groq',
+    protocol: 'openai',
+    hint: 'api.groq.com — very fast inference',
+    keyHint: 'gsk_…',
     endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-    host: 'https://api.groq.com/*', docsUrl: 'https://console.groq.com/keys',
+    host: 'https://api.groq.com/*',
+    docsUrl: 'https://console.groq.com/keys',
     models: [
       { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', recommended: true },
       { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B — instant' },
@@ -52,10 +64,14 @@ export const COMPAT_PROVIDERS = [
     ],
   },
   {
-    id: 'nvidia', label: 'NVIDIA NIM', protocol: 'openai',
-    hint: 'integrate.api.nvidia.com', keyHint: 'nvapi-…',
+    id: 'nvidia',
+    label: 'NVIDIA NIM',
+    protocol: 'openai',
+    hint: 'integrate.api.nvidia.com',
+    keyHint: 'nvapi-…',
     endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
-    host: 'https://integrate.api.nvidia.com/*', docsUrl: 'https://build.nvidia.com',
+    host: 'https://integrate.api.nvidia.com/*',
+    docsUrl: 'https://build.nvidia.com',
     models: [
       { value: 'meta/llama-3.3-70b-instruct', label: 'Llama 3.3 70B', recommended: true },
       { value: 'deepseek-ai/deepseek-r1', label: 'DeepSeek-R1' },
@@ -63,49 +79,67 @@ export const COMPAT_PROVIDERS = [
     ],
   },
   {
-    id: 'moonshot', label: 'Kimi (Moonshot)', protocol: 'openai',
-    hint: 'api.moonshot.ai', keyHint: 'sk-…',
+    id: 'moonshot',
+    label: 'Kimi (Moonshot)',
+    protocol: 'openai',
+    hint: 'api.moonshot.ai',
+    keyHint: 'sk-…',
     endpoint: 'https://api.moonshot.ai/v1/chat/completions',
-    host: 'https://api.moonshot.ai/*', docsUrl: 'https://platform.moonshot.ai/console/api-keys',
+    host: 'https://api.moonshot.ai/*',
+    docsUrl: 'https://platform.moonshot.ai/console/api-keys',
     models: [
       { value: 'kimi-k2-0905-preview', label: 'Kimi K2', recommended: true },
       { value: 'moonshot-v1-128k', label: 'Moonshot v1 128k' },
     ],
   },
   {
-    id: 'moonshot_cn', label: 'Kimi (Moonshot, 中国)', protocol: 'openai',
-    hint: 'api.moonshot.cn', keyHint: 'sk-…',
+    id: 'moonshot_cn',
+    label: 'Kimi (Moonshot, 中国)',
+    protocol: 'openai',
+    hint: 'api.moonshot.cn',
+    keyHint: 'sk-…',
     endpoint: 'https://api.moonshot.cn/v1/chat/completions',
-    host: 'https://api.moonshot.cn/*', docsUrl: 'https://platform.moonshot.cn/console/api-keys',
+    host: 'https://api.moonshot.cn/*',
+    docsUrl: 'https://platform.moonshot.cn/console/api-keys',
     models: [
       { value: 'kimi-k2-0905-preview', label: 'Kimi K2', recommended: true },
       { value: 'moonshot-v1-128k', label: 'Moonshot v1 128k' },
     ],
   },
   {
-    id: 'kimi_coding', label: 'Kimi (Coding Plan)', protocol: 'openai',
-    hint: 'api.kimi.com', keyHint: 'sk-…',
+    id: 'kimi_coding',
+    label: 'Kimi (Coding Plan)',
+    protocol: 'openai',
+    hint: 'api.kimi.com',
+    keyHint: 'sk-…',
     endpoint: 'https://api.kimi.com/v1/chat/completions',
-    host: 'https://api.kimi.com/*', docsUrl: 'https://www.kimi.com',
-    models: [
-      { value: 'kimi-k2-0905-preview', label: 'Kimi K2', recommended: true },
-    ],
+    host: 'https://api.kimi.com/*',
+    docsUrl: 'https://www.kimi.com',
+    models: [{ value: 'kimi-k2-0905-preview', label: 'Kimi K2', recommended: true }],
   },
   {
-    id: 'zhipu', label: '智谱 GLM (Zhipu)', protocol: 'openai',
-    hint: 'open.bigmodel.cn', keyHint: 'id.secret',
+    id: 'zhipu',
+    label: '智谱 GLM (Zhipu)',
+    protocol: 'openai',
+    hint: 'open.bigmodel.cn',
+    keyHint: 'id.secret',
     endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-    host: 'https://open.bigmodel.cn/*', docsUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
+    host: 'https://open.bigmodel.cn/*',
+    docsUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
     models: [
       { value: 'glm-4.6', label: 'GLM-4.6', recommended: true },
       { value: 'glm-4.5-air', label: 'GLM-4.5 Air — fast' },
     ],
   },
   {
-    id: 'aliyun', label: '阿里百炼 (Qwen)', protocol: 'openai',
-    hint: 'dashscope.aliyuncs.com (compatible-mode)', keyHint: 'sk-…',
+    id: 'aliyun',
+    label: '阿里百炼 (Qwen)',
+    protocol: 'openai',
+    hint: 'dashscope.aliyuncs.com (compatible-mode)',
+    keyHint: 'sk-…',
     endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-    host: 'https://dashscope.aliyuncs.com/*', docsUrl: 'https://bailian.console.aliyun.com',
+    host: 'https://dashscope.aliyuncs.com/*',
+    docsUrl: 'https://bailian.console.aliyun.com',
     models: [
       { value: 'qwen3-coder-plus', label: 'Qwen3 Coder Plus', recommended: true },
       { value: 'qwen-max', label: 'Qwen Max' },
@@ -113,32 +147,50 @@ export const COMPAT_PROVIDERS = [
     ],
   },
   {
-    id: 'xiaomi', label: '小米 MiMo (Xiaomi)', protocol: 'openai',
-    hint: 'api.xiaomimimo.com', keyHint: 'sk-…',
+    id: 'xiaomi',
+    label: '小米 MiMo (Xiaomi)',
+    protocol: 'openai',
+    hint: 'api.xiaomimimo.com',
+    keyHint: 'sk-…',
     endpoint: 'https://api.xiaomimimo.com/v1/chat/completions',
-    host: 'https://api.xiaomimimo.com/*', docsUrl: 'https://xiaomimimo.com',
-    models: [
-      { value: 'MiMo-7B-RL', label: 'MiMo 7B RL', recommended: true },
-    ],
+    host: 'https://api.xiaomimimo.com/*',
+    docsUrl: 'https://xiaomimimo.com',
+    models: [{ value: 'MiMo-7B-RL', label: 'MiMo 7B RL', recommended: true }],
   },
   {
-    id: 'volcengine', label: '火山引擎 Ark (Volcengine)', protocol: 'openai',
-    hint: 'ark.cn-beijing.volces.com — Model is an endpoint id (ep-…)', keyHint: 'API key',
+    id: 'volcengine',
+    label: '火山引擎 Ark (Volcengine)',
+    protocol: 'openai',
+    hint: 'ark.cn-beijing.volces.com — Model is an endpoint id (ep-…)',
+    keyHint: 'API key',
     endpoint: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-    host: 'https://ark.cn-beijing.volces.com/*', docsUrl: 'https://www.volcengine.com/product/ark',
+    host: 'https://ark.cn-beijing.volces.com/*',
+    docsUrl: 'https://www.volcengine.com/product/ark',
     models: [],
   },
   {
-    id: 'azure', label: 'Azure OpenAI', protocol: 'azure', needsOrigin: true, needsVersion: true,
-    hint: 'Resource endpoint + API version; Model = your deployment name', keyHint: 'Azure key',
-    endpoint: '', host: 'https://*/*', docsUrl: 'https://portal.azure.com', defaultApiVersion: '2024-10-21',
+    id: 'azure',
+    label: 'Azure OpenAI',
+    protocol: 'azure',
+    needsOrigin: true,
+    needsVersion: true,
+    hint: 'Resource endpoint + API version; Model = your deployment name',
+    keyHint: 'Azure key',
+    endpoint: '',
+    host: 'https://*/*',
+    docsUrl: 'https://portal.azure.com',
+    defaultApiVersion: '2024-10-21',
     models: [], // deployment names are per-resource — set yours in the Model field
   },
   {
-    id: 'ollama_cloud', label: 'Ollama Cloud', protocol: 'openai',
-    hint: 'ollama.com', keyHint: 'API key',
+    id: 'ollama_cloud',
+    label: 'Ollama Cloud',
+    protocol: 'openai',
+    hint: 'ollama.com',
+    keyHint: 'API key',
     endpoint: 'https://ollama.com/v1/chat/completions',
-    host: 'https://ollama.com/*', docsUrl: 'https://ollama.com/settings/keys',
+    host: 'https://ollama.com/*',
+    docsUrl: 'https://ollama.com/settings/keys',
     models: [
       { value: 'gpt-oss:120b', label: 'gpt-oss 120B', recommended: true },
       { value: 'deepseek-v3.1:671b', label: 'DeepSeek V3.1 671B' },
@@ -147,10 +199,14 @@ export const COMPAT_PROVIDERS = [
 
   // ── OpenAI-compatible, keyless (local) ───────────────────────────────────────
   {
-    id: 'ollama', label: 'Ollama (Local)', protocol: 'openai', keyless: true,
+    id: 'ollama',
+    label: 'Ollama (Local)',
+    protocol: 'openai',
+    keyless: true,
     hint: 'Self-hosted llama.cpp / Ollama — no key needed',
     endpoint: 'http://localhost:11434/v1/chat/completions',
-    host: 'http://localhost/*', docsUrl: 'https://ollama.com',
+    host: 'http://localhost/*',
+    docsUrl: 'https://ollama.com',
     models: [
       { value: 'llama3.1', label: 'Llama 3.1', recommended: true },
       { value: 'qwen2.5-coder', label: 'Qwen2.5 Coder' },
@@ -160,20 +216,28 @@ export const COMPAT_PROVIDERS = [
 
   // ── Anthropic-compatible, API-key (x-api-key) ────────────────────────────────
   {
-    id: 'minimax', label: 'MiniMax (Global)', protocol: 'anthropic',
-    hint: 'api.minimax.io/anthropic', keyHint: 'API key',
+    id: 'minimax',
+    label: 'MiniMax (Global)',
+    protocol: 'anthropic',
+    hint: 'api.minimax.io/anthropic',
+    keyHint: 'API key',
     endpoint: 'https://api.minimax.io/anthropic/v1/messages',
-    host: 'https://api.minimax.io/*', docsUrl: 'https://www.minimax.io/platform',
+    host: 'https://api.minimax.io/*',
+    docsUrl: 'https://www.minimax.io/platform',
     models: [
       { value: 'MiniMax-M2', label: 'MiniMax-M2', recommended: true },
       { value: 'MiniMax-M1', label: 'MiniMax-M1' },
     ],
   },
   {
-    id: 'minimax_cn', label: 'MiniMax (中国)', protocol: 'anthropic',
-    hint: 'api.minimaxi.com/anthropic', keyHint: 'API key',
+    id: 'minimax_cn',
+    label: 'MiniMax (中国)',
+    protocol: 'anthropic',
+    hint: 'api.minimaxi.com/anthropic',
+    keyHint: 'API key',
     endpoint: 'https://api.minimaxi.com/anthropic/v1/messages',
-    host: 'https://api.minimaxi.com/*', docsUrl: 'https://platform.minimaxi.com',
+    host: 'https://api.minimaxi.com/*',
+    docsUrl: 'https://platform.minimaxi.com',
     models: [
       { value: 'MiniMax-M2', label: 'MiniMax-M2', recommended: true },
       { value: 'MiniMax-M1', label: 'MiniMax-M1' },
@@ -182,9 +246,15 @@ export const COMPAT_PROVIDERS = [
 
   // ── Custom: user supplies endpoint + protocol + model ────────────────────────
   {
-    id: 'custom', label: 'Custom', protocol: 'openai', custom: true,
-    hint: 'Any OpenAI- or Anthropic-compatible endpoint', keyHint: 'API key (optional)',
-    endpoint: '', host: 'https://*/*', docsUrl: '',
+    id: 'custom',
+    label: 'Custom',
+    protocol: 'openai',
+    custom: true,
+    hint: 'Any OpenAI- or Anthropic-compatible endpoint',
+    keyHint: 'API key (optional)',
+    endpoint: '',
+    host: 'https://*/*',
+    docsUrl: '',
     models: [],
   },
 ];
@@ -196,11 +266,11 @@ export function compatProviderById(id) {
 }
 
 // ── storage-key naming (one independent slot per provider) ─────────────────────
-export const provKeyName = (id) => `${id}Key`;        // API key
-export const provModelName = (id) => `${id}Model`;    // chosen model id
-export const provBaseName = (id) => `${id}BaseUrl`;   // endpoint override (+ custom base)
+export const provKeyName = (id) => `${id}Key`; // API key
+export const provModelName = (id) => `${id}Model`; // chosen model id
+export const provBaseName = (id) => `${id}BaseUrl`; // endpoint override (+ custom base)
 export const provEnabledName = (id) => `${id}Enabled`; // keyless providers (Ollama local)
-export const provProtoName = (id) => `${id}Proto`;    // custom: 'openai' | 'anthropic'
+export const provProtoName = (id) => `${id}Proto`; // custom: 'openai' | 'anthropic'
 export const provVerName = (id) => `${id}ApiVersion`; // azure api-version
 
 // Every storage key this registry can touch — for allowlisted reads / cleanup.
@@ -289,23 +359,28 @@ export function embeddingsModelFor(id, keys = {}) {
 
 /** Derive the POST-able /embeddings URL from the provider's chat endpoint. '' when unknown. */
 export function compatEmbeddingsEndpoint(id, keys = {}) {
-  const chat = compatEndpoint(id, keys);                 // e.g. .../v1/chat/completions
+  const chat = compatEndpoint(id, keys); // e.g. .../v1/chat/completions
   if (!chat) return '';
   return chat.replace(/\/chat\/completions(\?.*)?$/, '/embeddings');
 }
 
 /** True when an OpenAI-protocol provider is connected AND has an embeddings model. */
 export function providerSupportsEmbeddings(id, keys = {}) {
-  return compatProtocol(id, keys) === 'openai'
-    && !!embeddingsModelFor(id, keys)
-    && isCompatConnected(id, keys);
+  return (
+    compatProtocol(id, keys) === 'openai' && !!embeddingsModelFor(id, keys) && isCompatConnected(id, keys)
+  );
 }
 
 /** First connected provider that supports embeddings → { id, endpoint, key, model }, or null. */
 export function pickEmbeddingsProvider(keys = {}) {
   for (const p of COMPAT_PROVIDERS) {
     if (providerSupportsEmbeddings(p.id, keys)) {
-      return { id: p.id, endpoint: compatEmbeddingsEndpoint(p.id, keys), key: keys[provKeyName(p.id)], model: embeddingsModelFor(p.id, keys) };
+      return {
+        id: p.id,
+        endpoint: compatEmbeddingsEndpoint(p.id, keys),
+        key: keys[provKeyName(p.id)],
+        model: embeddingsModelFor(p.id, keys),
+      };
     }
   }
   return null;
@@ -327,7 +402,9 @@ export function parseOpenAiText(json) {
 }
 
 export function parseAnthropicText(json) {
-  const t = Array.isArray(json?.content) ? json.content.find((b) => b?.type === 'text')?.text ?? json.content[0]?.text : json?.content?.[0]?.text;
+  const t = Array.isArray(json?.content)
+    ? (json.content.find((b) => b?.type === 'text')?.text ?? json.content[0]?.text)
+    : json?.content?.[0]?.text;
   if (!t) throw new Error('Provider returned no text content');
   return t;
 }

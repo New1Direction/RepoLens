@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>RepoLens Library — polish preview</title>
+    <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+    <style>
+      /* Refined dark palette (UI polish keeps your theme colors; this mirrors your current dark theme). */
+      :root {
+        --bg: #0e1622;
+        --bg-2: #0b121c;
+        --surface: #16212f;
+        --surface-2: #1b2838;
+        --raise: #22354a;
+        --text: #eaf1f8;
+        --text-sub: #9db0c4;
+        --muted: #6f82966;
+        --border: #243345;
+        --border-2: #2e4257;
+        --accent: #d8843a;
+        --accent-ink: #1a0f06;
+        --blue: #5aa0e6;
+        --green: #5bbf76;
+        --amber: #e0a13a;
+        --red: #e0655a;
+        --violet: #9b8be0;
+        --dur: 0.18s;
+        --dur-slow: 0.32s;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        --r: 12px;
+        --r-sm: 9px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(1200px 600px at 80% -10%, #15263a 0%, transparent 60%),
+          radial-gradient(900px 500px at -10% 110%, #15202e 0%, transparent 55%), var(--bg);
+        color: var(--text);
+        font:
+          14px/1.5 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 22px 26px 40px;
+      }
+
+      /* ── Top bar ── */
+      .top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .lens {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(150deg, var(--raise), var(--surface));
+        border: 1px solid var(--border-2);
+        box-shadow: 0 2px 8px #0006;
+      }
+      .brand h1 {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      .brand .sub {
+        font-size: 11px;
+        color: var(--text-sub);
+        margin-top: 1px;
+        letter-spacing: 0.02em;
+      }
+      .top .spacer {
+        flex: 1;
+      }
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 650;
+        font-size: 13px;
+        color: var(--accent-ink);
+        border: 1px solid #b9701f;
+        background: linear-gradient(180deg, #eaa055, var(--accent));
+        box-shadow:
+          0 2px 0 #00000040,
+          0 6px 18px #d8843a26;
+        transition:
+          transform var(--dur) var(--ease-spring),
+          box-shadow var(--dur) var(--ease-out);
+      }
+      .cta:hover {
+        transform: translateY(-1px);
+        box-shadow:
+          0 4px 0 #00000040,
+          0 10px 26px #d8843a3a;
+      }
+      .cta:active {
+        transform: translateY(1px) scale(0.99);
+      }
+
+      /* ── Toolbar: grouped, hierarchical (was one flat row) ── */
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 18px;
+        flex-wrap: wrap;
+      }
+      .seg {
+        display: inline-flex;
+        padding: 3px;
+        gap: 2px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 11px;
+      }
+      .seg button {
+        border: 0;
+        background: transparent;
+        color: var(--text-sub);
+        font: 600 12.5px/1 inherit;
+        padding: 7px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          background var(--dur),
+          color var(--dur),
+          transform var(--dur) var(--ease-spring);
+      }
+      .seg button:hover {
+        color: var(--text);
+        background: var(--surface-2);
+      }
+      .seg button.on {
+        color: var(--text);
+        background: var(--raise);
+        box-shadow: 0 1px 4px #0005;
+      }
+      .seg button:active {
+        transform: scale(0.96);
+      }
+      .tdiv {
+        width: 1px;
+        height: 22px;
+        background: var(--border);
+        margin: 0 2px;
+      }
+      .gbtn {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-sub);
+        font: 600 12.5px/1 inherit;
+        padding: 8px 11px;
+        border-radius: 9px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          background var(--dur),
+          color var(--dur),
+          border-color var(--dur),
+          transform var(--dur) var(--ease-spring);
+      }
+      .gbtn:hover {
+        color: var(--text);
+        border-color: var(--border-2);
+        background: var(--surface-2);
+      }
+      .gbtn:active {
+        transform: scale(0.96);
+      }
+      .gbtn.danger:hover {
+        color: var(--red);
+        border-color: #5a2a28;
+      }
+      .kbd {
+        font:
+          600 10.5px/1 ui-monospace,
+          monospace;
+        color: var(--text-sub);
+        border: 1px solid var(--border);
+        background: var(--bg-2);
+        padding: 3px 6px;
+        border-radius: 6px;
+      }
+
+      /* ── Filter row ── */
+      .filters {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .search {
+        flex: 1;
+        position: relative;
+      }
+      .search svg {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0.6;
+      }
+      .field {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 11px 13px;
+        border-radius: 11px;
+        font: 14px inherit;
+        outline: none;
+        transition:
+          border-color var(--dur),
+          box-shadow var(--dur) var(--ease-spring),
+          background var(--dur);
+      }
+      .search .field {
+        padding-left: 38px;
+      }
+      .field:focus {
+        border-color: var(--accent);
+        background: var(--surface-2);
+        box-shadow: 0 0 0 4px #d8843a26;
+      }
+      .field::placeholder {
+        color: #7e90a4;
+      }
+      select.field {
+        width: auto;
+        cursor: pointer;
+        color: var(--text-sub);
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      /* ── Ask bar ── */
+      .ask {
+        display: flex;
+        gap: 10px;
+        margin-top: 11px;
+      }
+      .ask .field {
+        flex: 1;
+      }
+      .ask-btn {
+        padding: 11px 20px;
+        border-radius: 11px;
+        border: 1px solid #2f6aa0;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 13px;
+        color: #06131f;
+        background: linear-gradient(180deg, #7bb4ee, var(--blue));
+        box-shadow: 0 6px 18px #5aa0e626;
+        transition:
+          transform var(--dur) var(--ease-spring),
+          box-shadow var(--dur);
+      }
+      .ask-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 26px #5aa0e63a;
+      }
+      .ask-btn:active {
+        transform: translateY(1px) scale(0.99);
+      }
+
+      /* ── Stats bento ── */
+      .stats {
+        display: grid;
+        grid-template-columns: 1.2fr 1.6fr 1fr 1fr;
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .stat {
+        background: linear-gradient(180deg, var(--surface), var(--surface-2));
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        padding: 13px 15px;
+      }
+      .stat .lab {
+        font:
+          600 10.5px/1 ui-monospace,
+          monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-sub);
+      }
+      .stat .big {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-top: 6px;
+      }
+      .stat .big small {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-sub);
+      }
+      .fitbars {
+        display: flex;
+        gap: 5px;
+        align-items: flex-end;
+        height: 34px;
+        margin-top: 8px;
+      }
+      .fitbars span {
+        flex: 1;
+        border-radius: 4px 4px 2px 2px;
+      }
+      .ring {
+        --p: 78;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        margin-top: 4px;
+        background: conic-gradient(var(--green) calc(var(--p) * 1%), var(--border) 0);
+        display: grid;
+        place-items: center;
+      }
+      .ring i {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--surface);
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        font-size: 13px;
+        font-style: normal;
+      }
+
+      /* ── Card grid ── */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+      .card {
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        padding: 15px 16px 14px;
+        overflow: hidden;
+        cursor: pointer;
+        animation: rise var(--dur-slow) var(--ease-out) backwards;
+        transition:
+          transform var(--dur) var(--ease-out),
+          border-color var(--dur),
+          box-shadow var(--dur);
+      }
+      .card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity var(--dur);
+        background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), #ffffff10, transparent 40%);
+        pointer-events: none;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+        border-color: var(--border-2);
+        box-shadow: 0 14px 30px #0007;
+      }
+      .card:hover::before {
+        opacity: 1;
+      }
+      .card .top-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .card .name {
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: -0.01em;
+      }
+      .card .owner {
+        color: var(--text-sub);
+        font-weight: 500;
+      }
+      .chip {
+        font:
+          700 10px/1 ui-monospace,
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 5px 8px;
+        border-radius: 7px;
+        white-space: nowrap;
+      }
+      .chip.strong {
+        color: #0c1f12;
+        background: var(--green);
+      }
+      .chip.solid {
+        color: #06131f;
+        background: var(--blue);
+      }
+      .chip.care {
+        color: #1f1305;
+        background: var(--amber);
+      }
+      .chip.risky {
+        color: #fff;
+        background: var(--red);
+      }
+      .card .desc {
+        color: var(--text-sub);
+        font-size: 12.5px;
+        line-height: 1.45;
+        margin: 9px 0 12px;
+        min-height: 36px;
+      }
+      .card .foot {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .lang {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        color: var(--text-sub);
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+      }
+      .spark {
+        margin-left: auto;
+      }
+      .health {
+        font:
+          700 11px/1 ui-monospace,
+          monospace;
+        color: var(--text-sub);
+      }
+      .tags {
+        display: flex;
+        gap: 5px;
+        margin-top: 11px;
+        flex-wrap: wrap;
+      }
+      .tag {
+        font-size: 10.5px;
+        color: var(--text-sub);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 3px 7px;
+      }
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+      }
+
+      /* ── keyboard hint footer ── */
+      .hint {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-top: 26px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+        font-size: 11.5px;
+        color: var(--text-sub);
+      }
+      .hint span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .note {
+        margin-top: 30px;
+        font-size: 12px;
+        color: var(--text-sub);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div class="brand">
+          <div class="lens">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="10.5" cy="10.5" r="6.2" stroke="#e6c89a" stroke-width="1.8" />
+              <path d="m15.5 15.5 4 4" stroke="#e6c89a" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="10.5" cy="10.5" r="2.3" fill="#d8843a" />
+            </svg>
+          </div>
+          <div>
+            <h1>Library</h1>
+            <div class="sub">Everything you've analyzed — your evaluations, compounding.</div>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <button class="cta">⌕ Scan a repo</button>
+      </div>
+
+      <!-- grouped toolbar -->
+      <div class="toolbar">
+        <div class="seg">
+          <button class="on">▦ Grid</button>
+          <button>🎯 Radar</button>
+          <button>🧭 Corkboard</button>
+          <button>🕸 Graph</button>
+        </div>
+        <div class="tdiv"></div>
+        <button class="gbtn">☑ Select</button>
+        <button class="gbtn">✦ Auto-organize</button>
+        <button class="gbtn">📦 Batch</button>
+        <div class="tdiv"></div>
+        <button class="gbtn">CSV</button>
+        <button class="gbtn">JSON</button>
+        <button class="gbtn">⭳ Backup</button>
+        <button class="gbtn">⭱ Import</button>
+        <button class="gbtn danger">🗑 Clear</button>
+        <div class="spacer" style="flex: 1"></div>
+        <button class="gbtn">🔍 Discover</button>
+        <button class="gbtn">⚙ Settings</button>
+        <span class="kbd">⌘K</span>
+      </div>
+
+      <!-- filters -->
+      <div class="filters">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path d="m20 20-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <input class="field" placeholder="Search repos… or ? ask AI to filter…" />
+        </div>
+        <select class="field">
+          <option>Sort: Best fit</option>
+        </select>
+        <select class="field">
+          <option>Language: All</option>
+        </select>
+      </div>
+
+      <!-- ask bar -->
+      <div class="ask">
+        <input
+          class="field"
+          placeholder="Ask your library…  e.g. “which of these handle auth without a backend?”"
+        />
+        <button class="ask-btn">Ask ▸</button>
+      </div>
+
+      <!-- stats bento -->
+      <div class="stats">
+        <div class="stat">
+          <div class="lab">Repos analyzed</div>
+          <div class="big">24</div>
+        </div>
+        <div class="stat">
+          <div class="lab">Fit distribution</div>
+          <div class="fitbars">
+            <span style="height: 80%; background: var(--green)"></span
+            ><span style="height: 55%; background: var(--blue)"></span>
+            <span style="height: 38%; background: var(--amber)"></span
+            ><span style="height: 22%; background: var(--red)"></span>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="lab">Avg health</div>
+          <div class="ring"><i>78</i></div>
+        </div>
+        <div class="stat">
+          <div class="lab">Going stale</div>
+          <div class="big">3 <small>repos</small></div>
+        </div>
+      </div>
+
+      <!-- cards -->
+      <div class="grid" id="grid"></div>
+
+      <div class="hint">
+        <span><span class="kbd">J</span><span class="kbd">K</span> navigate</span>
+        <span><span class="kbd">↵</span> open</span>
+        <span><span class="kbd">N</span> note</span>
+        <span><span class="kbd">C</span> compare</span>
+        <span><span class="kbd">D</span> decide</span>
+        <span><span class="kbd">E</span> evaluate</span>
+        <span><span class="kbd">R</span> re-scan</span>
+        <span><span class="kbd">/</span> search</span>
+        <span><span class="kbd">⌘K</span> palette</span>
+      </div>
+
+      <div class="note">
+        Polish preview — same theme colors, restructured UI + micro-interactions. (Sample data.)
+      </div>
+    </div>
+
+    <script>
+      const repos = [
+        {
+          owner: 'honojs',
+          name: 'hono',
+          fit: 'strong',
+          desc: 'Tiny, fast web framework for the edge — Web-Standard handlers, runs anywhere.',
+          lang: 'TypeScript',
+          dot: '#5aa0e6',
+          health: 92,
+          tags: ['edge', 'router', 'web-std'],
+          spark: [40, 55, 52, 68, 74, 92],
+        },
+        {
+          owner: 'drizzle-team',
+          name: 'drizzle-orm',
+          fit: 'solid',
+          desc: 'A TypeScript ORM that stays close to SQL — typed, no codegen, serverless-ready.',
+          lang: 'TypeScript',
+          dot: '#5aa0e6',
+          health: 84,
+          tags: ['orm', 'sql', 'typed'],
+          spark: [60, 58, 66, 70, 80, 84],
+        },
+        {
+          owner: 'colinhacks',
+          name: 'zod',
+          fit: 'strong',
+          desc: 'Schema validation with static type inference — the de-facto TS validator.',
+          lang: 'TypeScript',
+          dot: '#5aa0e6',
+          health: 95,
+          tags: ['validation', 'schema'],
+          spark: [70, 78, 82, 88, 90, 95],
+        },
+        {
+          owner: 'tailwindlabs',
+          name: 'tailwindcss',
+          fit: 'solid',
+          desc: 'Utility-first CSS. Huge ecosystem; opinionated but everywhere.',
+          lang: 'CSS',
+          dot: '#9b8be0',
+          health: 88,
+          tags: ['css', 'utility'],
+          spark: [80, 82, 79, 85, 86, 88],
+        },
+        {
+          owner: 'someorg',
+          name: 'legacy-bundler',
+          fit: 'risky',
+          desc: 'Powerful but unmaintained — last release 2 years ago, 400 open issues.',
+          lang: 'JavaScript',
+          dot: '#e0a13a',
+          health: 41,
+          tags: ['build', 'stale'],
+          spark: [70, 62, 55, 48, 44, 41],
+        },
+        {
+          owner: 'pmndrs',
+          name: 'zustand',
+          fit: 'care',
+          desc: 'Minimal state management. Great DX; watch the store-sprawl on big apps.',
+          lang: 'TypeScript',
+          dot: '#5aa0e6',
+          health: 73,
+          tags: ['state', 'react'],
+          spark: [68, 70, 66, 72, 71, 73],
+        },
+      ];
+      const sparkSvg = (pts) => {
+        const w = 66,
+          h = 22,
+          max = Math.max(...pts),
+          min = Math.min(...pts),
+          span = max - min || 1;
+        const d = pts.map((p, i) => `${(i / (pts.length - 1)) * w},${h - ((p - min) / span) * h}`).join(' ');
+        const up = pts[pts.length - 1] >= pts[0];
+        return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${d}" fill="none" stroke="${up ? '#5bbf76' : '#e0655a'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      };
+      const grid = document.getElementById('grid');
+      grid.innerHTML = repos
+        .map(
+          (r, i) => `
+    <div class="card" style="animation-delay:${i * 45}ms">
+      <div class="top-row">
+        <div class="name"><span class="owner">${r.owner}/</span>${r.name}</div>
+        <span class="chip ${r.fit}">${r.fit} fit</span>
+      </div>
+      <div class="desc">${r.desc}</div>
+      <div class="foot">
+        <span class="lang"><span class="dot" style="background:${r.dot}"></span>${r.lang}</span>
+        ${sparkSvg(r.spark)}
+        <span class="health">${r.health}</span>
+      </div>
+      <div class="tags">${r.tags.map((t) => `<span class="tag">${t}</span>`).join('')}</div>
+    </div>`
+        )
+        .join('');
+      // spotlight follow
+      grid.addEventListener('pointermove', (e) => {
+        const c = e.target.closest('.card');
+        if (!c) return;
+        const b = c.getBoundingClientRect();
+        c.style.setProperty('--mx', e.clientX - b.left + 'px');
+        c.style.setProperty('--my', e.clientY - b.top + 'px');
+      });
+    </script>
+  </body>
+</html>

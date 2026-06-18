@@ -7,8 +7,14 @@
 // Shape: { id, name, color, repoIds: string[], createdAt, updatedAt }
 
 export const COLLECTION_COLORS = [
-  '#818cf8', '#22c55e', '#38bdf8', '#f59e0b',
-  '#ef4444', '#c084fc', '#f472b6', '#2dd4bf',
+  '#818cf8',
+  '#22c55e',
+  '#38bdf8',
+  '#f59e0b',
+  '#ef4444',
+  '#c084fc',
+  '#f472b6',
+  '#2dd4bf',
 ];
 
 const MAX_NAME = 60;
@@ -16,7 +22,9 @@ const MAX_NAME = 60;
 /** A color for the Nth collection, cycling the palette. */
 export function nextColor(existingCount) {
   const n = Number.isFinite(existingCount) ? existingCount : 0;
-  return COLLECTION_COLORS[((n % COLLECTION_COLORS.length) + COLLECTION_COLORS.length) % COLLECTION_COLORS.length];
+  return COLLECTION_COLORS[
+    ((n % COLLECTION_COLORS.length) + COLLECTION_COLORS.length) % COLLECTION_COLORS.length
+  ];
 }
 
 /** Build a new, empty collection. id/color/now are injected by the caller. */
@@ -65,7 +73,11 @@ export function addRepoToCollection(col, repoId, { now } = {}) {
 /** Remove a repo (immutable; a no-op returning the same ref if absent). */
 export function removeRepoFromCollection(col, repoId, { now } = {}) {
   if (!collectionContains(col, repoId)) return col;
-  return { ...col, repoIds: (col.repoIds || []).filter((id) => id !== repoId), updatedAt: now || col.updatedAt };
+  return {
+    ...col,
+    repoIds: (col.repoIds || []).filter((id) => id !== repoId),
+    updatedAt: now || col.updatedAt,
+  };
 }
 
 /** Toggle a repo's membership. */

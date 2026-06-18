@@ -7,7 +7,9 @@ import { extractJsonObject } from './deepdive.js';
 
 export function buildSynergiesPrompt(repoData, candidates) {
   const lib = candidates.length
-    ? candidates.map(c => `- ${c.repoId}${c.category ? ` (${c.category})` : ''}: ${c.eli5 || ''}`).join('\n')
+    ? candidates
+        .map((c) => `- ${c.repoId}${c.category ? ` (${c.category})` : ''}: ${c.eli5 || ''}`)
+        .join('\n')
     : '(the user has not saved many repos yet)';
 
   return `Find COMPLEMENTARY repositories that work WELL TOGETHER with ${repoData.repoId} — tools you'd reach for ALONGSIDE it, not alternatives that replace it.
@@ -34,7 +36,7 @@ const arr = (v) => (Array.isArray(v) ? v : []);
 export function parseSynergies(rawText) {
   const d = extractJsonObject(rawText);
   return {
-    synergies: arr(d.synergies).map(s => ({
+    synergies: arr(d.synergies).map((s) => ({
       repoId: s.repoId || '',
       category: s.category || '',
       synergy: s.synergy || '',

@@ -6,14 +6,18 @@
 import { extractJsonObject } from './deepdive.js';
 
 export const IDEATE_FRAMEWORKS = [
-  { key: 'triz',    label: 'TRIZ',             blurb: 'Resolve a contradiction with inventive principles.' },
-  { key: 'scamper', label: 'SCAMPER',          blurb: 'Substitute · Combine · Adapt · Modify · Put · Eliminate · Reverse.' },
+  { key: 'triz', label: 'TRIZ', blurb: 'Resolve a contradiction with inventive principles.' },
+  {
+    key: 'scamper',
+    label: 'SCAMPER',
+    blurb: 'Substitute · Combine · Adapt · Modify · Put · Eliminate · Reverse.',
+  },
   { key: 'lateral', label: 'Lateral Thinking', blurb: 'A random provocation → a radical angle.' },
-  { key: 'morph',   label: 'Morphological',    blurb: 'Cross every variable to find novel combos.' },
+  { key: 'morph', label: 'Morphological', blurb: 'Cross every variable to find novel combos.' },
 ];
 
 export function isIdeateFramework(key) {
-  return IDEATE_FRAMEWORKS.some(f => f.key === key);
+  return IDEATE_FRAMEWORKS.some((f) => f.key === key);
 }
 
 function sourceContext(repoData, source) {
@@ -21,7 +25,7 @@ function sourceContext(repoData, source) {
     ? `File tree (truncated):\n${source.tree.join('\n')}`
     : '(no file tree — work from the README + description)';
   const files = source?.files?.length
-    ? source.files.map(f => `=== ${f.path} ===\n${f.content}`).join('\n\n')
+    ? source.files.map((f) => `=== ${f.path} ===\n${f.content}`).join('\n\n')
     : '(no source files available)';
   return `Repository: ${repoData.repoId}
 Description: ${repoData.description || '—'}
@@ -97,7 +101,7 @@ const FRAMEWORK_PARSERS = {
     const c = obj(d.contradiction);
     return {
       contradiction: { improving: c.improving || '', worsening: c.worsening || '' },
-      principles: arr(d.principles).map(p => ({
+      principles: arr(d.principles).map((p) => ({
         number: p.number ?? '',
         name: p.name || '',
         application: p.application || '',
@@ -106,15 +110,21 @@ const FRAMEWORK_PARSERS = {
     };
   },
   scamper(d) {
-    return { items: arr(d.items).map(i => ({ lens: i.lens || '', idea: i.idea || '' })) };
+    return { items: arr(d.items).map((i) => ({ lens: i.lens || '', idea: i.idea || '' })) };
   },
   lateral(d) {
     return { provocation: d.provocation || '', leap: d.leap || '', ideas: arr(d.ideas).map(String) };
   },
   morph(d) {
     return {
-      dimensions: arr(d.dimensions).map(dim => ({ axis: dim.axis || '', options: arr(dim.options).map(String) })),
-      combinations: arr(d.combinations).map(c => ({ picks: arr(c.picks).map(String), concept: c.concept || '' })),
+      dimensions: arr(d.dimensions).map((dim) => ({
+        axis: dim.axis || '',
+        options: arr(dim.options).map(String),
+      })),
+      combinations: arr(d.combinations).map((c) => ({
+        picks: arr(c.picks).map(String),
+        concept: c.concept || '',
+      })),
     };
   },
 };

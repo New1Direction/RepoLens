@@ -53,11 +53,13 @@ describe('parseSktpg', () => {
   });
 
   it('clamps the score and derives a band when missing, and defaults bad enums', () => {
-    const r = parseSktpg('{"score":{"value":250},"weak_signals":[{"signal":"s","evidence":"bogus"}],"tracking":[{"signal":"t","flag":"purple"}]}');
-    expect(r.score.value).toBe(100);          // clamped
-    expect(r.score.band).toBe('Urgent');      // derived from value
+    const r = parseSktpg(
+      '{"score":{"value":250},"weak_signals":[{"signal":"s","evidence":"bogus"}],"tracking":[{"signal":"t","flag":"purple"}]}'
+    );
+    expect(r.score.value).toBe(100); // clamped
+    expect(r.score.band).toBe('Urgent'); // derived from value
     expect(r.weak_signals[0].evidence).toBe('Unknown'); // bad enum → default
-    expect(r.tracking[0].flag).toBe('yellow');          // bad flag → default
+    expect(r.tracking[0].flag).toBe('yellow'); // bad flag → default
   });
 
   it('defaults to empty structures on a sparse object', () => {

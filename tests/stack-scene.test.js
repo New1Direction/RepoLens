@@ -21,13 +21,23 @@ describe('buildStackScene', () => {
     expect(hono.kind).toBe('repo');
     expect(hono.layer).toBe('backend');
     expect(hono.ref.role).toBe('HTTP router');
-    expect(s.edges[0]).toMatchObject({ from: 'honojs/hono', to: 'drizzle-team/drizzle-orm', rel: 'integrates', note: 'handlers call the ORM' });
+    expect(s.edges[0]).toMatchObject({
+      from: 'honojs/hono',
+      to: 'drizzle-team/drizzle-orm',
+      rel: 'integrates',
+      note: 'handlers call the ORM',
+    });
     const gap = s.nodes.find((n) => n.kind === 'gap');
     expect(gap.label).toBe('no auth layer');
     expect(s.source.order).toEqual(['honojs/hono', 'drizzle-team/drizzle-orm']);
   });
   it('drops integrations whose endpoints are not roles', () => {
-    const s = buildStackScene({ roles: [{ repoId: 'a/b', role: 'x', layer: 'tooling' }], integrations: [{ from: 'a/b', to: 'ghost', glue: 'g' }], gaps: [], order: [] });
+    const s = buildStackScene({
+      roles: [{ repoId: 'a/b', role: 'x', layer: 'tooling' }],
+      integrations: [{ from: 'a/b', to: 'ghost', glue: 'g' }],
+      gaps: [],
+      order: [],
+    });
     expect(s.edges).toHaveLength(0);
   });
   it('handles a missing/empty result without throwing', () => {

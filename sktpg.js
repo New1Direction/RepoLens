@@ -14,7 +14,7 @@ function sourceContext(repoData, source) {
     ? `File tree (truncated):\n${source.tree.join('\n')}`
     : '(no file tree — work from the README + description)';
   const files = source?.files?.length
-    ? source.files.map(f => `=== ${f.path} ===\n${f.content}`).join('\n\n')
+    ? source.files.map((f) => `=== ${f.path} ===\n${f.content}`).join('\n\n')
     : '(no source files available)';
   return `Repository: ${repoData.repoId}
 Description: ${repoData.description || '—'}
@@ -61,11 +61,17 @@ const obj = (v) => (v && typeof v === 'object' ? v : {});
 const EVIDENCE = new Set(['Confirmed', 'Likely', 'Speculative', 'Contradicted', 'Unknown']);
 const FLAGS = new Set(['green', 'yellow', 'red']);
 
-function evidence(v) { return EVIDENCE.has(v) ? v : 'Unknown'; }
+function evidence(v) {
+  return EVIDENCE.has(v) ? v : 'Unknown';
+}
 
 export function parseSktpg(rawText) {
   const d = extractJsonObject(rawText);
-  const t = obj(d.thesis), s = obj(d.score), b = obj(d.base_rate), bn = obj(d.bottleneck), fc = obj(d.forecast);
+  const t = obj(d.thesis),
+    s = obj(d.score),
+    b = obj(d.base_rate),
+    bn = obj(d.bottleneck),
+    fc = obj(d.forecast);
   let value = Number(s.value);
   if (!Number.isFinite(value)) value = 0;
   value = Math.max(0, Math.min(100, Math.round(value)));
@@ -73,21 +79,53 @@ export function parseSktpg(rawText) {
 
   return {
     thesis: {
-      becoming: t.becoming || '', forced_next: t.forced_next || '', opportunity: t.opportunity || '',
-      before_consensus: t.before_consensus || '', wrong_if: t.wrong_if || '',
+      becoming: t.becoming || '',
+      forced_next: t.forced_next || '',
+      opportunity: t.opportunity || '',
+      before_consensus: t.before_consensus || '',
+      wrong_if: t.wrong_if || '',
     },
     score: { value, band },
     base_rate: {
-      reference_class: b.reference_class || '', rate: b.rate || '', cause_of_death: b.cause_of_death || '',
-      prior: b.prior || 'low', evidence: evidence(b.evidence),
+      reference_class: b.reference_class || '',
+      rate: b.rate || '',
+      cause_of_death: b.cause_of_death || '',
+      prior: b.prior || 'low',
+      evidence: evidence(b.evidence),
     },
-    weak_signals: arr(d.weak_signals).map(w => ({ signal: w.signal || '', why: w.why || '', evidence: evidence(w.evidence), forces_next: w.forces_next || '' })),
-    hype_vs_motion: arr(d.hype_vs_motion).map(h => ({ claim: h.claim || '', verdict: h.verdict || 'Mixed', evidence: h.evidence || '' })),
-    bottleneck: { current: bn.current || '', weakening: bn.weakening || '', next: bn.next || '', who_profits: bn.who_profits || '' },
+    weak_signals: arr(d.weak_signals).map((w) => ({
+      signal: w.signal || '',
+      why: w.why || '',
+      evidence: evidence(w.evidence),
+      forces_next: w.forces_next || '',
+    })),
+    hype_vs_motion: arr(d.hype_vs_motion).map((h) => ({
+      claim: h.claim || '',
+      verdict: h.verdict || 'Mixed',
+      evidence: h.evidence || '',
+    })),
+    bottleneck: {
+      current: bn.current || '',
+      weakening: bn.weakening || '',
+      next: bn.next || '',
+      who_profits: bn.who_profits || '',
+    },
     forecast: { base: fc.base || '', bull: fc.bull || '', bear: fc.bear || '', wildcard: fc.wildcard || '' },
     becomes_obvious: arr(d.becomes_obvious).map(String),
-    actions: arr(d.actions).map(a => ({ action: a.action || '', timeframe: a.timeframe || '', why_now: a.why_now || '' })),
-    premortem: arr(d.premortem).map(p => ({ kill_path: p.kill_path || '', likelihood: p.likelihood || 'moderate', survives: p.survives === true })),
-    tracking: arr(d.tracking).map(t2 => ({ signal: t2.signal || '', flag: FLAGS.has(t2.flag) ? t2.flag : 'yellow', why: t2.why || '' })),
+    actions: arr(d.actions).map((a) => ({
+      action: a.action || '',
+      timeframe: a.timeframe || '',
+      why_now: a.why_now || '',
+    })),
+    premortem: arr(d.premortem).map((p) => ({
+      kill_path: p.kill_path || '',
+      likelihood: p.likelihood || 'moderate',
+      survives: p.survives === true,
+    })),
+    tracking: arr(d.tracking).map((t2) => ({
+      signal: t2.signal || '',
+      flag: FLAGS.has(t2.flag) ? t2.flag : 'yellow',
+      why: t2.why || '',
+    })),
   };
 }

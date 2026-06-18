@@ -1,171 +1,484 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="midnight">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RepoLens — "Vee" mascot preview</title>
-<link rel="stylesheet" href="themes.css">
-<style>
-  /* This is a standalone PREVIEW. It is not wired into the extension.
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RepoLens — "Vee" mascot preview</title>
+    <link rel="stylesheet" href="themes.css" />
+    <style>
+      /* This is a standalone PREVIEW. It is not wired into the extension.
      It links the real themes.css, so Vee re-skins across all 13 themes and
      inherits the shared motion tokens (--dur-*, --ease-*) for free. */
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--body-bg); color: var(--text); font-family: var(--font); padding: 40px 32px 80px; min-height: 100vh; }
-  .wrap { max-width: 960px; margin: 0 auto; }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--body-bg);
+        color: var(--text);
+        font-family: var(--font);
+        padding: 40px 32px 80px;
+        min-height: 100vh;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+      }
 
-  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 8px; }
-  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; color: var(--text-strong); display: flex; align-items: center; gap: 12px; }
-  .tagline { font-size: 13px; color: var(--text-sub); max-width: 540px; line-height: 1.6; margin: 6px 0 28px; }
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+      h1 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.6px;
+        color: var(--text-strong);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .tagline {
+        font-size: 13px;
+        color: var(--text-sub);
+        max-width: 540px;
+        line-height: 1.6;
+        margin: 6px 0 28px;
+      }
 
-  .theme-bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-  .theme-bar label { font: 700 9px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); margin-right: 4px; }
-  .tb { font: 600 11px/1 var(--font); color: var(--text-sub); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; cursor: pointer;
-    transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
-  .tb:hover { color: var(--text); border-color: var(--border-2); }
-  .tb:active { transform: scale(0.96); }
-  .tb.active { color: var(--accent); border-color: var(--accent); }
+      .theme-bar {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .theme-bar label {
+        font: 700 9px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin-right: 4px;
+      }
+      .tb {
+        font: 600 11px/1 var(--font);
+        color: var(--text-sub);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 6px 10px;
+        cursor: pointer;
+        transition:
+          color var(--dur-fast) var(--ease-out),
+          border-color var(--dur-fast) var(--ease-out),
+          transform var(--dur-fast) var(--ease-out);
+      }
+      .tb:hover {
+        color: var(--text);
+        border-color: var(--border-2);
+      }
+      .tb:active {
+        transform: scale(0.96);
+      }
+      .tb.active {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
 
-  .section-title { font: 700 10px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--text-faint); margin: 38px 0 16px; }
+      .section-title {
+        font: 700 10px/1 var(--mono);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin: 38px 0 16px;
+      }
 
-  /* Expression grid */
-  .vee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-  .vee-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 12px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: var(--card-shadow); }
-  .vee-cell .stage { height: 56px; display: grid; place-items: center; }
-  .vee-cell .name { font: 700 12px/1 var(--font); color: var(--text); }
-  .vee-cell .desc { font: 500 10.5px/1.4 var(--font); color: var(--text-muted); text-align: center; }
+      /* Expression grid */
+      .vee-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+      }
+      .vee-cell {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px 12px 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        box-shadow: var(--card-shadow);
+      }
+      .vee-cell .stage {
+        height: 56px;
+        display: grid;
+        place-items: center;
+      }
+      .vee-cell .name {
+        font: 700 12px/1 var(--font);
+        color: var(--text);
+      }
+      .vee-cell .desc {
+        font: 500 10.5px/1.4 var(--font);
+        color: var(--text-muted);
+        text-align: center;
+      }
 
-  /* Live context demos */
-  .demos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 640px) { .demos { grid-template-columns: 1fr; } }
-  .demo { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--card-shadow); }
-  .demo.loading { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
-  .demo .ld-name { font-size: 15px; font-weight: 800; color: var(--text); }
-  .demo .ld-msg { font-size: 12px; color: var(--text-faint); }
+      /* Live context demos */
+      .demos {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 640px) {
+        .demos {
+          grid-template-columns: 1fr;
+        }
+      }
+      .demo {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: var(--card-shadow);
+      }
+      .demo.loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        text-align: center;
+      }
+      .demo .ld-name {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+      }
+      .demo .ld-msg {
+        font-size: 12px;
+        color: var(--text-faint);
+      }
 
-  .fit-card { display: flex; align-items: center; gap: 13px; padding: 14px; border-radius: 14px; border: 1px solid; }
-  .fit-card.strong { background: var(--ok-bg); border-color: var(--ok-edge); }
-  .fit-card.risky  { background: var(--bad-bg); border-color: var(--bad-edge); }
-  .fit-card .chip { font: 800 12px/1 var(--font); padding: 6px 11px; border-radius: 8px; white-space: nowrap; }
-  .fit-card.strong .chip { background: var(--ok); color: #06210f; }
-  .fit-card.risky  .chip { background: var(--bad); color: #250a08; }
-  .fit-card .line { font-size: 12px; color: var(--text-sub); line-height: 1.45; }
-  .demo .demo-cap { font: 600 9px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; }
-  .demo .say { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 12px; line-height: 1.5; }
+      .fit-card {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 14px;
+        border-radius: 14px;
+        border: 1px solid;
+      }
+      .fit-card.strong {
+        background: var(--ok-bg);
+        border-color: var(--ok-edge);
+      }
+      .fit-card.risky {
+        background: var(--bad-bg);
+        border-color: var(--bad-edge);
+      }
+      .fit-card .chip {
+        font: 800 12px/1 var(--font);
+        padding: 6px 11px;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+      .fit-card.strong .chip {
+        background: var(--ok);
+        color: #06210f;
+      }
+      .fit-card.risky .chip {
+        background: var(--bad);
+        color: #250a08;
+      }
+      .fit-card .line {
+        font-size: 12px;
+        color: var(--text-sub);
+        line-height: 1.45;
+      }
+      .demo .demo-cap {
+        font: 600 9px/1 var(--mono);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin-bottom: 12px;
+      }
+      .demo .say {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-style: italic;
+        margin-top: 12px;
+        line-height: 1.5;
+      }
 
-  .note { margin-top: 36px; font-size: 12px; color: var(--text-muted); line-height: 1.7; border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; }
-  .note b { color: var(--text-sub); }
+      .note {
+        margin-top: 36px;
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        border-left: 3px solid var(--accent);
+        padding: 4px 0 4px 14px;
+      }
+      .note b {
+        color: var(--text-sub);
+      }
 
-  /* ════════════════════════════════════════════════════════════════════
+      /* ════════════════════════════════════════════════════════════════════
      Vee — RepoLens mascot. Decorative (aria-hidden). One markup, every state
      is a pure CSS class swap. currentColor + theme tokens → re-skins for free.
      ════════════════════════════════════════════════════════════════════ */
-  .vee { display: inline-flex; color: var(--text); line-height: 0; }
-  .vee svg { display: block; overflow: visible; }
-  .vee .vee-aperture, .vee .vee-pupil, .vee .vee-ticks, .vee svg { transform-box: fill-box; transform-origin: center; }
+      .vee {
+        display: inline-flex;
+        color: var(--text);
+        line-height: 0;
+      }
+      .vee svg {
+        display: block;
+        overflow: visible;
+      }
+      .vee .vee-aperture,
+      .vee .vee-pupil,
+      .vee .vee-ticks,
+      .vee svg {
+        transform-box: fill-box;
+        transform-origin: center;
+      }
 
-  /* Static expressive shapes — defined OUTSIDE the motion guard so reduced-motion
+      /* Static expressive shapes — defined OUTSIDE the motion guard so reduced-motion
      users still get the correct, distinct pose for each state (it just snaps). */
-  .vee.is-strong .vee-aperture { r: 12; stroke: var(--ok); }
-  .vee.is-strong .vee-pupil    { fill: var(--ok); }
-  .vee.is-risky  .vee-aperture { r: 4.5; stroke-width: 3.4; stroke: var(--bad); }
-  .vee.is-risky  .vee-pupil    { fill: var(--bad); }
-  .vee.is-risky  svg           { transform: rotate(-8deg); }
-  .vee.is-scanning .vee-aperture { r: 8.5; }
-  .vee.is-thinking .vee-aperture { r: 9; }
-  .vee.is-empty .vee-aperture  { r: 5; opacity: 0.7; }
-  .vee.is-empty .vee-pupil     { opacity: 0.7; }
-  .vee.is-empty svg            { transform: translateY(1px); }
-  .vee.is-error svg            { transform: rotate(5deg); }
-  .vee.is-error .vee-aperture  { r: 7; }
+      .vee.is-strong .vee-aperture {
+        r: 12;
+        stroke: var(--ok);
+      }
+      .vee.is-strong .vee-pupil {
+        fill: var(--ok);
+      }
+      .vee.is-risky .vee-aperture {
+        r: 4.5;
+        stroke-width: 3.4;
+        stroke: var(--bad);
+      }
+      .vee.is-risky .vee-pupil {
+        fill: var(--bad);
+      }
+      .vee.is-risky svg {
+        transform: rotate(-8deg);
+      }
+      .vee.is-scanning .vee-aperture {
+        r: 8.5;
+      }
+      .vee.is-thinking .vee-aperture {
+        r: 9;
+      }
+      .vee.is-empty .vee-aperture {
+        r: 5;
+        opacity: 0.7;
+      }
+      .vee.is-empty .vee-pupil {
+        opacity: 0.7;
+      }
+      .vee.is-empty svg {
+        transform: translateY(1px);
+      }
+      .vee.is-error svg {
+        transform: rotate(5deg);
+      }
+      .vee.is-error .vee-aperture {
+        r: 7;
+      }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .vee .vee-aperture, .vee .vee-pupil {
-      transition: r var(--dur) var(--ease-out), stroke var(--dur) var(--ease-out), fill var(--dur) var(--ease-out), stroke-width var(--dur) var(--ease-out), opacity var(--dur) var(--ease-out);
-    }
-    .vee svg { transition: transform var(--dur) var(--ease-out); }
+      @media (prefers-reduced-motion: no-preference) {
+        .vee .vee-aperture,
+        .vee .vee-pupil {
+          transition:
+            r var(--dur) var(--ease-out),
+            stroke var(--dur) var(--ease-out),
+            fill var(--dur) var(--ease-out),
+            stroke-width var(--dur) var(--ease-out),
+            opacity var(--dur) var(--ease-out);
+        }
+        .vee svg {
+          transition: transform var(--dur) var(--ease-out);
+        }
 
-    .vee.is-strong .vee-aperture { animation: vee-pop var(--dur-slow) var(--ease-spring); }
-    .vee.is-risky  svg           { animation: vee-squint var(--dur) var(--ease-out); }
-    .vee.is-scanning .vee-aperture { animation: vee-breathe 2.4s var(--ease-out) infinite; }
-    .vee.is-scanning .vee-ticks    { animation: vee-rotate 9s linear infinite; }
-    .vee.is-thinking .vee-pupil  { animation: vee-drift 2.2s var(--ease-out) infinite; }
-    .vee.is-empty .vee-aperture  { animation: vee-rest 4.5s var(--ease-out) infinite; }
-    .vee.is-error svg            { animation: vee-shake 360ms var(--ease-out); }
-  }
-  @keyframes vee-pop    { 0% { r: 9; } 60% { r: 13; } 100% { r: 12; } }
-  @keyframes vee-squint { 0% { transform: rotate(0); } 100% { transform: rotate(-8deg); } }
-  @keyframes vee-breathe{ 0%,100% { r: 6; } 50% { r: 11; } }
-  @keyframes vee-rotate { to { transform: rotate(360deg); } }
-  @keyframes vee-drift  { 0%,100% { transform: translateX(-1.6px); } 50% { transform: translateX(1.6px); } }
-  @keyframes vee-rest   { 0%,100% { r: 5; } 50% { r: 5.8; } }
-  @keyframes vee-shake  { 0% { transform: rotate(5deg) translateX(0);} 25% { transform: rotate(5deg) translateX(-1.5px);} 75% { transform: rotate(5deg) translateX(1.5px);} 100% { transform: rotate(5deg) translateX(0);} }
+        .vee.is-strong .vee-aperture {
+          animation: vee-pop var(--dur-slow) var(--ease-spring);
+        }
+        .vee.is-risky svg {
+          animation: vee-squint var(--dur) var(--ease-out);
+        }
+        .vee.is-scanning .vee-aperture {
+          animation: vee-breathe 2.4s var(--ease-out) infinite;
+        }
+        .vee.is-scanning .vee-ticks {
+          animation: vee-rotate 9s linear infinite;
+        }
+        .vee.is-thinking .vee-pupil {
+          animation: vee-drift 2.2s var(--ease-out) infinite;
+        }
+        .vee.is-empty .vee-aperture {
+          animation: vee-rest 4.5s var(--ease-out) infinite;
+        }
+        .vee.is-error svg {
+          animation: vee-shake 360ms var(--ease-out);
+        }
+      }
+      @keyframes vee-pop {
+        0% {
+          r: 9;
+        }
+        60% {
+          r: 13;
+        }
+        100% {
+          r: 12;
+        }
+      }
+      @keyframes vee-squint {
+        0% {
+          transform: rotate(0);
+        }
+        100% {
+          transform: rotate(-8deg);
+        }
+      }
+      @keyframes vee-breathe {
+        0%,
+        100% {
+          r: 6;
+        }
+        50% {
+          r: 11;
+        }
+      }
+      @keyframes vee-rotate {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes vee-drift {
+        0%,
+        100% {
+          transform: translateX(-1.6px);
+        }
+        50% {
+          transform: translateX(1.6px);
+        }
+      }
+      @keyframes vee-rest {
+        0%,
+        100% {
+          r: 5;
+        }
+        50% {
+          r: 5.8;
+        }
+      }
+      @keyframes vee-shake {
+        0% {
+          transform: rotate(5deg) translateX(0);
+        }
+        25% {
+          transform: rotate(5deg) translateX(-1.5px);
+        }
+        75% {
+          transform: rotate(5deg) translateX(1.5px);
+        }
+        100% {
+          transform: rotate(5deg) translateX(0);
+        }
+      }
 
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
-  }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div>
-      <h1><span id="logo-slot"></span> Meet “Vee”</h1>
-      <p class="tagline">A proposed mascot for RepoLens — it <b>is</b> the lens, not a sticker on top. One token-aware SVG; every expression is a CSS class swap; reduced-motion gets a static glyph. Switch themes to see it re-skin for free.</p>
-    </div>
-    <div class="theme-bar" id="theme-bar"><label>Theme</label></div>
-  </header>
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1><span id="logo-slot"></span> Meet “Vee”</h1>
+          <p class="tagline">
+            A proposed mascot for RepoLens — it <b>is</b> the lens, not a sticker on top. One token-aware SVG;
+            every expression is a CSS class swap; reduced-motion gets a static glyph. Switch themes to see it
+            re-skin for free.
+          </p>
+        </div>
+        <div class="theme-bar" id="theme-bar"><label>Theme</label></div>
+      </header>
 
-  <div class="section-title">Expressions — mapped to real app moments</div>
-  <div class="vee-grid" id="vee-grid"></div>
+      <div class="section-title">Expressions — mapped to real app moments</div>
+      <div class="vee-grid" id="vee-grid"></div>
 
-  <div class="section-title">In context</div>
-  <div class="demos">
-    <div class="demo loading">
-      <div class="demo-cap" style="align-self:flex-start">Scan loading</div>
-      <span class="vee is-scanning" aria-hidden="true" data-vee></span>
-      <div class="ld-name">facebook/react</div>
-      <div class="ld-msg">Reading the source. This is the boring, important part.</div>
-    </div>
+      <div class="section-title">In context</div>
+      <div class="demos">
+        <div class="demo loading">
+          <div class="demo-cap" style="align-self: flex-start">Scan loading</div>
+          <span class="vee is-scanning" aria-hidden="true" data-vee></span>
+          <div class="ld-name">facebook/react</div>
+          <div class="ld-msg">Reading the source. This is the boring, important part.</div>
+        </div>
 
-    <div class="demo">
-      <div class="demo-cap">Verdict — strong fit</div>
-      <div class="fit-card strong">
-        <span class="vee is-strong" aria-hidden="true" data-vee></span>
-        <span class="chip">STRONG</span>
-        <span class="line">Battle-tested, well-documented, actively maintained.</span>
+        <div class="demo">
+          <div class="demo-cap">Verdict — strong fit</div>
+          <div class="fit-card strong">
+            <span class="vee is-strong" aria-hidden="true" data-vee></span>
+            <span class="chip">STRONG</span>
+            <span class="line">Battle-tested, well-documented, actively maintained.</span>
+          </div>
+          <div class="say">“Looked hard. Couldn’t find the catch. Rare.”</div>
+        </div>
+
+        <div class="demo">
+          <div class="demo-cap">Verdict — risky fit</div>
+          <div class="fit-card risky">
+            <span class="vee is-risky" aria-hidden="true" data-vee></span>
+            <span class="chip">RISKY</span>
+            <span class="line">One maintainer, no tests, last push 14 months ago.</span>
+          </div>
+          <div class="say">“Eyes narrowed. The README and the code disagree.”</div>
+        </div>
+
+        <div class="demo">
+          <div class="demo-cap">Empty library</div>
+          <div style="display: flex; align-items: center; gap: 13px">
+            <span class="vee is-empty" aria-hidden="true" data-vee></span>
+            <div class="line" style="font-size: 13px; color: var(--text-sub)">
+              Nothing scanned yet.<br />Point me at a repo.
+            </div>
+          </div>
+          <div class="say">Vee rests when there’s nothing to look at. It reacts; it never interrupts.</div>
+        </div>
       </div>
-      <div class="say">“Looked hard. Couldn’t find the catch. Rare.”</div>
+
+      <p class="note">
+        <b>Guardrails:</b> every Vee is <code>aria-hidden</code> — meaning is always carried by the real chip
+        text and color, never the mascot. Red is borrowed only for the <i>verdict</i> (strong→green,
+        risky→red); a UI error gets a sheepish tilt, not red. All motion lives behind
+        <code>prefers-reduced-motion: no-preference</code>; the only loop (scanning breath) ends the moment
+        the verdict lands. A Settings toggle (<code>mascotEnabled</code>, default on) turns it off entirely.
+        Not yet wired into the extension — this page is a proposal you can eyeball first.
+      </p>
     </div>
 
-    <div class="demo">
-      <div class="demo-cap">Verdict — risky fit</div>
-      <div class="fit-card risky">
-        <span class="vee is-risky" aria-hidden="true" data-vee></span>
-        <span class="chip">RISKY</span>
-        <span class="line">One maintainer, no tests, last push 14 months ago.</span>
-      </div>
-      <div class="say">“Eyes narrowed. The README and the code disagree.”</div>
-    </div>
-
-    <div class="demo">
-      <div class="demo-cap">Empty library</div>
-      <div style="display:flex;align-items:center;gap:13px">
-        <span class="vee is-empty" aria-hidden="true" data-vee></span>
-        <div class="line" style="font-size:13px;color:var(--text-sub)">Nothing scanned yet.<br>Point me at a repo.</div>
-      </div>
-      <div class="say">Vee rests when there’s nothing to look at. It reacts; it never interrupts.</div>
-    </div>
-  </div>
-
-  <p class="note">
-    <b>Guardrails:</b> every Vee is <code>aria-hidden</code> — meaning is always carried by the real chip text and color, never the mascot. Red is borrowed only for the <i>verdict</i> (strong→green, risky→red); a UI error gets a sheepish tilt, not red. All motion lives behind <code>prefers-reduced-motion: no-preference</code>; the only loop (scanning breath) ends the moment the verdict lands. A Settings toggle (<code>mascotEnabled</code>, default on) turns it off entirely. Not yet wired into the extension — this page is a proposal you can eyeball first.
-  </p>
-</div>
-
-<script type="module">
-  // ── Vee markup (single source) ──────────────────────────────────────
-  const VEE_SVG = `
+    <script type="module">
+      // ── Vee markup (single source) ──────────────────────────────────────
+      const VEE_SVG = `
     <svg viewBox="0 0 48 48" width="40" height="40" fill="none" role="presentation" xmlns="http://www.w3.org/2000/svg">
       <circle class="vee-barrel" cx="24" cy="24" r="17" stroke="currentColor" stroke-width="2" opacity="0.32"/>
       <g class="vee-ticks" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.28">
@@ -176,43 +489,60 @@
       <circle class="vee-pupil" cx="24" cy="24" r="2.4" fill="var(--accent)"/>
     </svg>`;
 
-  // Fill every placeholder span (data-vee / class .vee) with the SVG.
-  for (const el of document.querySelectorAll('.vee')) el.innerHTML = VEE_SVG;
+      // Fill every placeholder span (data-vee / class .vee) with the SVG.
+      for (const el of document.querySelectorAll('.vee')) el.innerHTML = VEE_SVG;
 
-  // Header logo = an idle Vee.
-  document.getElementById('logo-slot').innerHTML = `<span class="vee" style="vertical-align:-8px">${VEE_SVG}</span>`;
+      // Header logo = an idle Vee.
+      document.getElementById('logo-slot').innerHTML =
+        `<span class="vee" style="vertical-align:-8px">${VEE_SVG}</span>`;
 
-  // ── Expression grid ─────────────────────────────────────────────────
-  const STATES = [
-    ['idle',     'Default / header',   'Mid-open, resting.'],
-    ['scanning', 'Loading',            'Aperture breathes; ticks rotate.'],
-    ['strong',   'Verdict · strong',   'Wide open, green. One-shot pop.'],
-    ['risky',    'Verdict · risky',    'Narrowed + a skeptical squint, red.'],
-    ['thinking', 'Deep Dive',          'Pupil drifts as if reading.'],
-    ['empty',    'Empty Library',      'Half-lidded, dimmed, near-asleep.'],
-    ['error',    'Error',              'Sheepish tilt — NOT red.'],
-  ];
-  const grid = document.getElementById('vee-grid');
-  grid.innerHTML = STATES.map(([s, name, desc]) => `
+      // ── Expression grid ─────────────────────────────────────────────────
+      const STATES = [
+        ['idle', 'Default / header', 'Mid-open, resting.'],
+        ['scanning', 'Loading', 'Aperture breathes; ticks rotate.'],
+        ['strong', 'Verdict · strong', 'Wide open, green. One-shot pop.'],
+        ['risky', 'Verdict · risky', 'Narrowed + a skeptical squint, red.'],
+        ['thinking', 'Deep Dive', 'Pupil drifts as if reading.'],
+        ['empty', 'Empty Library', 'Half-lidded, dimmed, near-asleep.'],
+        ['error', 'Error', 'Sheepish tilt — NOT red.'],
+      ];
+      const grid = document.getElementById('vee-grid');
+      grid.innerHTML = STATES.map(
+        ([s, name, desc]) => `
     <div class="vee-cell">
       <div class="stage"><span class="vee ${s === 'idle' ? '' : 'is-' + s}" aria-hidden="true">${VEE_SVG}</span></div>
       <div class="name">${name}</div>
       <div class="desc">${desc}</div>
-    </div>`).join('');
+    </div>`
+      ).join('');
 
-  // ── Theme picker (all 13 real themes from themes.css) ────────────────
-  const THEMES = ['midnight','paper','terminal','nord','gruvbox','rosepine','latte','solarized','synthwave','claude','xai','apple','bmw'];
-  const bar = document.getElementById('theme-bar');
-  for (const t of THEMES) {
-    const b = document.createElement('button');
-    b.className = 'tb' + (t === 'midnight' ? ' active' : '');
-    b.textContent = t;
-    b.onclick = () => {
-      document.documentElement.dataset.theme = t;
-      bar.querySelectorAll('.tb').forEach(x => x.classList.toggle('active', x === b));
-    };
-    bar.appendChild(b);
-  }
-</script>
-</body>
+      // ── Theme picker (all 13 real themes from themes.css) ────────────────
+      const THEMES = [
+        'midnight',
+        'paper',
+        'terminal',
+        'nord',
+        'gruvbox',
+        'rosepine',
+        'latte',
+        'solarized',
+        'synthwave',
+        'claude',
+        'xai',
+        'apple',
+        'bmw',
+      ];
+      const bar = document.getElementById('theme-bar');
+      for (const t of THEMES) {
+        const b = document.createElement('button');
+        b.className = 'tb' + (t === 'midnight' ? ' active' : '');
+        b.textContent = t;
+        b.onclick = () => {
+          document.documentElement.dataset.theme = t;
+          bar.querySelectorAll('.tb').forEach((x) => x.classList.toggle('active', x === b));
+        };
+        bar.appendChild(b);
+      }
+    </script>
+  </body>
 </html>

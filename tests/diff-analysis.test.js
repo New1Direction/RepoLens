@@ -91,8 +91,15 @@ describe('diffAnalyses', () => {
   });
 
   it('fit_delta marks changed when fit level changes', () => {
-    const prev = { ...base, health: { score: 90 }, red_flags: [] };       // strong
-    const next = { ...base, health: { score: 55 }, red_flags: [{ title: 'x', severity: 'warn' }, { title: 'y', severity: 'warn' }] }; // care
+    const prev = { ...base, health: { score: 90 }, red_flags: [] }; // strong
+    const next = {
+      ...base,
+      health: { score: 55 },
+      red_flags: [
+        { title: 'x', severity: 'warn' },
+        { title: 'y', severity: 'warn' },
+      ],
+    }; // care
     const diff = diffAnalyses(prev, next);
     expect(diff.fit_delta.changed).toBe(true);
     expect(diff.fit_delta.before).toBe('strong');

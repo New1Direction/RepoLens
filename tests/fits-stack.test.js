@@ -113,7 +113,13 @@ describe('parseFitsStack', () => {
 
   it('parses all three verdict types', () => {
     for (const verdict of FITS_VERDICTS) {
-      const raw = JSON.stringify({ verdict, summary: 'test', integrations: [], risks: [], recommendation: 'ok' });
+      const raw = JSON.stringify({
+        verdict,
+        summary: 'test',
+        integrations: [],
+        risks: [],
+        recommendation: 'ok',
+      });
       const result = parseFitsStack(raw);
       expect(result?.verdict).toBe(verdict);
     }

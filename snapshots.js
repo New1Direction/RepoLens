@@ -64,8 +64,7 @@ export function snapshotTrend(snaps) {
   const first = list[0];
   const latest = list[list.length - 1];
   const series = list.map((s) => ({ ts: s.ts, health: s.health, fit: s.fit, stars: s.stars }));
-  const healthDelta =
-    first.health != null && latest.health != null ? latest.health - first.health : null;
+  const healthDelta = first.health != null && latest.health != null ? latest.health - first.health : null;
   // Coerce defensively: a corrupt/hostile backup can pass the envelope-only
   // validateBackup with a non-array `flags` (e.g. flags:5), and `new Set(5)` throws.
   const firstFlags = new Set(Array.isArray(first.flags) ? first.flags : []);
@@ -89,7 +88,10 @@ export function snapshotTrend(snaps) {
  * Build an inline-SVG sparkline string from a trend series. Plots `metric`
  * (default 'health'), skipping null points. Returns null if <2 plottable points.
  */
-export function sparkline(series, { metric = 'health', width = 120, height = 32, stroke = 'currentColor' } = {}) {
+export function sparkline(
+  series,
+  { metric = 'health', width = 120, height = 32, stroke = 'currentColor' } = {}
+) {
   const all = Array.isArray(series) ? series : [];
   const pts = all
     .map((s, i) => {

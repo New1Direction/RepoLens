@@ -2,10 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { LENS_GUIDE, guideFor } from '../lens-guide.js';
 
 const KEYS = [
-  'triz', 'scamper', 'lateral', 'morph',     // Ideate
-  'toc', 'loops', 'pdca', 'dmaic',           // Systems
-  'pareto', 'eisenhower',                     // Prioritize
-  'deepdive', 'sktpg',                        // single-shot lenses
+  'triz',
+  'scamper',
+  'lateral',
+  'morph', // Ideate
+  'toc',
+  'loops',
+  'pdca',
+  'dmaic', // Systems
+  'pareto',
+  'eisenhower', // Prioritize
+  'deepdive',
+  'sktpg', // single-shot lenses
 ];
 
 describe('lens-guide', () => {
@@ -16,7 +24,7 @@ describe('lens-guide', () => {
       expect(g.howToUse.trim().length, `empty howToUse for ${k}`).toBeGreaterThan(0);
       expect(Array.isArray(g.misconceptions)).toBe(true);
       expect(g.misconceptions.length, `no misconceptions for ${k}`).toBeGreaterThan(0);
-      g.misconceptions.forEach(m => expect(m.trim().length).toBeGreaterThan(0));
+      g.misconceptions.forEach((m) => expect(m.trim().length).toBeGreaterThan(0));
     }
   });
 

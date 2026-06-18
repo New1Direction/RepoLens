@@ -22,10 +22,7 @@ const TOOLS = {
   [DEEP_DIVE_TOOL.name]: { def: DEEP_DIVE_TOOL, run: runDeepDive },
 };
 
-const server = new Server(
-  { name: 'repolens', version: '0.1.0' },
-  { capabilities: { tools: {} } },
-);
+const server = new Server({ name: 'repolens', version: '0.1.0' }, { capabilities: { tools: {} } });
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: Object.values(TOOLS).map((t) => t.def),

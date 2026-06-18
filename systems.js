@@ -6,14 +6,14 @@
 import { extractJsonObject } from './deepdive.js';
 
 export const SYSTEMS_FRAMEWORKS = [
-  { key: 'toc',   label: 'Theory of Constraints', blurb: 'Find & break the single bottleneck.' },
-  { key: 'loops', label: 'Feedback Loops',        blurb: 'Reinforcing vs balancing loops.' },
-  { key: 'pdca',  label: 'PDCA',                  blurb: 'Plan · Do · Check · Act cycle.' },
-  { key: 'dmaic', label: 'DMAIC',                 blurb: 'Define · Measure · Analyze · Improve · Control.' },
+  { key: 'toc', label: 'Theory of Constraints', blurb: 'Find & break the single bottleneck.' },
+  { key: 'loops', label: 'Feedback Loops', blurb: 'Reinforcing vs balancing loops.' },
+  { key: 'pdca', label: 'PDCA', blurb: 'Plan · Do · Check · Act cycle.' },
+  { key: 'dmaic', label: 'DMAIC', blurb: 'Define · Measure · Analyze · Improve · Control.' },
 ];
 
 export function isFramework(key) {
-  return SYSTEMS_FRAMEWORKS.some(f => f.key === key);
+  return SYSTEMS_FRAMEWORKS.some((f) => f.key === key);
 }
 
 function sourceContext(repoData, source) {
@@ -21,7 +21,7 @@ function sourceContext(repoData, source) {
     ? `File tree (truncated):\n${source.tree.join('\n')}`
     : '(no file tree — work from the README + description)';
   const files = source?.files?.length
-    ? source.files.map(f => `=== ${f.path} ===\n${f.content}`).join('\n\n')
+    ? source.files.map((f) => `=== ${f.path} ===\n${f.content}`).join('\n\n')
     : '(no source files available)';
   return `Repository: ${repoData.repoId}
 Description: ${repoData.description || '—'}
@@ -88,12 +88,13 @@ export function buildSystemsPrompt(framework, repoData, source) {
 }
 
 const arr = (v) => (Array.isArray(v) ? v : []);
-const str = (v) => (Array.isArray(v) ? v.join(' ') : (v || ''));
+const str = (v) => (Array.isArray(v) ? v.join(' ') : v || '');
 const obj = (v) => (v && typeof v === 'object' ? v : {});
 
 const FRAMEWORK_PARSERS = {
   toc(d) {
-    const b = obj(d.bottleneck), n = obj(d.next_bottleneck);
+    const b = obj(d.bottleneck),
+      n = obj(d.next_bottleneck);
     return {
       bottleneck: { name: b.name || '', why: b.why || '' },
       exploit: arr(d.exploit).map(String),
@@ -102,7 +103,7 @@ const FRAMEWORK_PARSERS = {
   },
   loops(d) {
     return {
-      loops: arr(d.loops).map(l => ({
+      loops: arr(d.loops).map((l) => ({
         type: l.type === 'balancing' ? 'balancing' : 'reinforcing',
         name: l.name || '',
         cycle: arr(l.cycle).map(String),

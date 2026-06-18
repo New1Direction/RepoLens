@@ -10,7 +10,9 @@ describe('buildDeepDiveResult', () => {
       questions: [{ q: '?', a: '!' }],
       confidence: [{ claim: 'c', level: 'high', note: 'n' }],
     };
-    const out = buildDeepDiveResult('a/b', [{ id: 'x' }], { links: [], roots: [], leaves: [] }, feynman, { degraded: true });
+    const out = buildDeepDiveResult('a/b', [{ id: 'x' }], { links: [], roots: [], leaves: [] }, feynman, {
+      degraded: true,
+    });
     expect(out.repoId).toBe('a/b');
     expect(out.explanation).toBe('It works.');
     expect(out.degraded).toBe(true);
@@ -29,21 +31,49 @@ describe('runDeepDive (offline, mocked GitHub + Anthropic)', () => {
   });
 
   it('makes three sequential model calls (atoms → lineage → Feynman)', async () => {
-    const atomsJson = JSON.stringify({ atoms: [{ id: 'core', name: 'Core', kind: 'subsystem', purpose: 'p', files: ['package.json'] }] });
+    const atomsJson = JSON.stringify({
+      atoms: [{ id: 'core', name: 'Core', kind: 'subsystem', purpose: 'p', files: ['package.json'] }],
+    });
     const lineageJson = JSON.stringify({ links: [], roots: ['core'], leaves: [] });
-    const feynmanJson = JSON.stringify({ explanation: 'Plain.', gaps: [], assumptions: [], questions: [], confidence: [] });
+    const feynmanJson = JSON.stringify({
+      explanation: 'Plain.',
+      gaps: [],
+      assumptions: [],
+      questions: [],
+      confidence: [],
+    });
     const anthropicQueue = [atomsJson, lineageJson, feynmanJson];
 
     global.fetch = vi.fn((url) => {
       const u = String(url);
       if (u.includes('api.anthropic.com')) {
-        return Promise.resolve({ ok: true, json: async () => ({ content: [{ text: anthropicQueue.shift() }] }) });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ content: [{ text: anthropicQueue.shift() }] }),
+        });
       }
-      if (u.includes('/git/trees/')) return Promise.resolve({ ok: true, json: async () => ({ tree: [{ type: 'blob', path: 'package.json' }] }) });
-      if (u.includes('/contents/')) return Promise.resolve({ ok: true, json: async () => ({ encoding: 'base64', content: btoa('{"name":"x"}') }) });
+      if (u.includes('/git/trees/'))
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ tree: [{ type: 'blob', path: 'package.json' }] }),
+        });
+      if (u.includes('/contents/'))
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ encoding: 'base64', content: btoa('{"name":"x"}') }),
+        });
       if (u.includes('/readme') || u.includes('/languages')) return Promise.resolve({ ok: false });
       if (/\/repos\/[^/]+\/[^/]+$/.test(u)) {
-        return Promise.resolve({ ok: true, json: async () => ({ description: 'x', stargazers_count: 0, language: 'JavaScript', license: { spdx_id: 'MIT' }, default_branch: 'main' }) });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            description: 'x',
+            stargazers_count: 0,
+            language: 'JavaScript',
+            license: { spdx_id: 'MIT' },
+            default_branch: 'main',
+          }),
+        });
       }
       return Promise.resolve({ ok: false });
     });

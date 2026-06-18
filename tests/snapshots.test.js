@@ -8,7 +8,16 @@ describe('toSnapshot', () => {
     // match what the app shows (deriveFit on the same payload), so toSnapshot passes the
     // real red_flags through unfiltered.
     const snap = toSnapshot(
-      { repoId: 'a/b', health: 88, stars: 1200, red_flags: [{ title: 'No tests', severity: 'warn' }, { title: '', severity: 'warn' }], saved_at: '2026-06-01T00:00:00.000Z' },
+      {
+        repoId: 'a/b',
+        health: 88,
+        stars: 1200,
+        red_flags: [
+          { title: 'No tests', severity: 'warn' },
+          { title: '', severity: 'warn' },
+        ],
+        saved_at: '2026-06-01T00:00:00.000Z',
+      },
       '2026-06-01T00:00:00.000Z'
     );
     expect(snap).toEqual({
@@ -32,11 +41,20 @@ describe('toSnapshot', () => {
     expect(trend.healthDelta).toBe(10);
   });
   it('derives a strong fit for a healthy, flag-free repo', () => {
-    const snap = toSnapshot({ repoId: 'a/b', health: 90, stars: 0, red_flags: [] }, '2026-06-01T00:00:00.000Z');
+    const snap = toSnapshot(
+      { repoId: 'a/b', health: 90, stars: 0, red_flags: [] },
+      '2026-06-01T00:00:00.000Z'
+    );
     expect(snap.fit).toBe('strong');
   });
   it('accepts health as a { score } object and defaults ts to saved_at', () => {
-    const snap = toSnapshot({ repoId: 'a/b', health: { score: 60 }, stars: 0, red_flags: [], saved_at: '2026-06-02T00:00:00.000Z' });
+    const snap = toSnapshot({
+      repoId: 'a/b',
+      health: { score: 60 },
+      stars: 0,
+      red_flags: [],
+      saved_at: '2026-06-02T00:00:00.000Z',
+    });
     expect(snap.health).toBe(60);
     expect(snap.ts).toBe('2026-06-02T00:00:00.000Z');
     expect(snap.fit).toBe('care'); // 60, 0 flags

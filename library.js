@@ -3,7 +3,26 @@
 // show), and each card manages its repo: click to reopen the saved analysis, hover for
 // re-scan / source / remove actions.
 
-import { scrollPoints, deleteRepo, deleteSnapshots, exportStores, importStores, clearLibrary, listCollections, saveCollection, deleteCollection, listDecisions, saveDecision, listAllSnapshots, getLibraryGraph, getScene, saveScene, saveRepo, deleteScene, getAllMastery } from './store.js';
+import {
+  scrollPoints,
+  deleteRepo,
+  deleteSnapshots,
+  exportStores,
+  importStores,
+  clearLibrary,
+  listCollections,
+  saveCollection,
+  deleteCollection,
+  listDecisions,
+  saveDecision,
+  listAllSnapshots,
+  getLibraryGraph,
+  getScene,
+  saveScene,
+  saveRepo,
+  deleteScene,
+  getAllMastery,
+} from './store.js';
 import { levelLabel, aggregateMastery } from './mastery.js';
 import { introStageA, shouldOfferMilestone, milestoneSteps, COPY } from './onboarding.js';
 import { startCoachmark } from './coachmark.js';
@@ -13,9 +32,29 @@ import { layoutCorkboard } from './canvas-layout.js';
 import { mountCanvas } from './canvas-engine.js';
 import { rankRepos } from './store/search.js';
 import { DECISION_META } from './decision-log.js';
-import { makeCollection, validateCollectionName, addRepoToCollection, toggleRepoInCollection, collectionContains, sortedCollections, repoCollections, removeRepoFromCollection, nextColor, COLLECTION_COLORS } from './collections.js';
+import {
+  makeCollection,
+  validateCollectionName,
+  addRepoToCollection,
+  toggleRepoInCollection,
+  collectionContains,
+  sortedCollections,
+  repoCollections,
+  removeRepoFromCollection,
+  nextColor,
+  COLLECTION_COLORS,
+} from './collections.js';
 import { listCached, removeCached, openCachedAnalysis, importCache, clearCache } from './cache.js';
-import { libraryRow, sortRows, filterRows, allCapabilities, relativeTime, sourceUrl, mergeRows, libraryStats } from './library-data.js';
+import {
+  libraryRow,
+  sortRows,
+  filterRows,
+  allCapabilities,
+  relativeTime,
+  sourceUrl,
+  mergeRows,
+  libraryStats,
+} from './library-data.js';
 import { snapshotTrend, sparkline } from './snapshots.js';
 import { buildBackup, validateBackup, summarizeBackup, backupFilename } from './backup.js';
 import { detectPlatform } from './url-detector.js';
@@ -23,7 +62,15 @@ import { html, escapeHtml as esc } from './safe-html.js';
 import { initTheme } from './theme.js';
 import { veeSvg } from './mascot.js';
 import { initPalette } from './palette.js';
-import { loadRubric, saveRubric, saveEval, clearEval, listEvals, computeScore, DEFAULT_RUBRIC } from './evaluations.js';
+import {
+  loadRubric,
+  saveRubric,
+  saveEval,
+  clearEval,
+  listEvals,
+  computeScore,
+  DEFAULT_RUBRIC,
+} from './evaluations.js';
 import { applyFilters } from './library-filters.js';
 // Vendored animation libs (local ES modules — never CDN; the MV3 CSP forbids remote scripts).
 import confetti from './vendor/confetti.mjs';
@@ -33,7 +80,9 @@ import { CountUp } from './vendor/countup.mjs';
 // Honour the user's chosen theme on this standalone page (sets <html data-theme>).
 initTheme();
 // Mirror the OS reduced-motion preference into storage for the service worker.
-chrome.storage.local.set({ reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches });
+chrome.storage.local.set({
+  reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+});
 
 // Respect the OS "reduce motion" setting — used to skip count-up / confetti / etc.
 const prefersReducedMotion = () =>
@@ -54,7 +103,9 @@ function celebrateAdopt(origin) {
       origin: origin || { x: 0.5, y: 0.35 },
       disableForReducedMotion: true,
     });
-  } catch { /* confetti is decorative — never let it break a decision save */ }
+  } catch {
+    /* confetti is decorative — never let it break a decision save */
+  }
 }
 
 // Translate a DOM element's centre into confetti's normalized {x,y} origin.
@@ -71,9 +122,24 @@ function originFromEl(el) {
 const MAX_BACKUP_BYTES = 50 * 1024 * 1024; // refuse absurd import files before parsing
 
 const LANG_COLORS = {
-  JavaScript: '#f1e05a', TypeScript: '#3178c6', Python: '#3572A5', Rust: '#dea584', Go: '#00ADD8',
-  Java: '#b07219', Ruby: '#701516', 'C++': '#f34b7d', C: '#555555', 'C#': '#178600', PHP: '#4F5D95',
-  Swift: '#F05138', Kotlin: '#A97BFF', Shell: '#89e051', HTML: '#e34c26', CSS: '#563d7c', Vue: '#41b883', Dart: '#00B4AB',
+  JavaScript: '#f1e05a',
+  TypeScript: '#3178c6',
+  Python: '#3572A5',
+  Rust: '#dea584',
+  Go: '#00ADD8',
+  Java: '#b07219',
+  Ruby: '#701516',
+  'C++': '#f34b7d',
+  C: '#555555',
+  'C#': '#178600',
+  PHP: '#4F5D95',
+  Swift: '#F05138',
+  Kotlin: '#A97BFF',
+  Shell: '#89e051',
+  HTML: '#e34c26',
+  CSS: '#563d7c',
+  Vue: '#41b883',
+  Dart: '#00B4AB',
 };
 const langColor = (n) => LANG_COLORS[n] || '#64748b';
 
@@ -93,14 +159,25 @@ function hilite(text, q) {
   try {
     const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     return safe.replace(re, '<mark class="lc-hl">$1</mark>');
-  } catch { return safe; }
+  } catch {
+    return safe;
+  }
 }
 
 let allRows = [];
 let snapsByRepo = new Map(); // repoId → snaps[] (batch-loaded once in init)
 let cacheByRepo = new Map(); // repoId → full cached analysis (instant reopen)
 let decisionMap = new Map(); // repoId → decision payload
-const state = { query: '', sort: 'fit', capability: '', collection: '', decision: '', lang: '', mastery: '', view: 'list' };
+const state = {
+  query: '',
+  sort: 'fit',
+  capability: '',
+  collection: '',
+  decision: '',
+  lang: '',
+  mastery: '',
+  view: 'list',
+};
 
 // Mastery records (repoId → { level, ... }), loaded once in init. Drives the
 // header aggregate line and the level filter.
@@ -136,7 +213,7 @@ const compareSet = new Set();
 let pinned = new Set();
 
 // User notes: freeform text annotations keyed by repoId, persisted to local storage.
-let notesMap = new Map();
+const notesMap = new Map();
 const noteKey = (repoId) => `repolens_note_${repoId}`;
 
 // Saved filters: named snapshots of {query,sort,capability,collection,decision,lang} state.
@@ -163,10 +240,15 @@ function card(r, i = 0) {
   const dots = r.languages
     .map((l) => `<span class="lc-dot" style="background:${langColor(l.name)}" title="${esc(l.name)}"></span>`)
     .join('');
-  const tags = r.capabilities.slice(0, 4).map((c) => `<span class="lc-tag" data-cap="${esc(c)}" title="Filter by ${esc(c)}">${hilite(c, hq)}</span>`).join('');
+  const tags = r.capabilities
+    .slice(0, 4)
+    .map(
+      (c) => `<span class="lc-tag" data-cap="${esc(c)}" title="Filter by ${esc(c)}">${hilite(c, hq)}</span>`
+    )
+    .join('');
   const when = relativeTime(r.savedAt);
-  const isToday = r.savedAt && (Date.now() - Date.parse(r.savedAt)) < 86_400_000;
-  const isStale = r.savedAt && (Date.now() - Date.parse(r.savedAt)) > 30 * 86_400_000;
+  const isToday = r.savedAt && Date.now() - Date.parse(r.savedAt) < 86_400_000;
+  const isStale = r.savedAt && Date.now() - Date.parse(r.savedAt) > 30 * 86_400_000;
   const sel = selected.has(r.repoId);
   const boards = repoCollections(collections, r.repoId);
   const boardDots = boards.length
@@ -186,14 +268,16 @@ function card(r, i = 0) {
       })()
     : '';
   const isPinned = pinned.has(r.repoId);
-  const platformBadge = r.platform && r.platform !== 'github'
-    ? `<span class="lc-platform" title="${esc(r.platform)}">${r.platform === 'npm' ? 'npm' : r.platform === 'pypi' ? 'PyPI' : r.platform === 'gitlab' ? 'GL' : esc(r.platform)}</span>`
-    : '';
+  const platformBadge =
+    r.platform && r.platform !== 'github'
+      ? `<span class="lc-platform" title="${esc(r.platform)}">${r.platform === 'npm' ? 'npm' : r.platform === 'pypi' ? 'PyPI' : r.platform === 'gitlab' ? 'GL' : esc(r.platform)}</span>`
+      : '';
   const evalEntry = evalMap.get(r.repoId);
   const evalScore = evalEntry ? computeScore(evalEntry, rubric) : null;
-  const evalBadge = evalScore !== null
-    ? `<button class="lc-eval-badge" data-act="eval" title="Evaluation: ${evalScore.toFixed(1)}/5 — click to edit">▣ ${evalScore.toFixed(1)}</button>`
-    : `<button class="lc-eval-badge lc-eval-empty" data-act="eval" title="Add evaluation scores">▣</button>`;
+  const evalBadge =
+    evalScore !== null
+      ? `<button class="lc-eval-badge" data-act="eval" title="Evaluation: ${evalScore.toFixed(1)}/5 — click to edit">▣ ${evalScore.toFixed(1)}</button>`
+      : `<button class="lc-eval-badge lc-eval-empty" data-act="eval" title="Add evaluation scores">▣</button>`;
   const M_GLYPH = { new: '○', explored: '◐', understood: '●' };
   const mLevel = r.masteryLevel || 'new';
   const masteryDot = `<span class="lib-mastery m-${mLevel}" title="${esc(levelLabel(mLevel))}">${M_GLYPH[mLevel]}</span>`;
@@ -391,7 +475,10 @@ function openQuickAsk(repoId, btn) {
   const panel = document.getElementById(`lc-qa-${safeId}`);
   if (!panel) return;
   const isOpen = !panel.classList.contains('hidden');
-  if (isOpen) { panel.classList.add('hidden'); return; }
+  if (isOpen) {
+    panel.classList.add('hidden');
+    return;
+  }
   panel.classList.remove('hidden');
   const input = panel.querySelector('.lc-qa-input');
   input?.focus();
@@ -407,7 +494,7 @@ function openQuickAsk(repoId, btn) {
     if (btn) btn.disabled = true;
     try {
       const resp = await chrome.runtime.sendMessage({ type: 'ASK_CACHED', question: q, analysis });
-      if (answerEl) answerEl.textContent = resp?.ok ? resp.answer : (resp?.error || 'Something went wrong.');
+      if (answerEl) answerEl.textContent = resp?.ok ? resp.answer : resp?.error || 'Something went wrong.';
     } catch {
       if (answerEl) answerEl.textContent = 'Could not reach the extension.';
     } finally {
@@ -415,7 +502,12 @@ function openQuickAsk(repoId, btn) {
     }
   };
 
-  input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.stopPropagation(); doAsk(); } });
+  input?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.stopPropagation();
+      doAsk();
+    }
+  });
   // Clear the event after first use by removing and re-adding the panel hidden on next render
 }
 
@@ -440,12 +532,20 @@ function showHoverPreview(repoId, cardEl) {
   const dec = decisionMap.get(repoId);
   const note = notesMap.get(repoId);
   const eli5 = full.eli5 ? `<p class="lchc-eli5">${esc(full.eli5.slice(0, 200))}</p>` : '';
-  const pros = Array.isArray(full.pros) && full.pros.length
-    ? `<p class="lchc-section">Strengths</p><ul class="lchc-list lchc-pros">${full.pros.slice(0, 3).map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`
-    : '';
-  const cons = Array.isArray(full.cons) && full.cons.length
-    ? `<p class="lchc-section">Weaknesses</p><ul class="lchc-list lchc-cons">${full.cons.slice(0, 2).map((c) => `<li>${esc(c)}</li>`).join('')}</ul>`
-    : '';
+  const pros =
+    Array.isArray(full.pros) && full.pros.length
+      ? `<p class="lchc-section">Strengths</p><ul class="lchc-list lchc-pros">${full.pros
+          .slice(0, 3)
+          .map((p) => `<li>${esc(p)}</li>`)
+          .join('')}</ul>`
+      : '';
+  const cons =
+    Array.isArray(full.cons) && full.cons.length
+      ? `<p class="lchc-section">Weaknesses</p><ul class="lchc-list lchc-cons">${full.cons
+          .slice(0, 2)
+          .map((c) => `<li>${esc(c)}</li>`)
+          .join('')}</ul>`
+      : '';
   const decHtml = dec
     ? `<p class="lchc-dec"><span class="lc-decision" data-d="${esc(dec.decision)}">${esc(DECISION_META[dec.decision]?.label || dec.decision)}</span>${dec.savedAt ? ` <span class="lchc-when">${esc(relativeTime(dec.savedAt))}</span>` : ''}</p>`
     : '';
@@ -455,7 +555,9 @@ function showHoverPreview(repoId, cardEl) {
         return `<p class="lchc-delta ${imp ? 'up' : 'down'}">${imp ? '↑' : '↓'} fit: ${esc(row.fitDelta.from)} → ${esc(row.fitDelta.to)}</p>`;
       })()
     : '';
-  const noteHtml = note ? `<p class="lchc-note">"${esc(note.slice(0, 100))}${note.length > 100 ? '…' : ''}"</p>` : '';
+  const noteHtml = note
+    ? `<p class="lchc-note">"${esc(note.slice(0, 100))}${note.length > 100 ? '…' : ''}"</p>`
+    : '';
 
   panel.innerHTML = decHtml + deltaHtml + noteHtml + eli5 + pros + cons;
 
@@ -490,29 +592,46 @@ async function copyCardMd(repoId, btn) {
     '',
     [
       full?.health?.score ? `**Health:** ${full.health.score}/100` : '',
-      row?.stars >= 1 ? `**Stars:** ${row.stars >= 1000 ? (row.stars / 1000).toFixed(1) + 'k' : row.stars}` : '',
+      row?.stars >= 1
+        ? `**Stars:** ${row.stars >= 1000 ? (row.stars / 1000).toFixed(1) + 'k' : row.stars}`
+        : '',
       row?.fit?.label ? `**Fit:** ${row.fit.label}` : '',
       dec ? `**Decision:** ${DECISION_META[dec.decision]?.label || dec.decision}` : '',
-    ].filter(Boolean).join(' · '),
+    ]
+      .filter(Boolean)
+      .join(' · '),
     full?.pros?.length ? `\n**Pros:** ${full.pros.slice(0, 3).join('; ')}` : '',
     full?.cons?.length ? `**Cons:** ${full.cons.slice(0, 2).join('; ')}` : '',
     note ? `\n> ${note}` : '',
     '',
     `_via RepoLens_`,
-  ].filter((l) => l !== undefined).join('\n').trim();
+  ]
+    .filter((l) => l !== undefined)
+    .join('\n')
+    .trim();
   try {
     await navigator.clipboard.writeText(lines);
     const orig = btn?.textContent;
-    if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = orig; }, 1200); }
-  } catch { /* clipboard denied — silent */ }
+    if (btn) {
+      btn.textContent = '✓';
+      setTimeout(() => {
+        btn.textContent = orig;
+      }, 1200);
+    }
+  } catch {
+    /* clipboard denied — silent */
+  }
 }
 
-function openNote(repoId, btn) {
+function openNote(repoId) {
   const safeId = repoId.replace(/[^a-z0-9]/gi, '-');
   const panel = document.getElementById(`lc-np-${safeId}`);
   if (!panel) return;
   const isOpen = !panel.classList.contains('hidden');
-  if (isOpen) { panel.classList.add('hidden'); return; }
+  if (isOpen) {
+    panel.classList.add('hidden');
+    return;
+  }
   panel.classList.remove('hidden');
   const textarea = panel.querySelector('.lc-note-input');
   if (textarea) {
@@ -528,14 +647,22 @@ function openNote(repoId, btn) {
     try {
       if (text) await chrome.storage.local.set({ [noteKey(repoId)]: text });
       else await chrome.storage.local.remove(noteKey(repoId));
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
     panel.classList.add('hidden');
     render();
   };
 
   textarea?.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { panel.classList.add('hidden'); return; }
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNote(); }
+    if (e.key === 'Escape') {
+      panel.classList.add('hidden');
+      return;
+    }
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      saveNote();
+    }
   });
   panel.querySelector('.lc-note-save')?.addEventListener('click', saveNote);
 }
@@ -548,7 +675,9 @@ function openNote(repoId, btn) {
 async function focusExistingOutputTab(repoId) {
   try {
     const tabs = await chrome.tabs.query({ url: chrome.runtime.getURL('output-tab.html') + '*' });
-    const existing = tabs.find((t) => typeof t.title === 'string' && t.title.includes(`${repoId} — RepoLens`));
+    const existing = tabs.find(
+      (t) => typeof t.title === 'string' && t.title.includes(`${repoId} — RepoLens`)
+    );
     if (!existing) return false;
     await chrome.tabs.update(existing.id, { active: true });
     await chrome.windows.update(existing.windowId, { focused: true });
@@ -560,7 +689,10 @@ async function focusExistingOutputTab(repoId) {
 
 async function openRow(repoId) {
   const cached = cacheByRepo.get(repoId);
-  if (!cached) { openSource(repoId); return; }
+  if (!cached) {
+    openSource(repoId);
+    return;
+  }
   if (await focusExistingOutputTab(repoId)) return;
   openCachedAnalysis(cached);
 }
@@ -573,10 +705,14 @@ async function rescan(repoId) {
   const key = 'repolens_' + crypto.randomUUID();
   try {
     await chrome.runtime.sendMessage({
-      type: 'RERUN', sessionKey: key,
-      platform: rowFor(repoId)?.platform || 'github', repoId,
+      type: 'RERUN',
+      sessionKey: key,
+      platform: rowFor(repoId)?.platform || 'github',
+      repoId,
     });
-  } catch { /* background asleep — the output tab will surface any failure */ }
+  } catch {
+    /* background asleep — the output tab will surface any failure */
+  }
   chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${key}`) });
 }
 
@@ -585,12 +721,19 @@ async function removeRepo(repoId, btn) {
   if (!btn.dataset.armed) {
     btn.dataset.armed = '1';
     btn.textContent = 'Remove?';
-    setTimeout(() => { btn.dataset.armed = ''; btn.textContent = '✕'; }, 2500);
+    setTimeout(() => {
+      btn.dataset.armed = '';
+      btn.textContent = '✕';
+    }, 2500);
     return;
   }
   const cached = cacheByRepo.get(repoId);
   if (cached) {
-    try { await removeCached(cached.platform, cached.repoId); } catch { /* already gone */ }
+    try {
+      await removeCached(cached.platform, cached.repoId);
+    } catch {
+      /* already gone */
+    }
   }
   await deleteRepo(repoId); // best-effort; never throws
   cacheByRepo.delete(repoId);
@@ -606,9 +749,15 @@ async function removeRepo(repoId, btn) {
 async function pruneRepoFromCollections(repoId) {
   const touched = collections.filter((c) => collectionContains(c, repoId));
   if (!touched.length) return;
-  collections = collections.map((c) => removeRepoFromCollection(c, repoId, { now: new Date().toISOString() }));
+  collections = collections.map((c) =>
+    removeRepoFromCollection(c, repoId, { now: new Date().toISOString() })
+  );
   for (const c of touched) {
-    try { await saveCollection(collections.find((x) => x.id === c.id)); } catch { /* best-effort */ }
+    try {
+      await saveCollection(collections.find((x) => x.id === c.id));
+    } catch {
+      /* best-effort */
+    }
   }
 }
 
@@ -634,7 +783,12 @@ function updateSelectionBar() {
   const del = document.getElementById('sel-del');
   if (del) {
     del.disabled = !n;
-    if (delArmed) { delArmed = false; clearTimeout(delTimer); delTimer = null; resetDelBtn(del); } // a changed selection cancels a pending confirm
+    if (delArmed) {
+      delArmed = false;
+      clearTimeout(delTimer);
+      delTimer = null;
+      resetDelBtn(del);
+    } // a changed selection cancels a pending confirm
   }
   const all = document.getElementById('sel-all');
   if (all) {
@@ -648,7 +802,9 @@ function updateSelectionBar() {
     stack.disabled = !ok;
     stack.title = ok
       ? `Build a wiring diagram from ${n} repos`
-      : n < 2 ? 'Select 2–6 repos to build a stack' : 'Select at most 6 repos';
+      : n < 2
+        ? 'Select 2–6 repos to build a stack'
+        : 'Select at most 6 repos';
   }
   const compare = document.getElementById('sel-compare');
   if (compare) {
@@ -674,8 +830,11 @@ function selectAllToggle() {
 // ─── N-way compare modal ──────────────────────────────────────────────────────
 
 function compareSelected() {
-  const repos = [...selected].map(id => allRows.find(r => r.repoId === id)).filter(Boolean);
-  if (repos.length < 2) { setStatus('Select at least 2 repos to compare.'); return; }
+  const repos = [...selected].map((id) => allRows.find((r) => r.repoId === id)).filter(Boolean);
+  if (repos.length < 2) {
+    setStatus('Select at least 2 repos to compare.');
+    return;
+  }
 
   document.getElementById('rl-cmp-modal')?.remove();
   const modal = document.createElement('div');
@@ -684,28 +843,72 @@ function compareSelected() {
   modal.setAttribute('aria-label', `Compare ${repos.length} repos`);
   modal.setAttribute('aria-modal', 'true');
 
-  const thCols = repos.map(r =>
-    `<th><a href="https://github.com/${esc(r.repoId)}" target="_blank" rel="noopener" class="cmp2-name">${esc(r.name)}</a><br><span class="cmp2-id">${esc(r.repoId)}</span></th>`
-  ).join('');
+  const thCols = repos
+    .map(
+      (r) =>
+        `<th><a href="https://github.com/${esc(r.repoId)}" target="_blank" rel="noopener" class="cmp2-name">${esc(r.name)}</a><br><span class="cmp2-id">${esc(r.repoId)}</span></th>`
+    )
+    .join('');
 
   const TABLE_ROWS = [
-    { label: 'Fit', fn: r => `<span class="lc-chip fit-${esc(r.fit?.level ?? 'unrated')}">${esc(r.fit?.label ?? '—')}</span>` },
-    { label: 'Fit delta', fn: r => r.fitDelta ? `<span class="lc-fit-delta ${FIT_ORDER.indexOf(r.fitDelta.to) < FIT_ORDER.indexOf(r.fitDelta.from) ? 'up' : 'down'}">${r.fitDelta.from} → ${r.fitDelta.to}</span>` : '—' },
-    { label: 'Health', fn: r => r.health != null ? `${r.health}%` : '—' },
-    { label: 'Stars', fn: r => r.stars != null ? (r.stars >= 1000 ? (r.stars / 1000).toFixed(1) + 'k' : String(r.stars)) : '—' },
-    { label: 'Language', fn: r => esc(r.languages?.[0]?.name ?? '—') },
-    { label: 'Decision', fn: r => { const d = decisionMap.get(r.repoId); return d ? `<span class="lc-decision" data-d="${esc(d.decision)}">${esc(DECISION_META[d.decision]?.label || d.decision)}</span>` : '—'; } },
-    { label: 'Eval score', fn: r => { const ev = evalMap.get(r.repoId); const s = ev ? computeScore(ev, rubric) : null; return s !== null ? `${s.toFixed(1)}/5` : '—'; } },
-    ...rubric.map(crit => ({
+    {
+      label: 'Fit',
+      fn: (r) =>
+        `<span class="lc-chip fit-${esc(r.fit?.level ?? 'unrated')}">${esc(r.fit?.label ?? '—')}</span>`,
+    },
+    {
+      label: 'Fit delta',
+      fn: (r) =>
+        r.fitDelta
+          ? `<span class="lc-fit-delta ${FIT_ORDER.indexOf(r.fitDelta.to) < FIT_ORDER.indexOf(r.fitDelta.from) ? 'up' : 'down'}">${r.fitDelta.from} → ${r.fitDelta.to}</span>`
+          : '—',
+    },
+    { label: 'Health', fn: (r) => (r.health != null ? `${r.health}%` : '—') },
+    {
+      label: 'Stars',
+      fn: (r) =>
+        r.stars != null ? (r.stars >= 1000 ? (r.stars / 1000).toFixed(1) + 'k' : String(r.stars)) : '—',
+    },
+    { label: 'Language', fn: (r) => esc(r.languages?.[0]?.name ?? '—') },
+    {
+      label: 'Decision',
+      fn: (r) => {
+        const d = decisionMap.get(r.repoId);
+        return d
+          ? `<span class="lc-decision" data-d="${esc(d.decision)}">${esc(DECISION_META[d.decision]?.label || d.decision)}</span>`
+          : '—';
+      },
+    },
+    {
+      label: 'Eval score',
+      fn: (r) => {
+        const ev = evalMap.get(r.repoId);
+        const s = ev ? computeScore(ev, rubric) : null;
+        return s !== null ? `${s.toFixed(1)}/5` : '—';
+      },
+    },
+    ...rubric.map((crit) => ({
       label: crit.name,
-      fn: r => { const ev = evalMap.get(r.repoId); const v = ev?.scores?.[crit.id]; return v != null ? '★'.repeat(v) + '☆'.repeat(5 - v) : '—'; },
+      fn: (r) => {
+        const ev = evalMap.get(r.repoId);
+        const v = ev?.scores?.[crit.id];
+        return v != null ? '★'.repeat(v) + '☆'.repeat(5 - v) : '—';
+      },
     })),
-    { label: 'Capabilities', fn: r => r.capabilities?.slice(0, 5).map(c => `<span class="cap-tag">${esc(c)}</span>`).join(' ') || '—' },
-    { label: 'Note', fn: r => esc((notesMap.get(r.repoId) || '').slice(0, 80)) || '—' },
+    {
+      label: 'Capabilities',
+      fn: (r) =>
+        r.capabilities
+          ?.slice(0, 5)
+          .map((c) => `<span class="cap-tag">${esc(c)}</span>`)
+          .join(' ') || '—',
+    },
+    { label: 'Note', fn: (r) => esc((notesMap.get(r.repoId) || '').slice(0, 80)) || '—' },
   ];
 
-  const tBody = TABLE_ROWS.map(row =>
-    `<tr><th class="cmp2-label">${esc(row.label)}</th>${repos.map(r => `<td>${row.fn(r)}</td>`).join('')}</tr>`
+  const tBody = TABLE_ROWS.map(
+    (row) =>
+      `<tr><th class="cmp2-label">${esc(row.label)}</th>${repos.map((r) => `<td>${row.fn(r)}</td>`).join('')}</tr>`
   ).join('');
 
   modal.innerHTML = `
@@ -729,10 +932,20 @@ function compareSelected() {
   document.body.appendChild(modal);
   requestAnimationFrame(() => modal.classList.add('visible'));
 
-  const close = () => { modal.classList.remove('visible'); setTimeout(() => modal.remove(), 200); };
+  const close = () => {
+    modal.classList.remove('visible');
+    setTimeout(() => modal.remove(), 200);
+  };
   modal.querySelector('#cmp2-close')?.addEventListener('click', close);
-  modal.addEventListener('click', e => { if (e.target === modal) close(); });
-  const escFn = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escFn); } };
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) close();
+  });
+  const escFn = (e) => {
+    if (e.key === 'Escape') {
+      close();
+      document.removeEventListener('keydown', escFn);
+    }
+  };
   document.addEventListener('keydown', escFn);
   modal.querySelector('#cmp2-md')?.addEventListener('click', () => exportCompareMatrix(repos, 'md'));
   modal.querySelector('#cmp2-csv')?.addEventListener('click', () => exportCompareMatrix(repos, 'csv'));
@@ -740,34 +953,74 @@ function compareSelected() {
 
 function exportCompareMatrix(repos, format) {
   const date = new Date().toISOString().slice(0, 10);
-  const dl = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
-  const getRow = r => {
+  const dl = (blob, name) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  const getRow = (r) => {
     const dec = decisionMap.get(r.repoId);
     const ev = evalMap.get(r.repoId);
     const score = ev ? computeScore(ev, rubric) : null;
     return {
-      repoId: r.repoId, fit: r.fit?.label ?? '—', health: r.health ?? '—', stars: r.stars ?? '—',
+      repoId: r.repoId,
+      fit: r.fit?.label ?? '—',
+      health: r.health ?? '—',
+      stars: r.stars ?? '—',
       language: r.languages?.[0]?.name ?? '—',
-      decision: dec ? (DECISION_META[dec.decision]?.label || dec.decision) : '—',
+      decision: dec ? DECISION_META[dec.decision]?.label || dec.decision : '—',
       evalScore: score !== null ? score.toFixed(1) : '—',
-      critScores: rubric.map(c => ev?.scores?.[c.id] ?? '—'),
+      critScores: rubric.map((c) => ev?.scores?.[c.id] ?? '—'),
       note: (notesMap.get(r.repoId) || '').slice(0, 80),
     };
   };
   if (format === 'csv') {
-    const qv = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const hdr = ['repoId', 'fit', 'health', 'stars', 'language', 'decision', 'evalScore', ...rubric.map(c => c.name), 'note'].join(',');
-    const rows = repos.map(r => { const d = getRow(r); return [qv(d.repoId), qv(d.fit), d.health, d.stars, qv(d.language), qv(d.decision), d.evalScore, ...d.critScores, qv(d.note)].join(','); });
+    const qv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const hdr = [
+      'repoId',
+      'fit',
+      'health',
+      'stars',
+      'language',
+      'decision',
+      'evalScore',
+      ...rubric.map((c) => c.name),
+      'note',
+    ].join(',');
+    const rows = repos.map((r) => {
+      const d = getRow(r);
+      return [
+        qv(d.repoId),
+        qv(d.fit),
+        d.health,
+        d.stars,
+        qv(d.language),
+        qv(d.decision),
+        d.evalScore,
+        ...d.critScores,
+        qv(d.note),
+      ].join(',');
+    });
     dl(new Blob([[hdr, ...rows].join('\n')], { type: 'text/csv' }), `repolens-compare-${date}.csv`);
   } else {
-    const critCols = rubric.map(c => ` ${c.name} |`).join('');
+    const critCols = rubric.map((c) => ` ${c.name} |`).join('');
     const hdr = `| Repo | Fit | Health | Stars | Language | Decision | Eval |${critCols} Note |`;
     const sep = `|---|---|---|---|---|---|---|${rubric.map(() => '---|').join('')}---|`;
-    const rows = repos.map(r => {
+    const rows = repos.map((r) => {
       const d = getRow(r);
-      return `| [${d.repoId}](https://github.com/${d.repoId}) | ${d.fit} | ${d.health} | ${d.stars} | ${d.language} | ${d.decision} | ${d.evalScore} |${d.critScores.map(s => ` ${s} |`).join('')} ${d.note.replace(/\|/g, '\\|')} |`;
+      return `| [${d.repoId}](https://github.com/${d.repoId}) | ${d.fit} | ${d.health} | ${d.stars} | ${d.language} | ${d.decision} | ${d.evalScore} |${d.critScores.map((s) => ` ${s} |`).join('')} ${d.note.replace(/\|/g, '\\|')} |`;
     });
-    dl(new Blob([`# Compare: ${repos.map(r => r.name).join(' · ')} — ${date}\n\n${hdr}\n${sep}\n${rows.join('\n')}\n`], { type: 'text/markdown' }), `repolens-compare-${date}.md`);
+    dl(
+      new Blob(
+        [
+          `# Compare: ${repos.map((r) => r.name).join(' · ')} — ${date}\n\n${hdr}\n${sep}\n${rows.join('\n')}\n`,
+        ],
+        { type: 'text/markdown' }
+      ),
+      `repolens-compare-${date}.md`
+    );
   }
 }
 
@@ -810,7 +1063,10 @@ function deleteSelectedFlow(btn) {
     delArmed = true;
     btn.classList.add('armed');
     btn.textContent = `Delete ${selected.size}? Confirm`;
-    delTimer = setTimeout(() => { delArmed = false; resetDelBtn(btn); }, 3000);
+    delTimer = setTimeout(() => {
+      delArmed = false;
+      resetDelBtn(btn);
+    }, 3000);
     return;
   }
   clearTimeout(delTimer);
@@ -827,7 +1083,11 @@ async function deleteSelected() {
   for (const repoId of ids) {
     const cached = cacheByRepo.get(repoId);
     if (cached) {
-      try { await removeCached(cached.platform, cached.repoId); } catch { /* already gone */ }
+      try {
+        await removeCached(cached.platform, cached.repoId);
+      } catch {
+        /* already gone */
+      }
     }
     await deleteRepo(repoId); // best-effort; never throws
     cacheByRepo.delete(repoId);
@@ -835,7 +1095,10 @@ async function deleteSelected() {
   const idSet = new Set(ids);
   allRows = allRows.filter((r) => !idSet.has(r.repoId));
   selected.clear();
-  if (!allRows.length) { location.reload(); return; } // fall back to the clean empty state
+  if (!allRows.length) {
+    location.reload();
+    return;
+  } // fall back to the clean empty state
   setSelectionMode(false, false); // tear down the mode; we render once below
   renderCaps();
   render();
@@ -847,7 +1110,7 @@ async function deleteSelected() {
 async function bulkDecide(decision) {
   const ids = [...selected];
   if (!ids.length) return;
-  const label = decision ? (DECISION_META[decision]?.label || decision) : 'cleared';
+  const label = decision ? DECISION_META[decision]?.label || decision : 'cleared';
   setStatus(`Setting decision to ${label} for ${ids.length} repo${ids.length === 1 ? '' : 's'}…`);
   const now = new Date().toISOString();
   const { clearDecision } = await import('./store.js');
@@ -876,39 +1139,59 @@ function renderStats() {
   // The seeded demo repo is a tour prop, not part of the user's real library.
   const realRows = allRows.filter((r) => !isDemo(r));
   const s = libraryStats(realRows);
-  if (!s.total) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  if (!s.total) {
+    host.classList.add('hidden');
+    host.innerHTML = '';
+    return;
+  }
   host.classList.remove('hidden');
   const pill = (level, n) => (n ? html`<span class="ls-pill ${level}">${n} ${level}</span>` : '');
   const staleCount = realRows.filter((r) => {
     if (!r.savedAt) return false;
-    return (Date.now() - new Date(r.savedAt).getTime()) > 30 * 86_400_000;
+    return Date.now() - new Date(r.savedAt).getTime() > 30 * 86_400_000;
   }).length;
   const stalePill = staleCount
-    ? html`<button class="ls-stale" id="refresh-stale" title="Queue stale repos for a fresh scan">↻ ${staleCount} stale</button>`
+    ? html`<button class="ls-stale" id="refresh-stale" title="Queue stale repos for a fresh scan">
+        ↻ ${staleCount} stale
+      </button>`
     : '';
   const FIT_ORDER_ALL = ['strong', 'solid', 'care', 'risky', 'unrated'];
   const barSegments = FIT_ORDER_ALL.filter((lvl) => s.byFit[lvl] > 0)
-    .map((lvl) => `<span class="ls-bar-seg ls-bar-${lvl}" style="flex:${s.byFit[lvl]}" title="${s.byFit[lvl]} ${lvl}"></span>`)
+    .map(
+      (lvl) =>
+        `<span class="ls-bar-seg ls-bar-${lvl}" style="flex:${s.byFit[lvl]}" title="${s.byFit[lvl]} ${lvl}"></span>`
+    )
     .join('');
   const decCounts = { adopt: 0, trial: 0, hold: 0, reject: 0 };
   for (const d of decisionMap.values()) if (decCounts[d.decision] != null) decCounts[d.decision]++;
   const totalDecided = decCounts.adopt + decCounts.trial + decCounts.hold + decCounts.reject;
   const undecided = s.total - totalDecided;
   const decSummary = totalDecided
-    ? `<span class="ls-dec-row">${
-        [
-          decCounts.adopt  ? `<button class="ls-dec adopt"  title="Show Adopt"  data-filter-dec="adopt">${decCounts.adopt} Adopt</button>`  : '',
-          decCounts.trial  ? `<button class="ls-dec trial"  title="Show Trial"  data-filter-dec="trial">${decCounts.trial} Trial</button>`  : '',
-          decCounts.hold   ? `<button class="ls-dec hold"   title="Show Hold"   data-filter-dec="hold">${decCounts.hold} Hold</button>`   : '',
-          decCounts.reject ? `<button class="ls-dec reject" title="Show Reject" data-filter-dec="reject">${decCounts.reject} Reject</button>` : '',
-          undecided > 0    ? `<button class="ls-dec undecided" title="Show Undecided" data-filter-dec="undecided">${undecided} undecided</button>` : '',
-        ].filter(Boolean).join('<span class="ls-dec-sep">·</span>')
-      }</span>`
+    ? `<span class="ls-dec-row">${[
+        decCounts.adopt
+          ? `<button class="ls-dec adopt"  title="Show Adopt"  data-filter-dec="adopt">${decCounts.adopt} Adopt</button>`
+          : '',
+        decCounts.trial
+          ? `<button class="ls-dec trial"  title="Show Trial"  data-filter-dec="trial">${decCounts.trial} Trial</button>`
+          : '',
+        decCounts.hold
+          ? `<button class="ls-dec hold"   title="Show Hold"   data-filter-dec="hold">${decCounts.hold} Hold</button>`
+          : '',
+        decCounts.reject
+          ? `<button class="ls-dec reject" title="Show Reject" data-filter-dec="reject">${decCounts.reject} Reject</button>`
+          : '',
+        undecided > 0
+          ? `<button class="ls-dec undecided" title="Show Undecided" data-filter-dec="undecided">${undecided} undecided</button>`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('<span class="ls-dec-sep">·</span>')}</span>`
     : '';
   const triagePct = s.total ? Math.round((totalDecided / s.total) * 100) : 0;
-  const triagePill = s.total > 0
-    ? `<span class="ls-triage-pct" title="${totalDecided} of ${s.total} repos triaged">${triagePct}% triaged</span>`
-    : '';
+  const triagePill =
+    s.total > 0
+      ? `<span class="ls-triage-pct" title="${totalDecided} of ${s.total} repos triaged">${triagePct}% triaged</span>`
+      : '';
   // Honest mastery coverage — counts, never a percentage.
   const agg = aggregateMastery(masteryMap);
   const masteryLine = agg.total
@@ -918,14 +1201,19 @@ function renderStats() {
     ? `<span class="ls-mastery" title="Self-graded understanding from deep-dive checks">${masteryLine}</span>`
     : '';
   host.innerHTML = String(html`
-    <span class="ls-total"><span class="ls-total-n" data-count="${s.total}">${s.total}</span> repo${s.total === 1 ? '' : 's'}</span>
-    ${triagePill}
-    ${barSegments ? `<span class="ls-bar" title="Fit distribution">${barSegments}</span>` : ''}
+    <span class="ls-total"
+      ><span class="ls-total-n" data-count="${s.total}">${s.total}</span> repo${s.total === 1
+        ? ''
+        : 's'}</span
+    >
+    ${triagePill} ${barSegments ? `<span class="ls-bar" title="Fit distribution">${barSegments}</span>` : ''}
     <span class="ls-pills">${FIT_ORDER_ALL.map((lvl) => pill(lvl, s.byFit[lvl]))}</span>
-    ${s.avgHealth != null ? html`<span class="ls-health">avg health <span class="ls-health-n" data-count="${s.avgHealth}">${s.avgHealth}</span></span>` : ''}
-    ${stalePill}
-    ${decSummary}
-    ${masterySummary}
+    ${s.avgHealth != null
+      ? html`<span class="ls-health"
+          >avg health <span class="ls-health-n" data-count="${s.avgHealth}">${s.avgHealth}</span></span
+        >`
+      : ''}
+    ${stalePill} ${decSummary} ${masterySummary}
   `);
   countUpStat(host.querySelector('.ls-total-n'));
   countUpStat(host.querySelector('.ls-health-n'));
@@ -945,16 +1233,26 @@ function countUpStat(el) {
   if (!el) return;
   const target = Number(el.dataset.count);
   if (!Number.isFinite(target)) return;
-  if (prefersReducedMotion()) { el.textContent = String(target); return; }
+  if (prefersReducedMotion()) {
+    el.textContent = String(target);
+    return;
+  }
   const cu = new CountUp(el, target, { duration: 0.9, useGrouping: true });
-  if (cu.error) { el.textContent = String(target); return; }
+  if (cu.error) {
+    el.textContent = String(target);
+    return;
+  }
   cu.start();
 }
 
 function renderNlFilterBanner() {
   const host = document.getElementById('nl-filter-banner');
   if (!host) return;
-  if (!nlFilter) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  if (!nlFilter) {
+    host.classList.add('hidden');
+    host.innerHTML = '';
+    return;
+  }
   host.classList.remove('hidden');
   if (!nlFilter.ids) {
     host.innerHTML = `<span class="nlf-spinner">⟳</span> <span class="nlf-text">AI filtering for <em>${esc(nlFilter.question)}</em>…</span>`;
@@ -963,7 +1261,9 @@ function renderNlFilterBanner() {
   const count = nlFilter.ids.length;
   const errSpan = nlFilter.error ? `<span class="nlf-err">${esc(nlFilter.error)}</span>` : '';
   const result = !nlFilter.error
-    ? (count ? `<span class="nlf-count">${count} match${count === 1 ? '' : 'es'}</span>` : '<span class="nlf-none">No matches found</span>')
+    ? count
+      ? `<span class="nlf-count">${count} match${count === 1 ? '' : 'es'}</span>`
+      : '<span class="nlf-none">No matches found</span>'
     : errSpan;
   host.innerHTML = `<span class="nlf-label">✦ AI: <em>${esc(nlFilter.question)}</em></span>${result}<button class="nlf-clear" id="nlf-clear">✕ Clear</button>`;
   host.querySelector('#nlf-clear')?.addEventListener('click', () => {
@@ -976,13 +1276,15 @@ function renderNlFilterBanner() {
 async function refreshStale() {
   const stale = allRows.filter((r) => {
     if (!r.savedAt) return false;
-    return (Date.now() - new Date(r.savedAt).getTime()) > 30 * 86_400_000;
+    return Date.now() - new Date(r.savedAt).getTime() > 30 * 86_400_000;
   });
   if (!stale.length) return;
   const urls = stale.map((r) => sourceUrl(r.platform || '', r.repoId));
   try {
     await chrome.storage.session.set({ repolens_batch_prefill: urls });
-  } catch { /* session storage unavailable — open batch anyway */ }
+  } catch {
+    /* session storage unavailable — open batch anyway */
+  }
   chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') });
 }
 
@@ -1000,7 +1302,16 @@ async function exportLibrary() {
   try {
     setStatus('Preparing backup…');
     const [stores, cached] = await Promise.all([exportStores(), listCached().catch(() => [])]);
-    const backup = buildBackup({ repos: stores.repos, nodes: stores.nodes, edges: stores.edges, cache: cached, collections: stores.collections, decisions: stores.decisions, snapshots: stores.snapshots, scenes: stores.scenes });
+    const backup = buildBackup({
+      repos: stores.repos,
+      nodes: stores.nodes,
+      edges: stores.edges,
+      cache: cached,
+      collections: stores.collections,
+      decisions: stores.decisions,
+      snapshots: stores.snapshots,
+      scenes: stores.scenes,
+    });
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1011,7 +1322,9 @@ async function exportLibrary() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     const c = backup.counts;
-    setStatus(`Exported ${c.repos} repo${c.repos === 1 ? '' : 's'}, ${c.cache} cached, ${c.edges} connection${c.edges === 1 ? '' : 's'}.`);
+    setStatus(
+      `Exported ${c.repos} repo${c.repos === 1 ? '' : 's'}, ${c.cache} cached, ${c.edges} connection${c.edges === 1 ? '' : 's'}.`
+    );
   } catch (e) {
     setStatus('Export failed: ' + (e?.message || e), true);
   }
@@ -1049,13 +1362,31 @@ function showImportConfirm(value, counts, warnings = []) {
   if (!host) return;
   setStatus('');
   host.classList.remove('hidden');
-  const warn = warnings.length ? html`<p class="lic-msg" style="color:var(--fit-care)">${warnings[0]}</p>` : '';
+  const warn = warnings.length
+    ? html`<p class="lic-msg" style="color:var(--fit-care)">${warnings[0]}</p>`
+    : '';
   host.innerHTML = String(html`
     ${warn}
-    <p class="lic-msg">This backup has <b>${counts.repos}</b> repo${counts.repos === 1 ? '' : 's'}, <b>${counts.cache}</b> cached scan${counts.cache === 1 ? '' : 's'} and <b>${counts.edges}</b> connection${counts.edges === 1 ? '' : 's'}. How should it be applied?</p>
+    <p class="lic-msg">
+      This backup has <b>${counts.repos}</b> repo${counts.repos === 1 ? '' : 's'},
+      <b>${counts.cache}</b> cached scan${counts.cache === 1 ? '' : 's'} and
+      <b>${counts.edges}</b> connection${counts.edges === 1 ? '' : 's'}. How should it be applied?
+    </p>
     <div class="lic-actions">
-      <button class="lib-btn" id="imp-merge" title="Add these repos to your library, overwriting any with the same id">Merge into my library</button>
-      <button class="lib-btn lib-btn-danger" id="imp-replace" title="Wipe the current library and restore only this backup">Replace everything</button>
+      <button
+        class="lib-btn"
+        id="imp-merge"
+        title="Add these repos to your library, overwriting any with the same id"
+      >
+        Merge into my library
+      </button>
+      <button
+        class="lib-btn lib-btn-danger"
+        id="imp-replace"
+        title="Wipe the current library and restore only this backup"
+      >
+        Replace everything
+      </button>
       <button class="lib-btn" id="imp-cancel">Cancel</button>
     </div>
   `);
@@ -1122,10 +1453,16 @@ function wireToolbar() {
     densityCompact = !densityCompact;
     document.getElementById('grid')?.classList.toggle('density-compact', densityCompact);
     const btn = document.getElementById('density-toggle');
-    if (btn) { btn.textContent = densityCompact ? '⊞' : '⊟'; btn.classList.toggle('on', densityCompact); btn.title = densityCompact ? 'Switch to comfortable view' : 'Switch to compact view'; }
+    if (btn) {
+      btn.textContent = densityCompact ? '⊞' : '⊟';
+      btn.classList.toggle('on', densityCompact);
+      btn.title = densityCompact ? 'Switch to comfortable view' : 'Switch to compact view';
+    }
     chrome.storage.local.set({ libraryDensity: densityCompact ? 'compact' : 'comfortable' });
   });
-  document.getElementById('batch-scan-link')?.addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }));
+  document
+    .getElementById('batch-scan-link')
+    ?.addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }));
   document.getElementById('compare-btn')?.addEventListener('click', () => {
     compareSet.clear();
     updateCompareToolbar();
@@ -1144,7 +1481,7 @@ function wireToolbar() {
   document.getElementById('sel-compare')?.addEventListener('click', compareSelected);
   document.getElementById('sel-done')?.addEventListener('click', () => setSelectionMode(false));
   document.getElementById('discover-btn')?.addEventListener('click', openDiscovery);
-  document.getElementById('discover-form')?.addEventListener('submit', async e => {
+  document.getElementById('discover-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const q = document.getElementById('discover-input')?.value.trim();
     if (!q) return;
@@ -1158,7 +1495,7 @@ function wireToolbar() {
       resultsEl.innerHTML = `<p class="dc-empty">Search failed: ${esc(err.message)}</p>`;
     }
   });
-  document.getElementById('discover-panel')?.addEventListener('click', e => {
+  document.getElementById('discover-panel')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.dc-open');
     if (btn?.dataset.url) chrome.tabs.create({ url: btn.dataset.url });
   });
@@ -1195,22 +1532,25 @@ const CAPS_VISIBLE = 10;
 function renderCaps() {
   const host = document.getElementById('caps');
   const caps = allCapabilities(allRows);
-  if (!caps.length) { host.innerHTML = ''; return; }
+  if (!caps.length) {
+    host.innerHTML = '';
+    return;
+  }
 
   const visibleCaps = caps.slice(0, CAPS_VISIBLE);
   const hiddenCaps = caps.slice(CAPS_VISIBLE);
   const showAll = host.dataset.expanded === '1';
-  const renderCap = (c) => `<button class="lib-cap${state.capability === c ? ' on' : ''}" data-cap="${esc(c)}">${esc(c)}</button>`;
+  const renderCap = (c) =>
+    `<button class="lib-cap${state.capability === c ? ' on' : ''}" data-cap="${esc(c)}">${esc(c)}</button>`;
 
   const moreBtn = hiddenCaps.length
-    ? (showAll
-        ? `<button class="lib-cap lib-cap-more" data-toggle-caps>− less</button>`
-        : `<button class="lib-cap lib-cap-more" data-toggle-caps>+ ${hiddenCaps.length} more</button>`)
+    ? showAll
+      ? `<button class="lib-cap lib-cap-more" data-toggle-caps>− less</button>`
+      : `<button class="lib-cap lib-cap-more" data-toggle-caps>+ ${hiddenCaps.length} more</button>`
     : '';
 
-  host.innerHTML = visibleCaps.map(renderCap).join('')
-    + (showAll ? hiddenCaps.map(renderCap).join('') : '')
-    + moreBtn;
+  host.innerHTML =
+    visibleCaps.map(renderCap).join('') + (showAll ? hiddenCaps.map(renderCap).join('') : '') + moreBtn;
 
   if (!host._capsDelegated) {
     host._capsDelegated = true;
@@ -1260,7 +1600,8 @@ function toggleRadarView() {
   // Ensure the Corkboard view is closed when the Radar opens.
   document.getElementById('corkboard-panel')?.classList.add('hidden');
   syncViewSwitcher();
-  if (state.view === 'radar') renderRadar(); else render();
+  if (state.view === 'radar') renderRadar();
+  else render();
 }
 
 function renderRadar() {
@@ -1275,7 +1616,8 @@ function renderRadar() {
   }
   const hasAny = Object.values(byDecision).some((arr) => arr.length > 0);
   if (!hasAny) {
-    host.innerHTML = '<p class="radar-empty-msg">No decisions recorded yet.<br>Open a repo analysis and use the <strong>Decision Log</strong> on the Verdict tab to record Adopt, Trial, Hold, or Reject.</p>';
+    host.innerHTML =
+      '<p class="radar-empty-msg">No decisions recorded yet.<br>Open a repo analysis and use the <strong>Decision Log</strong> on the Verdict tab to record Adopt, Trial, Hold, or Reject.</p>';
     return;
   }
   const cols = ['adopt', 'trial', 'hold', 'reject'].map((key) => {
@@ -1283,10 +1625,12 @@ function renderRadar() {
     const items = byDecision[key];
     const icon = RADAR_ICONS[key];
     const chips = items.length
-      ? items.map(({ row }) => {
-          const label = row.repoId.includes('/') ? row.repoId.split('/')[1] : row.repoId;
-          return `<button class="radar-chip" data-repo="${esc(row.repoId)}" title="${esc(row.repoId)}${row.blurb ? ': ' + esc(row.blurb) : ''}">${esc(label)}</button>`;
-        }).join('')
+      ? items
+          .map(({ row }) => {
+            const label = row.repoId.includes('/') ? row.repoId.split('/')[1] : row.repoId;
+            return `<button class="radar-chip" data-repo="${esc(row.repoId)}" title="${esc(row.repoId)}${row.blurb ? ': ' + esc(row.blurb) : ''}">${esc(label)}</button>`;
+          })
+          .join('')
       : `<span class="radar-empty-col">—</span>`;
     return `<div class="radar-col">
       <div class="radar-col-head" style="color:${meta.color};border-bottom-color:${meta.border}">
@@ -1309,7 +1653,9 @@ function renderRadar() {
     await navigator.clipboard.writeText(md).catch(() => {});
     const orig = btn.textContent;
     btn.textContent = '✓ Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 1600);
+    setTimeout(() => {
+      btn.textContent = orig;
+    }, 1600);
   });
 }
 
@@ -1320,7 +1666,10 @@ function radarToMarkdown(byDecision) {
     const icon = RADAR_ICONS[key];
     const items = byDecision[key];
     lines.push(`## ${icon} ${meta.label} (${items.length})`);
-    if (!items.length) { lines.push('_None_', ''); continue; }
+    if (!items.length) {
+      lines.push('_None_', '');
+      continue;
+    }
     lines.push('| Repo | Note |', '|------|------|');
     for (const { row, note } of items) {
       const url = sourceUrl(row.platform || '', row.repoId);
@@ -1344,7 +1693,8 @@ function toggleCorkboardView() {
   // Ensure the Radar view is closed when the Corkboard opens.
   document.getElementById('radar-panel')?.classList.add('hidden');
   syncViewSwitcher();
-  if (on) renderCorkboard(); else render();
+  if (on) renderCorkboard();
+  else render();
 }
 
 let cbApi = null;
@@ -1353,8 +1703,12 @@ async function renderCorkboard() {
   if (!panel) return;
   const graph = await getLibraryGraph();
   if (!graph.nodes.length) {
-    if (cbApi) { cbApi.destroy(); cbApi = null; }
-    panel.innerHTML = '<div class="corkboard-empty">Scan a few repos — and run Alternatives / Synergies / Versus — to grow your board.</div>';
+    if (cbApi) {
+      cbApi.destroy();
+      cbApi = null;
+    }
+    panel.innerHTML =
+      '<div class="corkboard-empty">Scan a few repos — and run Alternatives / Synergies / Versus — to grow your board.</div>';
     return;
   }
   // Repo metadata (fit level + health) from the loaded rows. `r.fit.level` is the
@@ -1375,9 +1729,9 @@ async function renderCorkboard() {
   const saved = await getScene('library');
   const savedPos = saved ? Object.fromEntries((saved.nodes || []).map((n) => [n.id, n])) : {};
   const seeded = layoutCorkboard(built.nodes, built.edges);
-  built.nodes = seeded.map((n) => (savedPos[n.id]
-    ? { ...n, x: savedPos[n.id].x, y: savedPos[n.id].y, pinned: !!savedPos[n.id].pinned }
-    : n));
+  built.nodes = seeded.map((n) =>
+    savedPos[n.id] ? { ...n, x: savedPos[n.id].x, y: savedPos[n.id].y, pinned: !!savedPos[n.id].pinned } : n
+  );
   panel.innerHTML = '';
   if (cbApi) cbApi.destroy();
   cbApi = mountCanvas(panel, built, { onChange: (s) => saveScene(s).catch(() => {}) });
@@ -1401,7 +1755,11 @@ function renderDecisionFilter() {
     if (counts[dec.decision] != null) counts[dec.decision]++;
   }
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
-  if (!total) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  if (!total) {
+    host.classList.add('hidden');
+    host.innerHTML = '';
+    return;
+  }
   host.classList.remove('hidden');
   const undecidedCount = allRows.filter((r) => !decisionMap.has(r.repoId)).length;
   const chip = (id, label, n) =>
@@ -1410,7 +1768,7 @@ function renderDecisionFilter() {
     chip('', 'All decisions', total),
     counts.adopt ? chip('adopt', 'Adopt', counts.adopt) : '',
     counts.trial ? chip('trial', 'Trial', counts.trial) : '',
-    counts.hold  ? chip('hold',  'Hold',  counts.hold)  : '',
+    counts.hold ? chip('hold', 'Hold', counts.hold) : '',
     counts.reject ? chip('reject', 'Reject', counts.reject) : '',
     undecidedCount ? chip('undecided', 'Undecided', undecidedCount) : '',
   ].join('');
@@ -1441,15 +1799,23 @@ function renderCollections() {
     chip('', 'All', allRows.length, ''),
     ...cols.map((c) => chip(c.id, c.name, c.repoIds.length, c.color)),
     `<button class="lib-coll lib-coll-new" data-coll-new="1" title="Create a collection">＋ New</button>`,
-    state.collection ? `<button class="lib-coll lib-coll-del" data-coll-del="1" title="Delete this collection">Delete collection</button>` : '',
+    state.collection
+      ? `<button class="lib-coll lib-coll-del" data-coll-del="1" title="Delete this collection">Delete collection</button>`
+      : '',
   ].join('');
   host.innerHTML = chips;
 
   if (!host._collDelegated) {
     host._collDelegated = true;
     host.addEventListener('click', (e) => {
-      if (e.target.closest('[data-coll-new]')) { showCollectionInput(host); return; }
-      if (e.target.closest('[data-coll-del]')) { confirmDeleteCollection(e.target.closest('[data-coll-del]')); return; }
+      if (e.target.closest('[data-coll-new]')) {
+        showCollectionInput(host);
+        return;
+      }
+      if (e.target.closest('[data-coll-del]')) {
+        confirmDeleteCollection(e.target.closest('[data-coll-del]'));
+        return;
+      }
       const btn = e.target.closest('[data-coll]');
       if (!btn) return;
       state.collection = btn.dataset.coll;
@@ -1461,7 +1827,10 @@ function renderCollections() {
 
 function showCollectionInput(host, addRepoId) {
   const existing = host.querySelector('.coll-inline-input');
-  if (existing) { existing.focus(); return; }
+  if (existing) {
+    existing.focus();
+    return;
+  }
   const wrap = document.createElement('div');
   wrap.className = 'coll-inline-wrap';
   wrap.innerHTML = `<input class="coll-inline-input" placeholder="Collection name…" maxlength="40" type="text">`;
@@ -1475,10 +1844,18 @@ function showCollectionInput(host, addRepoId) {
     await createCollection(addRepoId, name);
   };
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); finish(); }
-    if (e.key === 'Escape') { e.preventDefault(); wrap.remove(); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finish();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      wrap.remove();
+    }
   });
-  input.addEventListener('blur', () => { setTimeout(() => wrap.isConnected && wrap.remove(), 150); });
+  input.addEventListener('blur', () => {
+    setTimeout(() => wrap.isConnected && wrap.remove(), 150);
+  });
 }
 
 // Create a collection (optionally adding a repo to it straight away).
@@ -1489,12 +1866,23 @@ async function createCollection(addRepoId, name) {
   }
   if (!name) return null;
   const check = validateCollectionName(name, collections);
-  if (!check.ok) { setStatus(check.error, true); return null; }
-  let col = makeCollection(name, { id: crypto.randomUUID(), color: nextColor(collections.length), now: new Date().toISOString() });
+  if (!check.ok) {
+    setStatus(check.error, true);
+    return null;
+  }
+  let col = makeCollection(name, {
+    id: crypto.randomUUID(),
+    color: nextColor(collections.length),
+    now: new Date().toISOString(),
+  });
   if (addRepoId) col = addRepoToCollection(col, addRepoId, { now: col.createdAt });
   collections = [...collections, col];
-  try { await saveCollection(col); setStatus(`Created “${col.name}”`); }
-  catch { setStatus('Could not save the collection.', true); }
+  try {
+    await saveCollection(col);
+    setStatus(`Created “${col.name}”`);
+  } catch {
+    setStatus('Could not save the collection.', true);
+  }
   renderCollections();
   render();
   return col;
@@ -1505,7 +1893,12 @@ function confirmDeleteCollection(btn) {
   if (!btn.dataset.armed) {
     btn.dataset.armed = '1';
     btn.textContent = 'Delete — sure?';
-    setTimeout(() => { if (btn.isConnected) { btn.dataset.armed = ''; btn.textContent = 'Delete collection'; } }, 2500);
+    setTimeout(() => {
+      if (btn.isConnected) {
+        btn.dataset.armed = '';
+        btn.textContent = 'Delete collection';
+      }
+    }, 2500);
     return;
   }
   const id = state.collection;
@@ -1525,17 +1918,26 @@ function closeBoardsPopover() {
   document.removeEventListener('click', onPopoverDocClick, true);
   document.removeEventListener('keydown', onPopoverKey, true);
 }
-function onPopoverDocClick(e) { if (openPopover && !openPopover.contains(e.target)) closeBoardsPopover(); }
-function onPopoverKey(e) { if (e.key === 'Escape') closeBoardsPopover(); }
+function onPopoverDocClick(e) {
+  if (openPopover && !openPopover.contains(e.target)) closeBoardsPopover();
+}
+function onPopoverKey(e) {
+  if (e.key === 'Escape') closeBoardsPopover();
+}
 
 function openBoardsPopover(repoId, anchor) {
   closeBoardsPopover();
   const cols = sortedCollections(collections);
   const list = cols.length
-    ? cols.map((c) => `<button class="bp-row" data-id="${esc(c.id)}">` +
-        `<span class="bp-check">${collectionContains(c, repoId) ? '✓' : ''}</span>` +
-        `<span class="coll-dot" style="background:${safeColor(c.color)}"></span>` +
-        `<span class="bp-name">${esc(c.name)}</span></button>`).join('')
+    ? cols
+        .map(
+          (c) =>
+            `<button class="bp-row" data-id="${esc(c.id)}">` +
+            `<span class="bp-check">${collectionContains(c, repoId) ? '✓' : ''}</span>` +
+            `<span class="coll-dot" style="background:${safeColor(c.color)}"></span>` +
+            `<span class="bp-name">${esc(c.name)}</span></button>`
+        )
+        .join('')
     : `<div class="bp-empty">No collections yet.</div>`;
   const pop = document.createElement('div');
   pop.className = 'boards-pop';
@@ -1573,9 +1975,13 @@ async function toggleMembership(collectionId, repoId) {
   if (idx < 0) return;
   const updated = toggleRepoInCollection(collections[idx], repoId, { now: new Date().toISOString() });
   collections = collections.map((c, i) => (i === idx ? updated : c));
-  try { await saveCollection(updated); } catch { setStatus('Could not update the collection.', true); }
+  try {
+    await saveCollection(updated);
+  } catch {
+    setStatus('Could not update the collection.', true);
+  }
   renderCollections(); // counts changed
-  render();            // card dots + (if filtering this collection) membership
+  render(); // card dots + (if filtering this collection) membership
 }
 
 // ─── Compare mode ─────────────────────────────────────────────────────────────
@@ -1615,40 +2021,62 @@ function comparePanelHtml(a, b) {
   const maxHealth = Math.max(a.health, b.health, 1);
   const maxStars = Math.max(a.stars, b.stars, 1);
 
-  const fitChip = (r) => `<span class="lc-chip fit-${r.fit.level}" style="margin:0"${r.fit.why ? ` title="${esc(r.fit.why)}"` : ''}>${esc(r.fit.label)}</span>`;
-  const decChip = (dec) => dec
-    ? `<span class="lc-decision" data-d="${esc(dec.decision)}">${esc(DECISION_META[dec.decision]?.label || dec.decision)}</span>`
-    : '<span class="cmp-none">—</span>';
-  const bar = (v, max) => `<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:${Math.round((v / max) * 100)}%"></div></div>`;
-  const langPips = (r) => r.languages.map((l) => `<span class="lc-dot" style="background:${langColor(l.name)}" title="${esc(l.name)}"></span>`).join('');
+  const fitChip = (r) =>
+    `<span class="lc-chip fit-${r.fit.level}" style="margin:0"${r.fit.why ? ` title="${esc(r.fit.why)}"` : ''}>${esc(r.fit.label)}</span>`;
+  const decChip = (dec) =>
+    dec
+      ? `<span class="lc-decision" data-d="${esc(dec.decision)}">${esc(DECISION_META[dec.decision]?.label || dec.decision)}</span>`
+      : '<span class="cmp-none">—</span>';
+  const bar = (v, max) =>
+    `<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:${Math.round((v / max) * 100)}%"></div></div>`;
+  const langPips = (r) =>
+    r.languages
+      .map(
+        (l) => `<span class="lc-dot" style="background:${langColor(l.name)}" title="${esc(l.name)}"></span>`
+      )
+      .join('');
   const cell = (v, fallback = '<span class="cmp-none">—</span>') => v || fallback;
 
   const rows = [
-    ['Fit',       fitChip(a),                                         fitChip(b)],
-    ['Health',    a.health ? `${a.health}% ${bar(a.health, maxHealth)}` : '', b.health ? `${b.health}% ${bar(b.health, maxHealth)}` : ''],
-    ['Stars',     a.stars  ? `${fmtStars(a.stars)} ${bar(a.stars, maxStars)}`  : '', b.stars  ? `${fmtStars(b.stars)} ${bar(b.stars, maxStars)}`  : ''],
-    ['Category',  a.category ? esc(a.category) : '',                 b.category ? esc(b.category) : ''],
-    ['Languages', langPips(a) || '',                                  langPips(b) || ''],
-    ['Decision',  decChip(decA),                                      decChip(decB)],
+    ['Fit', fitChip(a), fitChip(b)],
+    [
+      'Health',
+      a.health ? `${a.health}% ${bar(a.health, maxHealth)}` : '',
+      b.health ? `${b.health}% ${bar(b.health, maxHealth)}` : '',
+    ],
+    [
+      'Stars',
+      a.stars ? `${fmtStars(a.stars)} ${bar(a.stars, maxStars)}` : '',
+      b.stars ? `${fmtStars(b.stars)} ${bar(b.stars, maxStars)}` : '',
+    ],
+    ['Category', a.category ? esc(a.category) : '', b.category ? esc(b.category) : ''],
+    ['Languages', langPips(a) || '', langPips(b) || ''],
+    ['Decision', decChip(decA), decChip(decB)],
   ];
 
-  const metaRows = rows.map(([label, va, vb]) =>
-    `<div class="cmp-row">
+  const metaRows = rows
+    .map(
+      ([label, va, vb]) =>
+        `<div class="cmp-row">
       <div class="cmp-label">${label}</div>
       <div class="cmp-cell lc-langs">${cell(va)}</div>
       <div class="cmp-cell lc-langs">${cell(vb)}</div>
     </div>`
-  ).join('');
+    )
+    .join('');
 
   const capRows = caps.length
     ? `<div class="cmp-row cmp-caps-header"><div class="cmp-label">Capabilities</div><div class="cmp-cell"></div><div class="cmp-cell"></div></div>` +
-      caps.map((cap) =>
-        `<div class="cmp-row cmp-cap-row">
+      caps
+        .map(
+          (cap) =>
+            `<div class="cmp-row cmp-cap-row">
           <div class="cmp-label cmp-cap-name">${esc(cap)}</div>
           <div class="cmp-cell ${a.capabilities.includes(cap) ? 'cmp-yes' : 'cmp-no'}">${a.capabilities.includes(cap) ? '✓' : '✗'}</div>
           <div class="cmp-cell ${b.capabilities.includes(cap) ? 'cmp-yes' : 'cmp-no'}">${b.capabilities.includes(cap) ? '✓' : '✗'}</div>
         </div>`
-      ).join('')
+        )
+        .join('')
     : '';
 
   return `
@@ -1670,11 +2098,14 @@ function renderVerdictHtml(result, nameA, nameB) {
   const winnerBadge = winnerName
     ? `<span class="cmp-winner-badge">✓ ${esc(winnerName)}</span>`
     : `<span class="cmp-winner-badge cmp-tie">⇄ Tie</span>`;
-  const picks = (result.pickA || result.pickB) ? `
+  const picks =
+    result.pickA || result.pickB
+      ? `
     <div class="cmp-pick-row">
       ${result.pickA ? `<div class="cmp-pick"><span class="cmp-pick-label">${esc(nameA)}</span>${esc(result.pickA)}</div>` : ''}
       ${result.pickB ? `<div class="cmp-pick"><span class="cmp-pick-label">${esc(nameB)}</span>${esc(result.pickB)}</div>` : ''}
-    </div>` : '';
+    </div>`
+      : '';
   const tradeoffs = result.tradeoffs?.length
     ? `<ul class="cmp-tradeoffs">${result.tradeoffs.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`
     : '';
@@ -1690,11 +2121,18 @@ function renderVerdictHtml(result, nameA, nameB) {
 function renderComparePanel() {
   const host = document.getElementById('compare-panel');
   if (!host) return;
-  if (compareSet.size !== 2) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  if (compareSet.size !== 2) {
+    host.classList.add('hidden');
+    host.innerHTML = '';
+    return;
+  }
   const [idA, idB] = [...compareSet];
   const a = allRows.find((r) => r.repoId === idA);
   const b = allRows.find((r) => r.repoId === idB);
-  if (!a || !b) { host.classList.add('hidden'); return; }
+  if (!a || !b) {
+    host.classList.add('hidden');
+    return;
+  }
   host.classList.remove('hidden');
   host.innerHTML = comparePanelHtml(a, b);
 
@@ -1719,10 +2157,12 @@ function renderComparePanel() {
       if (resp?.ok && resp.result) {
         if (verdictEl) verdictEl.innerHTML = renderVerdictHtml(resp.result, a.name || idA, b.name || idB);
       } else {
-        if (verdictEl) verdictEl.innerHTML = `<div class="cmp-ai-error">${esc(resp?.error || 'Comparison failed')}</div>`;
+        if (verdictEl)
+          verdictEl.innerHTML = `<div class="cmp-ai-error">${esc(resp?.error || 'Comparison failed')}</div>`;
       }
     } catch (err) {
-      if (verdictEl) verdictEl.innerHTML = `<div class="cmp-ai-error">${esc(err?.message || 'Comparison failed')}</div>`;
+      if (verdictEl)
+        verdictEl.innerHTML = `<div class="cmp-ai-error">${esc(err?.message || 'Comparison failed')}</div>`;
     }
     btn.disabled = false;
     btn.textContent = '✦ Ask AI';
@@ -1760,7 +2200,11 @@ function buildAskDocs() {
 function renderAskResult({ loading = false, answer = '', error = '' } = {}) {
   const host = document.getElementById('ask-answer');
   if (!host) return;
-  if (!loading && !answer && !error) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+  if (!loading && !answer && !error) {
+    host.classList.add('hidden');
+    host.innerHTML = '';
+    return;
+  }
   host.classList.remove('hidden');
   if (loading) {
     host.innerHTML = '<span class="ask-spinner">Asking your library…</span>';
@@ -1780,7 +2224,10 @@ async function submitAsk(question) {
   if (!q) return;
 
   const allDocs = buildAskDocs();
-  if (!allDocs.length) { renderAskResult({ error: 'No repos in your library yet.' }); return; }
+  if (!allDocs.length) {
+    renderAskResult({ error: 'No repos in your library yet.' });
+    return;
+  }
 
   // BM25-rank the docs against the question; fall back to the first 6 if ranking finds nothing.
   const ranked = rankRepos(allDocs, q, { topK: 6 });
@@ -1793,7 +2240,7 @@ async function submitAsk(question) {
   let resp;
   try {
     resp = await chrome.runtime.sendMessage({ type: 'ASK_LIBRARY', question: q, docs: contextDocs });
-  } catch (e) {
+  } catch {
     renderAskResult({ error: 'Could not reach the extension. Try again.' });
     if (btn) btn.disabled = false;
     return;
@@ -1834,7 +2281,13 @@ function exportDigest(format) {
   } else if (format === 'md') {
     const date = new Date().toISOString().slice(0, 10);
     const groups = { strong: [], solid: [], care: [], risky: [], unrated: [] };
-    const labels = { strong: 'Strong fit', solid: 'Solid fit', care: 'Needs care', risky: 'Risky', unrated: 'Unrated' };
+    const labels = {
+      strong: 'Strong fit',
+      solid: 'Solid fit',
+      care: 'Needs care',
+      risky: 'Risky',
+      unrated: 'Unrated',
+    };
     for (const r of rows) {
       const k = r.fit?.level in groups ? r.fit.level : 'unrated';
       groups[k].push(r);
@@ -1852,7 +2305,9 @@ function exportDigest(format) {
         r.health ? `♥ ${r.health}` : '',
         r.stars >= 1 ? `${r.stars >= 1000 ? (r.stars / 1000).toFixed(1) + 'k' : r.stars}★` : '',
         r.languages[0]?.name || '',
-      ].filter(Boolean).join(' · ');
+      ]
+        .filter(Boolean)
+        .join(' · ');
       return `- **[${r.repoId}](https://github.com/${r.repoId})**${decLabel(r.repoId)}${meta ? ` — ${meta}` : ''}\n  ${r.blurb ? r.blurb.slice(0, 120) : ''}${noteText(r.repoId)}`;
     };
     const sections = Object.entries(groups)
@@ -1868,11 +2323,16 @@ function exportDigest(format) {
     URL.revokeObjectURL(a.href);
   } else {
     const header = 'repoId,fit,stars,language,license,blurb,savedAt';
-    const csvRow = (r) => [
-      r.repoId, r.fit?.level ?? '', r.stars ?? '', r.language ?? '', r.license ?? '',
-      `"${(r.blurb ?? '').replace(/"/g, '""').slice(0, 200)}"`,
-      r.savedAt ? new Date(r.savedAt).toISOString() : '',
-    ].join(',');
+    const csvRow = (r) =>
+      [
+        r.repoId,
+        r.fit?.level ?? '',
+        r.stars ?? '',
+        r.language ?? '',
+        r.license ?? '',
+        `"${(r.blurb ?? '').replace(/"/g, '""').slice(0, 200)}"`,
+        r.savedAt ? new Date(r.savedAt).toISOString() : '',
+      ].join(',');
     const blob = new Blob([[header, ...rows.map(csvRow)].join('\n')], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1886,42 +2346,65 @@ function exportDigest(format) {
 
 function exportDecisionMatrix(format = 'csv') {
   const rows = getVisibleRows();
-  if (!rows.length) { setStatus('No repos to export.'); return; }
+  if (!rows.length) {
+    setStatus('No repos to export.');
+    return;
+  }
   const date = new Date().toISOString().slice(0, 10);
-  const dl = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
+  const dl = (blob, name) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
 
   if (format === 'csv') {
-    const qv = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const critHeaders = rubric.map(c => qv(c.name)).join(',');
+    const qv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const critHeaders = rubric.map((c) => qv(c.name)).join(',');
     const hdr = `repoId,name,platform,fit,health,stars,language,decision,decisionDate,evalScore,${critHeaders},evalNote,note,savedAt`;
-    const csvRows = rows.map(r => {
+    const csvRows = rows.map((r) => {
       const dec = decisionMap.get(r.repoId);
       const ev = evalMap.get(r.repoId);
       const score = ev ? computeScore(ev, rubric) : null;
       return [
-        qv(r.repoId), qv(r.name), qv(r.platform ?? ''),
-        r.fit?.level ?? '', r.health ?? '', r.stars ?? '',
+        qv(r.repoId),
+        qv(r.name),
+        qv(r.platform ?? ''),
+        r.fit?.level ?? '',
+        r.health ?? '',
+        r.stars ?? '',
         qv(r.languages?.[0]?.name ?? ''),
-        dec?.decision ?? '', dec?.savedAt ? new Date(dec.savedAt).toISOString().slice(0, 10) : '',
+        dec?.decision ?? '',
+        dec?.savedAt ? new Date(dec.savedAt).toISOString().slice(0, 10) : '',
         score !== null ? score.toFixed(2) : '',
-        rubric.map(c => ev?.scores?.[c.id] ?? '').join(','),
-        qv(ev?.note ?? ''), qv(notesMap.get(r.repoId) ?? ''),
+        rubric.map((c) => ev?.scores?.[c.id] ?? '').join(','),
+        qv(ev?.note ?? ''),
+        qv(notesMap.get(r.repoId) ?? ''),
         r.savedAt ? new Date(r.savedAt).toISOString().slice(0, 10) : '',
       ].join(',');
     });
     dl(new Blob([[hdr, ...csvRows].join('\n')], { type: 'text/csv' }), `repolens-matrix-${date}.csv`);
   } else {
-    const critCols = rubric.map(c => ` ${c.name} |`).join('');
+    const critCols = rubric.map((c) => ` ${c.name} |`).join('');
     const hdr = `| Repo | Fit | Health | Stars | Language | Decision | Eval |${critCols} Note |`;
     const sep = `|---|---|---|---|---|---|---|${rubric.map(() => '---|').join('')}---|`;
-    const mdRows = rows.map(r => {
+    const mdRows = rows.map((r) => {
       const dec = decisionMap.get(r.repoId);
       const ev = evalMap.get(r.repoId);
       const score = ev ? computeScore(ev, rubric) : null;
       const note = (notesMap.get(r.repoId) || ev?.note || '').slice(0, 60).replace(/\|/g, '\\|');
-      return `| [${r.repoId}](https://github.com/${r.repoId}) | ${r.fit?.label ?? '—'} | ${r.health ?? '—'} | ${r.stars ?? '—'} | ${r.languages?.[0]?.name ?? '—'} | ${dec ? (DECISION_META[dec.decision]?.label || dec.decision) : '—'} | ${score !== null ? score.toFixed(1) : '—'} |${rubric.map(c => ` ${ev?.scores?.[c.id] ?? '—'} |`).join('')} ${note} |`;
+      return `| [${r.repoId}](https://github.com/${r.repoId}) | ${r.fit?.label ?? '—'} | ${r.health ?? '—'} | ${r.stars ?? '—'} | ${r.languages?.[0]?.name ?? '—'} | ${dec ? DECISION_META[dec.decision]?.label || dec.decision : '—'} | ${score !== null ? score.toFixed(1) : '—'} |${rubric.map((c) => ` ${ev?.scores?.[c.id] ?? '—'} |`).join('')} ${note} |`;
     });
-    dl(new Blob([`# RepoLens Decision Matrix — ${date}\n\n_${rows.length} repos · Generated by RepoLens_\n\n${hdr}\n${sep}\n${mdRows.join('\n')}\n`], { type: 'text/markdown' }), `repolens-matrix-${date}.md`);
+    dl(
+      new Blob(
+        [
+          `# RepoLens Decision Matrix — ${date}\n\n_${rows.length} repos · Generated by RepoLens_\n\n${hdr}\n${sep}\n${mdRows.join('\n')}\n`,
+        ],
+        { type: 'text/markdown' }
+      ),
+      `repolens-matrix-${date}.md`
+    );
   }
   setStatus(`Exported ${rows.length} repos to decision matrix.`);
 }
@@ -1953,11 +2436,17 @@ async function searchGitHub(query) {
 }
 
 function showDiscoveryResults(items, resultsEl, heading) {
-  const existing = new Set(allRows.map(r => r.repoId));
-  const fresh = items.filter(item => !existing.has(item.full_name));
-  if (!fresh.length) { resultsEl.innerHTML = '<p class="dc-empty">No new repos found — all results are already in your library.</p>'; return; }
-  const stars = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k★' : `${n || 0}★`;
-  const cards = fresh.map(item => `
+  const existing = new Set(allRows.map((r) => r.repoId));
+  const fresh = items.filter((item) => !existing.has(item.full_name));
+  if (!fresh.length) {
+    resultsEl.innerHTML =
+      '<p class="dc-empty">No new repos found — all results are already in your library.</p>';
+    return;
+  }
+  const stars = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + 'k★' : `${n || 0}★`);
+  const cards = fresh
+    .map(
+      (item) => `
     <div class="dc-card">
       <div class="dc-card-top">
         <span class="dc-name">${esc(item.name)}</span>
@@ -1969,7 +2458,9 @@ function showDiscoveryResults(items, resultsEl, heading) {
         <button class="lib-btn dc-open" data-url="${esc(item.html_url)}">Open &amp; Scan ↗</button>
         <span class="dc-id">${esc(item.full_name)}</span>
       </div>
-    </div>`).join('');
+    </div>`
+    )
+    .join('');
   resultsEl.innerHTML = heading ? `<div class="dc-heading">${esc(heading)}</div>${cards}` : cards;
 }
 
@@ -1977,7 +2468,10 @@ async function recommendFromLibrary(resultsEl) {
   if (!resultsEl) resultsEl = document.querySelector('#discover-panel .dc-results');
   if (!resultsEl) return;
 
-  const adopted = allRows.filter(r => { const d = decisionMap.get(r.repoId); return d && (d.decision === 'adopt' || d.decision === 'trial'); });
+  const adopted = allRows.filter((r) => {
+    const d = decisionMap.get(r.repoId);
+    return d && (d.decision === 'adopt' || d.decision === 'trial');
+  });
   if (!adopted.length) {
     resultsEl.innerHTML = '<p class="dc-empty">Adopt or trial some repos to unlock recommendations.</p>';
     return;
@@ -1985,13 +2479,20 @@ async function recommendFromLibrary(resultsEl) {
 
   const capFreq = {};
   for (const r of adopted) for (const c of r.capabilities || []) capFreq[c] = (capFreq[c] || 0) + 1;
-  const topCaps = Object.entries(capFreq).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([c]) => c);
+  const topCaps = Object.entries(capFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([c]) => c);
 
   const langFreq = {};
-  for (const r of adopted) { const l = r.languages?.[0]?.name; if (l) langFreq[l] = (langFreq[l] || 0) + 1; }
+  for (const r of adopted) {
+    const l = r.languages?.[0]?.name;
+    if (l) langFreq[l] = (langFreq[l] || 0) + 1;
+  }
   const topLang = Object.entries(langFreq).sort((a, b) => b[1] - a[1])[0]?.[0];
 
-  const query = [topCaps.join(' '), topLang ? `language:${topLang}` : ''].filter(Boolean).join(' ') || 'developer tools';
+  const query =
+    [topCaps.join(' '), topLang ? `language:${topLang}` : ''].filter(Boolean).join(' ') || 'developer tools';
   resultsEl.innerHTML = '<div class="dc-loading">Finding recommendations…</div>';
   try {
     const items = await searchGitHub(query);
@@ -2008,20 +2509,31 @@ function getVisibleRows() {
 function showQuickWins() {
   const HIGH_FIT = new Set(['strong', 'solid']);
   const wins = allRows.filter((r) => HIGH_FIT.has(r.fit?.level) && !decisionMap.has(r.repoId));
-  if (!wins.length) { setStatus('No quick wins found — all strong/solid repos already have a decision.'); return; }
+  if (!wins.length) {
+    setStatus('No quick wins found — all strong/solid repos already have a decision.');
+    return;
+  }
   // Apply as an NL-style filter without a real AI call: reuse the nlFilter infra with a synthetic result.
-  nlFilter = { question: `✦ Quick wins (${wins.length} strong/solid, undecided)`, ids: wins.map((r) => r.repoId) };
+  nlFilter = {
+    question: `✦ Quick wins (${wins.length} strong/solid, undecided)`,
+    ids: wins.map((r) => r.repoId),
+  };
   state.query = '';
   state.decision = '';
   renderDecisionFilter();
   renderNlFilterBanner();
   render();
-  setStatus(`Showing ${wins.length} quick-win repo${wins.length === 1 ? '' : 's'} — strong or solid fit with no decision yet.`);
+  setStatus(
+    `Showing ${wins.length} quick-win repo${wins.length === 1 ? '' : 's'} — strong or solid fit with no decision yet.`
+  );
 }
 
-function exportVisible(format) {
+function exportVisible(_format) {
   const rows = getVisibleRows();
-  if (!rows.length) { setStatus('No visible repos to export.'); return; }
+  if (!rows.length) {
+    setStatus('No visible repos to export.');
+    return;
+  }
   const date = new Date().toISOString().slice(0, 10);
   const decLabel = (repoId) => {
     const d = decisionMap.get(repoId);
@@ -2036,16 +2548,21 @@ function exportVisible(format) {
       r.health ? `♥ ${r.health}` : '',
       r.stars >= 1 ? `${r.stars >= 1000 ? (r.stars / 1000).toFixed(1) + 'k' : r.stars}★` : '',
       r.languages[0]?.name || '',
-    ].filter(Boolean).join(' · ');
+    ]
+      .filter(Boolean)
+      .join(' · ');
     return `- **[${r.repoId}](https://github.com/${r.repoId})**${decLabel(r.repoId)}${meta ? ` — ${meta}` : ''}\n  ${r.blurb ? r.blurb.slice(0, 120) : ''}${noteText(r.repoId)}`;
   };
   const filter = [
     state.query && `query: "${state.query}"`,
     state.capability && `capability: ${state.capability}`,
-    state.collection && `collection: ${collections.find((c) => c.id === state.collection)?.name || state.collection}`,
+    state.collection &&
+      `collection: ${collections.find((c) => c.id === state.collection)?.name || state.collection}`,
     state.decision && `decision: ${state.decision}`,
     nlFilter?.question && `AI filter: "${nlFilter.question}"`,
-  ].filter(Boolean).join(', ');
+  ]
+    .filter(Boolean)
+    .join(', ');
   const md = `# RepoLens — Filtered Export (${date})\n\n_${rows.length} repos${filter ? ` · Filters: ${filter}` : ''} · Generated by RepoLens_\n\n---\n\n${rows.map(repoLine).join('\n\n')}\n`;
   const blob = new Blob([md], { type: 'text/markdown' });
   const a = document.createElement('a');
@@ -2063,7 +2580,7 @@ async function autoOrganize() {
 
   const byLang = new Map();
   for (const r of allRows) {
-    const lang = r.language || (r.languages?.[0]?.name);
+    const lang = r.language || r.languages?.[0]?.name;
     if (!lang) continue;
     if (!byLang.has(lang)) byLang.set(lang, []);
     byLang.get(lang).push(r.repoId);
@@ -2093,7 +2610,9 @@ async function autoOrganize() {
 
   renderCollections();
   render();
-  setStatus(`Auto-organized: ${created} new group${created !== 1 ? 's' : ''}, ${updated} repo${updated !== 1 ? 's' : ''} assigned.`);
+  setStatus(
+    `Auto-organized: ${created} new group${created !== 1 ? 's' : ''}, ${updated} repo${updated !== 1 ? 's' : ''} assigned.`
+  );
 }
 
 // ─── Quick-decision popover (d key) ──────────────────────────────────────────
@@ -2113,20 +2632,23 @@ function showQuickDecision(repoId, anchorEl) {
   pop.setAttribute('role', 'dialog');
   pop.setAttribute('aria-label', 'Quick decision');
   const choices = [
-    { key: 'adopt',  label: 'Adopt',  color: '#22c55e' },
-    { key: 'trial',  label: 'Trial',  color: '#3b82f6' },
-    { key: 'hold',   label: 'Hold',   color: '#f59e0b' },
+    { key: 'adopt', label: 'Adopt', color: '#22c55e' },
+    { key: 'trial', label: 'Trial', color: '#3b82f6' },
+    { key: 'hold', label: 'Hold', color: '#f59e0b' },
     { key: 'reject', label: 'Reject', color: '#ef4444' },
   ];
   const veeHint = suggested
     ? `<button class="qdec-vee" data-d="${suggested}" title="Accept Vee's suggestion"><span class="qdec-vee-ic" aria-hidden="true">✦</span><span class="qdec-vee-tier">${esc(DECISION_META[suggested]?.label || suggested)}</span><span class="qdec-vee-why">${esc(fitLabel)}${health ? ` · ♥ ${health}` : ''}</span></button>`
     : '';
-  pop.innerHTML = `<p class="qdec-heading">${esc(repoId.replace(/^[^/]+\//, ''))}</p>` +
+  pop.innerHTML =
+    `<p class="qdec-heading">${esc(repoId.replace(/^[^/]+\//, ''))}</p>` +
     veeHint +
-    choices.map((c) => {
-      const isSuggested = suggested === c.key && current !== c.key;
-      return `<button class="qdec-btn${current === c.key ? ' qdec-active' : ''}${isSuggested ? ' qdec-suggested' : ''}" data-d="${c.key}" style="--qdec-color:${c.color}">${c.label}${isSuggested ? '<span class="qdec-sug-mark" aria-label="Vee suggestion"> ✦</span>' : ''}</button>`;
-    }).join('') +
+    choices
+      .map((c) => {
+        const isSuggested = suggested === c.key && current !== c.key;
+        return `<button class="qdec-btn${current === c.key ? ' qdec-active' : ''}${isSuggested ? ' qdec-suggested' : ''}" data-d="${c.key}" style="--qdec-color:${c.color}">${c.label}${isSuggested ? '<span class="qdec-sug-mark" aria-label="Vee suggestion"> ✦</span>' : ''}</button>`;
+      })
+      .join('') +
     (current ? `<button class="qdec-btn qdec-clear" data-d="">Clear</button>` : '');
 
   async function pick(d) {
@@ -2155,12 +2677,25 @@ function showQuickDecision(repoId, anchorEl) {
   });
 
   function onKey(e) {
-    if (e.key === 'Escape') { pop.remove(); document.removeEventListener('keydown', onKey, true); document.removeEventListener('mousedown', onOutside, true); e.stopPropagation(); }
+    if (e.key === 'Escape') {
+      pop.remove();
+      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('mousedown', onOutside, true);
+      e.stopPropagation();
+    }
     const map = { a: 'adopt', t: 'trial', h: 'hold', r: 'reject', c: '' };
-    if (e.key in map) { e.preventDefault(); e.stopPropagation(); pick(map[e.key]); }
+    if (e.key in map) {
+      e.preventDefault();
+      e.stopPropagation();
+      pick(map[e.key]);
+    }
   }
   function onOutside(e) {
-    if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('keydown', onKey, true); document.removeEventListener('mousedown', onOutside, true); }
+    if (!pop.contains(e.target)) {
+      pop.remove();
+      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('mousedown', onOutside, true);
+    }
   }
 
   document.addEventListener('keydown', onKey, true);
@@ -2168,7 +2703,8 @@ function showQuickDecision(repoId, anchorEl) {
 
   document.body.appendChild(pop);
   const rect = anchorEl.getBoundingClientRect();
-  const pw = pop.offsetWidth || 180, ph = pop.offsetHeight || 140;
+  const pw = pop.offsetWidth || 180,
+    ph = pop.offsetHeight || 140;
   let left = rect.left;
   let top = rect.bottom + 6;
   if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
@@ -2196,14 +2732,18 @@ function setJkFocus(idx) {
 
 document.addEventListener('keydown', (e) => {
   const t = e.target;
-  const inField = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
+  const inField =
+    t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
   if (inField) return;
 
   if (e.key === 'j' || e.key === 'k') {
     e.preventDefault();
     const cards = getVisibleCards();
     if (!cards.length) return;
-    if (jkIdx === -1) { setJkFocus(0); return; }
+    if (jkIdx === -1) {
+      setJkFocus(0);
+      return;
+    }
     setJkFocus(jkIdx + (e.key === 'j' ? 1 : -1));
     return;
   }
@@ -2271,13 +2811,18 @@ function showEvalPanel(repoId, anchorEl) {
   pop.setAttribute('role', 'dialog');
   pop.setAttribute('aria-label', `Evaluate ${name}`);
 
-  const criteriaHtml = rubric.map((crit) => {
-    const score = entry.scores[crit.id] ?? 0;
-    const stars = [1, 2, 3, 4, 5].map((v) =>
-      `<button class="ep-star${v <= score ? ' active' : ''}" data-crit="${esc(crit.id)}" data-val="${v}" aria-label="${v}/5">${v <= score ? '★' : '☆'}</button>`
-    ).join('');
-    return `<div class="ep-row"><span class="ep-crit">${esc(crit.name)}</span><span class="ep-stars">${stars}</span></div>`;
-  }).join('');
+  const criteriaHtml = rubric
+    .map((crit) => {
+      const score = entry.scores[crit.id] ?? 0;
+      const stars = [1, 2, 3, 4, 5]
+        .map(
+          (v) =>
+            `<button class="ep-star${v <= score ? ' active' : ''}" data-crit="${esc(crit.id)}" data-val="${v}" aria-label="${v}/5">${v <= score ? '★' : '☆'}</button>`
+        )
+        .join('');
+      return `<div class="ep-row"><span class="ep-crit">${esc(crit.name)}</span><span class="ep-stars">${stars}</span></div>`;
+    })
+    .join('');
 
   const scoreAvg = computeScore(entry, rubric);
 
@@ -2325,7 +2870,9 @@ function showEvalPanel(repoId, anchorEl) {
       const avgEl = pop.querySelector('.ep-avg');
       if (avgEl) avgEl.textContent = newAvg !== null ? `${newAvg.toFixed(1)}/5` : '';
       else if (newAvg !== null) {
-        pop.querySelector('.ep-header').insertAdjacentHTML('beforeend', `<span class="ep-avg">${newAvg.toFixed(1)}/5</span>`);
+        pop
+          .querySelector('.ep-header')
+          .insertAdjacentHTML('beforeend', `<span class="ep-avg">${newAvg.toFixed(1)}/5</span>`);
       }
     }
   });
@@ -2346,23 +2893,46 @@ function showEvalPanel(repoId, anchorEl) {
   });
 
   // Dismiss on outside click
-  const dismiss = (e) => { if (!pop.contains(e.target) && e.target !== anchorEl) { pop.remove(); document.removeEventListener('mousedown', dismiss); } };
+  const dismiss = (e) => {
+    if (!pop.contains(e.target) && e.target !== anchorEl) {
+      pop.remove();
+      document.removeEventListener('mousedown', dismiss);
+    }
+  };
   setTimeout(() => document.addEventListener('mousedown', dismiss), 50);
 
   // Esc key
-  pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') { pop.remove(); document.removeEventListener('mousedown', dismiss); } });
+  pop.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      pop.remove();
+      document.removeEventListener('mousedown', dismiss);
+    }
+  });
 }
 
 async function editRubric() {
   const current = rubric.map((c) => c.name).join('\n');
   const input = prompt(`Rubric criteria (one per line, max 6):\n\n${current}`);
   if (input === null) return;
-  const names = input.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 6);
+  const names = input
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 6);
   if (!names.length) return;
   // Preserve existing ids by name match; new names get generated ids.
   const newRubric = names.map((name) => {
     const existing = rubric.find((c) => c.name === name);
-    return existing ?? { id: name.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 20), name, weight: 1 };
+    return (
+      existing ?? {
+        id: name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '_')
+          .slice(0, 20),
+        name,
+        weight: 1,
+      }
+    );
   });
   rubric = newRubric;
   await saveRubric(rubric);
@@ -2373,7 +2943,10 @@ async function editRubric() {
 
 async function applyVeeSuggestions() {
   const undecided = allRows.filter((r) => r.fit.level !== 'unrated' && !decisionMap.has(r.repoId));
-  if (!undecided.length) { setStatus('All rated repos already have a decision.'); return; }
+  if (!undecided.length) {
+    setStatus('All rated repos already have a decision.');
+    return;
+  }
   const now = new Date().toISOString();
   setStatus(`Applying Vee's suggestions to ${undecided.length} repos…`);
   let adopted = 0;
@@ -2395,7 +2968,14 @@ async function applyVeeSuggestions() {
 // ─── Saved filters ────────────────────────────────────────────────────────────
 
 function currentFilterSnapshot() {
-  return { query: state.query, sort: state.sort, capability: state.capability, collection: state.collection, decision: state.decision, lang: state.lang };
+  return {
+    query: state.query,
+    sort: state.sort,
+    capability: state.capability,
+    collection: state.collection,
+    decision: state.decision,
+    lang: state.lang,
+  };
 }
 
 async function saveCurrentFilter(name) {
@@ -2425,80 +3005,324 @@ function applySavedFilter(f) {
 
 function initLibraryPalette() {
   const commands = [
-    { section: 'Filter by decision', name: 'Show: All decisions', action: () => { state.decision = ''; renderDecisionFilter(); render(); } },
-    { name: 'Show: Adopt only', action: () => { state.decision = 'adopt'; renderDecisionFilter(); render(); } },
-    { name: 'Show: Trial only', action: () => { state.decision = 'trial'; renderDecisionFilter(); render(); } },
-    { name: 'Show: Hold only', action: () => { state.decision = 'hold'; renderDecisionFilter(); render(); } },
-    { name: 'Show: Rejected only', action: () => { state.decision = 'reject'; renderDecisionFilter(); render(); } },
-    { name: 'Show: Undecided only', action: () => { state.decision = 'undecided'; renderDecisionFilter(); render(); } },
-    { name: '✦ Quick wins — strong/solid fit, no decision', description: 'Surface your easiest triage calls first', action: () => { showQuickWins(); } },
-    { name: '⚠ Needs attention — risky/care, no decision', description: 'Repos with poor fit that still need a Hold or Reject decision', action: () => {
-      const ids = allRows.filter((r) => (r.fit.level === 'risky' || r.fit.level === 'care') && !decisionMap.has(r.repoId)).map((r) => r.repoId);
-      nlFilter = ids.length
-        ? { question: `Needs attention (${ids.length} risky/care, undecided)`, ids }
-        : { question: 'Needs attention', ids: [], error: 'All risky/care repos already have a decision — great triage!' };
-      render();
-    } },
-    { name: '↕ Show: Fit changed since last scan', description: 'Repos whose fit verdict improved or regressed after a re-scan', action: () => {
-      const ids = allRows.filter((r) => r.fitDelta).map((r) => r.repoId);
-      nlFilter = ids.length
-        ? { question: 'Fit changed since last scan', ids }
-        : { question: 'Fit changed since last scan', ids: [], error: 'No fit changes yet — re-scan repos to track deltas' };
-      render();
-    } },
-    { section: 'Sort', name: 'Sort: Best fit', action: () => { state.sort = 'fit'; document.getElementById('sort').value = 'fit'; chrome.storage.local.set({ librarySort: 'fit' }); render(); } },
-    { name: 'Sort: Health', action: () => { state.sort = 'health'; document.getElementById('sort').value = 'health'; chrome.storage.local.set({ librarySort: 'health' }); render(); } },
-    { name: 'Sort: Recently scanned', action: () => { state.sort = 'recent'; document.getElementById('sort').value = 'recent'; chrome.storage.local.set({ librarySort: 'recent' }); render(); } },
-    { name: 'Sort: Stars', action: () => { state.sort = 'stars'; document.getElementById('sort').value = 'stars'; chrome.storage.local.set({ librarySort: 'stars' }); render(); } },
-    { name: 'Sort: Name', action: () => { state.sort = 'name'; document.getElementById('sort').value = 'name'; chrome.storage.local.set({ librarySort: 'name' }); render(); } },
-    { name: 'Sort: Recently decided', action: () => { state.sort = 'decided'; document.getElementById('sort').value = 'decided'; chrome.storage.local.set({ librarySort: 'decided' }); render(); } },
-    { name: 'Sort: Fit changed', description: 'Repos with fit delta (improved or regressed) at the top', action: () => { state.sort = 'delta'; document.getElementById('sort').value = 'delta'; chrome.storage.local.set({ librarySort: 'delta' }); render(); } },
-    { name: 'Sort: Eval score', description: 'Repos with highest evaluation score at the top', action: () => { state.sort = 'eval'; document.getElementById('sort').value = 'eval'; chrome.storage.local.set({ librarySort: 'eval' }); render(); } },
-    { section: 'Evaluations', name: '▣ Evaluate focused repo', description: 'Open the scoring panel for the focused card (or press e)', action: () => {
-      const cards = getVisibleCards();
-      if (jkIdx < 0 || !cards[jkIdx]) { setStatus('Focus a card first (j/k) then press e, or use the ▣ button on a card.'); return; }
-      const repoId = cards[jkIdx].dataset.repo;
-      showEvalPanel(repoId, cards[jkIdx].querySelector('[data-act="eval"]') || cards[jkIdx]);
-    } },
-    { name: '▣ Edit rubric criteria', description: 'Change the scoring criteria used by the Evaluations Workbench', action: () => editRubric() },
-    { name: '▣ Show: Evaluated repos only', description: 'Filter to repos with at least one eval score', action: () => {
-      const ids = allRows.filter((r) => evalMap.has(r.repoId)).map((r) => r.repoId);
-      nlFilter = ids.length
-        ? { question: `Evaluated (${ids.length} repos)`, ids }
-        : { question: 'Evaluated repos', ids: [], error: 'No evaluations yet — press e on a focused card to score a repo' };
-      render();
-    } },
-    { section: 'View', name: 'Tech Radar', description: 'Organize repos by Adopt/Trial/Hold/Reject decision', action: () => { if (state.view !== 'radar') toggleRadarView(); } },
-    { name: 'Corkboard', description: 'A red-string board of your library', action: () => { if (state.view !== 'corkboard') toggleCorkboardView(); } },
-    { name: 'List view', description: 'Default card grid', action: () => { if (state.view === 'radar') toggleRadarView(); else if (state.view === 'corkboard') toggleCorkboardView(); } },
-    { section: 'Pins', name: 'Unpin all', description: 'Remove all pinned repos from the top section', action: async () => { pinned.clear(); await chrome.storage.local.set({ repolens_pinned: [] }); render(); } },
-    { section: 'Actions', name: 'Auto-organize by language', description: 'Group repos into language collections', action: () => autoOrganize() },
-    { name: 'Re-scan all stale (30+ days)', description: 'Open Batch Scan pre-filled with repos not scanned in 30 days', action: () => refreshStale() },
-    { name: '⟳ Show: Stale only', description: 'Filter to repos not scanned in 30 days', action: () => {
-      const ids = allRows.filter((r) => r.savedAt && (Date.now() - Date.parse(r.savedAt)) > 30 * 86_400_000).map((r) => r.repoId);
-      nlFilter = ids.length
-        ? { question: 'Stale (not scanned in 30 days)', ids }
-        : { question: 'Stale repos', ids: [], error: 'No stale repos — all scans are under 30 days old' };
-      render();
-    } },
-    { name: 'Batch Scan', description: 'Scan multiple repos at once', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }) },
-    { name: 'Export visible repos (Markdown)', description: 'Download only the currently filtered repos as Markdown', action: () => exportVisible('md') },
-    { name: 'Export Library (Markdown)', description: 'Download library as a readable Markdown report', action: () => exportDigest('md') },
-    { name: 'Export Digest (JSON)', description: 'Download library as JSON', action: () => exportDigest('json') },
-    { name: 'Export Digest (CSV)', description: 'Download library as CSV', action: () => exportDigest('csv') },
-    { name: '⊞ Export Decision Matrix (CSV)', description: 'Full matrix: fit, health, decision, eval score, rubric criteria, notes', action: () => exportDecisionMatrix('csv') },
-    { name: '⊞ Export Decision Matrix (Markdown)', description: 'Same as CSV but formatted as a Markdown table', action: () => exportDecisionMatrix('md') },
+    {
+      section: 'Filter by decision',
+      name: 'Show: All decisions',
+      action: () => {
+        state.decision = '';
+        renderDecisionFilter();
+        render();
+      },
+    },
+    {
+      name: 'Show: Adopt only',
+      action: () => {
+        state.decision = 'adopt';
+        renderDecisionFilter();
+        render();
+      },
+    },
+    {
+      name: 'Show: Trial only',
+      action: () => {
+        state.decision = 'trial';
+        renderDecisionFilter();
+        render();
+      },
+    },
+    {
+      name: 'Show: Hold only',
+      action: () => {
+        state.decision = 'hold';
+        renderDecisionFilter();
+        render();
+      },
+    },
+    {
+      name: 'Show: Rejected only',
+      action: () => {
+        state.decision = 'reject';
+        renderDecisionFilter();
+        render();
+      },
+    },
+    {
+      name: 'Show: Undecided only',
+      action: () => {
+        state.decision = 'undecided';
+        renderDecisionFilter();
+        render();
+      },
+    },
+    {
+      name: '✦ Quick wins — strong/solid fit, no decision',
+      description: 'Surface your easiest triage calls first',
+      action: () => {
+        showQuickWins();
+      },
+    },
+    {
+      name: '⚠ Needs attention — risky/care, no decision',
+      description: 'Repos with poor fit that still need a Hold or Reject decision',
+      action: () => {
+        const ids = allRows
+          .filter((r) => (r.fit.level === 'risky' || r.fit.level === 'care') && !decisionMap.has(r.repoId))
+          .map((r) => r.repoId);
+        nlFilter = ids.length
+          ? { question: `Needs attention (${ids.length} risky/care, undecided)`, ids }
+          : {
+              question: 'Needs attention',
+              ids: [],
+              error: 'All risky/care repos already have a decision — great triage!',
+            };
+        render();
+      },
+    },
+    {
+      name: '↕ Show: Fit changed since last scan',
+      description: 'Repos whose fit verdict improved or regressed after a re-scan',
+      action: () => {
+        const ids = allRows.filter((r) => r.fitDelta).map((r) => r.repoId);
+        nlFilter = ids.length
+          ? { question: 'Fit changed since last scan', ids }
+          : {
+              question: 'Fit changed since last scan',
+              ids: [],
+              error: 'No fit changes yet — re-scan repos to track deltas',
+            };
+        render();
+      },
+    },
+    {
+      section: 'Sort',
+      name: 'Sort: Best fit',
+      action: () => {
+        state.sort = 'fit';
+        document.getElementById('sort').value = 'fit';
+        chrome.storage.local.set({ librarySort: 'fit' });
+        render();
+      },
+    },
+    {
+      name: 'Sort: Health',
+      action: () => {
+        state.sort = 'health';
+        document.getElementById('sort').value = 'health';
+        chrome.storage.local.set({ librarySort: 'health' });
+        render();
+      },
+    },
+    {
+      name: 'Sort: Recently scanned',
+      action: () => {
+        state.sort = 'recent';
+        document.getElementById('sort').value = 'recent';
+        chrome.storage.local.set({ librarySort: 'recent' });
+        render();
+      },
+    },
+    {
+      name: 'Sort: Stars',
+      action: () => {
+        state.sort = 'stars';
+        document.getElementById('sort').value = 'stars';
+        chrome.storage.local.set({ librarySort: 'stars' });
+        render();
+      },
+    },
+    {
+      name: 'Sort: Name',
+      action: () => {
+        state.sort = 'name';
+        document.getElementById('sort').value = 'name';
+        chrome.storage.local.set({ librarySort: 'name' });
+        render();
+      },
+    },
+    {
+      name: 'Sort: Recently decided',
+      action: () => {
+        state.sort = 'decided';
+        document.getElementById('sort').value = 'decided';
+        chrome.storage.local.set({ librarySort: 'decided' });
+        render();
+      },
+    },
+    {
+      name: 'Sort: Fit changed',
+      description: 'Repos with fit delta (improved or regressed) at the top',
+      action: () => {
+        state.sort = 'delta';
+        document.getElementById('sort').value = 'delta';
+        chrome.storage.local.set({ librarySort: 'delta' });
+        render();
+      },
+    },
+    {
+      name: 'Sort: Eval score',
+      description: 'Repos with highest evaluation score at the top',
+      action: () => {
+        state.sort = 'eval';
+        document.getElementById('sort').value = 'eval';
+        chrome.storage.local.set({ librarySort: 'eval' });
+        render();
+      },
+    },
+    {
+      section: 'Evaluations',
+      name: '▣ Evaluate focused repo',
+      description: 'Open the scoring panel for the focused card (or press e)',
+      action: () => {
+        const cards = getVisibleCards();
+        if (jkIdx < 0 || !cards[jkIdx]) {
+          setStatus('Focus a card first (j/k) then press e, or use the ▣ button on a card.');
+          return;
+        }
+        const repoId = cards[jkIdx].dataset.repo;
+        showEvalPanel(repoId, cards[jkIdx].querySelector('[data-act="eval"]') || cards[jkIdx]);
+      },
+    },
+    {
+      name: '▣ Edit rubric criteria',
+      description: 'Change the scoring criteria used by the Evaluations Workbench',
+      action: () => editRubric(),
+    },
+    {
+      name: '▣ Show: Evaluated repos only',
+      description: 'Filter to repos with at least one eval score',
+      action: () => {
+        const ids = allRows.filter((r) => evalMap.has(r.repoId)).map((r) => r.repoId);
+        nlFilter = ids.length
+          ? { question: `Evaluated (${ids.length} repos)`, ids }
+          : {
+              question: 'Evaluated repos',
+              ids: [],
+              error: 'No evaluations yet — press e on a focused card to score a repo',
+            };
+        render();
+      },
+    },
+    {
+      section: 'View',
+      name: 'Tech Radar',
+      description: 'Organize repos by Adopt/Trial/Hold/Reject decision',
+      action: () => {
+        if (state.view !== 'radar') toggleRadarView();
+      },
+    },
+    {
+      name: 'Corkboard',
+      description: 'A red-string board of your library',
+      action: () => {
+        if (state.view !== 'corkboard') toggleCorkboardView();
+      },
+    },
+    {
+      name: 'List view',
+      description: 'Default card grid',
+      action: () => {
+        if (state.view === 'radar') toggleRadarView();
+        else if (state.view === 'corkboard') toggleCorkboardView();
+      },
+    },
+    {
+      section: 'Pins',
+      name: 'Unpin all',
+      description: 'Remove all pinned repos from the top section',
+      action: async () => {
+        pinned.clear();
+        await chrome.storage.local.set({ repolens_pinned: [] });
+        render();
+      },
+    },
+    {
+      section: 'Actions',
+      name: 'Auto-organize by language',
+      description: 'Group repos into language collections',
+      action: () => autoOrganize(),
+    },
+    {
+      name: 'Re-scan all stale (30+ days)',
+      description: 'Open Batch Scan pre-filled with repos not scanned in 30 days',
+      action: () => refreshStale(),
+    },
+    {
+      name: '⟳ Show: Stale only',
+      description: 'Filter to repos not scanned in 30 days',
+      action: () => {
+        const ids = allRows
+          .filter((r) => r.savedAt && Date.now() - Date.parse(r.savedAt) > 30 * 86_400_000)
+          .map((r) => r.repoId);
+        nlFilter = ids.length
+          ? { question: 'Stale (not scanned in 30 days)', ids }
+          : { question: 'Stale repos', ids: [], error: 'No stale repos — all scans are under 30 days old' };
+        render();
+      },
+    },
+    {
+      name: 'Batch Scan',
+      description: 'Scan multiple repos at once',
+      action: () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }),
+    },
+    {
+      name: 'Export visible repos (Markdown)',
+      description: 'Download only the currently filtered repos as Markdown',
+      action: () => exportVisible('md'),
+    },
+    {
+      name: 'Export Library (Markdown)',
+      description: 'Download library as a readable Markdown report',
+      action: () => exportDigest('md'),
+    },
+    {
+      name: 'Export Digest (JSON)',
+      description: 'Download library as JSON',
+      action: () => exportDigest('json'),
+    },
+    {
+      name: 'Export Digest (CSV)',
+      description: 'Download library as CSV',
+      action: () => exportDigest('csv'),
+    },
+    {
+      name: '⊞ Export Decision Matrix (CSV)',
+      description: 'Full matrix: fit, health, decision, eval score, rubric criteria, notes',
+      action: () => exportDecisionMatrix('csv'),
+    },
+    {
+      name: '⊞ Export Decision Matrix (Markdown)',
+      description: 'Same as CSV but formatted as a Markdown table',
+      action: () => exportDecisionMatrix('md'),
+    },
     { name: 'Export Backup', description: 'Full library backup', action: () => exportLibrary() },
-    { name: '🔍 Discover repos', description: 'Search GitHub and get recommendations based on your library', action: () => openDiscovery() },
+    {
+      name: '🔍 Discover repos',
+      description: 'Search GitHub and get recommendations based on your library',
+      action: () => openDiscovery(),
+    },
     { name: 'Import Backup', description: 'Restore from a backup file', action: () => pickImportFile() },
-    { section: 'Saved filters', name: '★ Save current filter…', description: 'Bookmark this filter combo by name', action: async () => {
-      const name = prompt('Name this filter:');
-      if (!name?.trim()) return;
-      await saveCurrentFilter(name.trim());
-      setStatus(`Filter saved: "${name.trim()}"`);
-    } },
-    { name: 'Select mode', description: 'Select repos for bulk actions', action: () => setSelectionMode(!selectionMode) },
-    { section: 'Vee', name: '✦ Auto-decide all undecided (Vee)', description: 'Apply Vee\'s fit-based suggestion to every undecided rated repo', action: () => applyVeeSuggestions() },
+    {
+      section: 'Saved filters',
+      name: '★ Save current filter…',
+      description: 'Bookmark this filter combo by name',
+      action: async () => {
+        const name = prompt('Name this filter:');
+        if (!name?.trim()) return;
+        await saveCurrentFilter(name.trim());
+        setStatus(`Filter saved: "${name.trim()}"`);
+      },
+    },
+    {
+      name: 'Select mode',
+      description: 'Select repos for bulk actions',
+      action: () => setSelectionMode(!selectionMode),
+    },
+    {
+      section: 'Vee',
+      name: '✦ Auto-decide all undecided (Vee)',
+      description: "Apply Vee's fit-based suggestion to every undecided rated repo",
+      action: () => applyVeeSuggestions(),
+    },
     { name: 'Take the tour', description: 'Replay the Vee walkthrough', action: () => startIntro() },
     { name: 'Open Settings', action: () => chrome.runtime.openOptionsPage() },
   ];
@@ -2507,12 +3331,22 @@ function initLibraryPalette() {
     if (!savedFilters.length) return commands;
     const filterCmds = savedFilters.map((f) => ({
       name: `★ ${f.name}`,
-      description: [f.snapshot.decision && `decision: ${f.snapshot.decision}`, f.snapshot.lang && `lang: ${f.snapshot.lang}`, f.snapshot.query && `"${f.snapshot.query}"`].filter(Boolean).join(' · ') || 'saved filter',
+      description:
+        [
+          f.snapshot.decision && `decision: ${f.snapshot.decision}`,
+          f.snapshot.lang && `lang: ${f.snapshot.lang}`,
+          f.snapshot.query && `"${f.snapshot.query}"`,
+        ]
+          .filter(Boolean)
+          .join(' · ') || 'saved filter',
       action: () => applySavedFilter(f),
     }));
     const deleteCmds = savedFilters.map((f) => ({
       name: `Delete saved filter: ${f.name}`,
-      action: async () => { await deleteSavedFilter(f.name); setStatus(`Deleted filter "${f.name}"`); },
+      action: async () => {
+        await deleteSavedFilter(f.name);
+        setStatus(`Deleted filter "${f.name}"`);
+      },
     }));
     // Insert saved filter commands right before the 'Save current filter…' entry
     const saveIdx = commands.findIndex((c) => c.name === '★ Save current filter…');
@@ -2559,8 +3393,11 @@ function runIntroTour() {
     copy: COPY,
     onExit: async () => {
       // Stage B picks up in the output tab (Task 7) — hand it the demo + a marker.
-      try { await chrome.storage.local.set({ onboardingSeen: true, onboardingStage: 'verdict' }); }
-      catch { /* storage best-effort */ }
+      try {
+        await chrome.storage.local.set({ onboardingSeen: true, onboardingStage: 'verdict' });
+      } catch {
+        /* storage best-effort */
+      }
       // openCachedAnalysis writes the demo payload into chrome.storage.session and opens
       // output-tab.html?key=… (the path Stage B reads). openRow would miss — the demo lives
       // in the IndexedDB repos/scenes stores, not the listCached() cache that backs cacheByRepo.
@@ -2572,17 +3409,25 @@ function runIntroTour() {
 // A self-contained 3-way prompt (Show me / Maybe later / Don't ask) for the
 // milestone tour. Reuses the coachmark veil/card classes; removes itself on choice.
 function offerMilestone(realCount) {
-  const veil = document.createElement('div'); veil.className = 'cm-veil';
-  const cardEl = document.createElement('div'); cardEl.className = 'cm-card';
+  const veil = document.createElement('div');
+  veil.className = 'cm-veil';
+  const cardEl = document.createElement('div');
+  cardEl.className = 'cm-card';
   cardEl.setAttribute('role', 'dialog');
   cardEl.setAttribute('aria-modal', 'true');
   cardEl.setAttribute('aria-label', 'Take the milestone tour?');
-  const textEl = document.createElement('p'); textEl.className = 'cm-text';
+  const textEl = document.createElement('p');
+  textEl.className = 'cm-text';
   textEl.textContent = (COPY.milestoneOffer || '').replace('{N}', String(realCount));
-  const ctl = document.createElement('div'); ctl.className = 'cm-ctl';
-  const show = document.createElement('button'); show.textContent = 'Show me';
-  const later = document.createElement('button'); later.textContent = 'Maybe later';
-  const never = document.createElement('button'); never.textContent = "Don't ask"; never.className = 'cm-skip';
+  const ctl = document.createElement('div');
+  ctl.className = 'cm-ctl';
+  const show = document.createElement('button');
+  show.textContent = 'Show me';
+  const later = document.createElement('button');
+  later.textContent = 'Maybe later';
+  const never = document.createElement('button');
+  never.textContent = "Don't ask";
+  never.className = 'cm-skip';
   ctl.append(never, later, show);
   cardEl.append(textEl, ctl);
   veil.append(cardEl);
@@ -2591,22 +3436,41 @@ function offerMilestone(realCount) {
   const focusables = [never, later, show]; // DOM/tab order
   const persist = (patch) => chrome.storage.local.set(patch).catch(() => {});
   const onKeydown = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); later.click(); return; }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      later.click();
+      return;
+    }
     if (e.key !== 'Tab') return;
     // Trap Tab/Shift+Tab so focus cycles the three buttons (wrap first↔last).
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
   };
   const close = () => {
     document.removeEventListener('keydown', onKeydown);
     veil.remove();
     if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus(); // restore focus
   };
-  show.onclick = () => { close(); persist({ milestoneTourSeen: true }); startCoachmark({ steps: milestoneSteps(), copy: COPY }); };
-  later.onclick = () => { close(); persist({ milestoneSnoozeAt10: true }); }; // Escape maps here (snooze)
-  never.onclick = () => { close(); persist({ milestoneTourSeen: true }); };
+  show.onclick = () => {
+    close();
+    persist({ milestoneTourSeen: true });
+    startCoachmark({ steps: milestoneSteps(), copy: COPY });
+  };
+  later.onclick = () => {
+    close();
+    persist({ milestoneSnoozeAt10: true });
+  }; // Escape maps here (snooze)
+  never.onclick = () => {
+    close();
+    persist({ milestoneTourSeen: true });
+  };
   document.addEventListener('keydown', onKeydown);
   document.body.append(veil);
   show.focus(); // move focus to the primary action on mount
@@ -2621,21 +3485,38 @@ async function checkOnboarding() {
     return;
   }
   let prefs = {};
-  try { prefs = await chrome.storage.local.get(['onboardingSeen', 'milestoneTourSeen', 'milestoneSnoozeAt10']); }
-  catch { return; }
+  try {
+    prefs = await chrome.storage.local.get(['onboardingSeen', 'milestoneTourSeen', 'milestoneSnoozeAt10']);
+  } catch {
+    return;
+  }
   const real = allRows.filter((r) => !isDemo(r));
   // A returning user who never saw the intro: mark it seen silently (no demo seed).
   if (!prefs.onboardingSeen) {
-    try { await chrome.storage.local.set({ onboardingSeen: true }); } catch { /* best-effort */ }
+    try {
+      await chrome.storage.local.set({ onboardingSeen: true });
+    } catch {
+      /* best-effort */
+    }
   }
   // Snooze: "Maybe later" defers the offer until the library reaches ≥10 real repos.
   let snoozed = !!prefs.milestoneSnoozeAt10;
   if (snoozed && real.length >= 10) {
     snoozed = false;
-    try { await chrome.storage.local.set({ milestoneSnoozeAt10: false }); } catch { /* best-effort */ }
+    try {
+      await chrome.storage.local.set({ milestoneSnoozeAt10: false });
+    } catch {
+      /* best-effort */
+    }
   }
   if (snoozed) return;
-  if (shouldOfferMilestone({ realCount: real.length, milestoneTourSeen: prefs.milestoneTourSeen, onboardingSeen: true })) {
+  if (
+    shouldOfferMilestone({
+      realCount: real.length,
+      milestoneTourSeen: prefs.milestoneTourSeen,
+      onboardingSeen: true,
+    })
+  ) {
     offerMilestone(real.length);
   }
 }
@@ -2650,7 +3531,9 @@ async function init() {
   const [points, cachedList, prefs, savedCollections, savedDecisions, loadedMastery] = await Promise.all([
     scrollPoints(),
     listCached().catch(() => []),
-    chrome.storage.local.get(['librarySort', 'mascotEnabled', 'repolens_pinned', SAVED_FILTERS_KEY]).catch(() => ({})),
+    chrome.storage.local
+      .get(['librarySort', 'mascotEnabled', 'repolens_pinned', SAVED_FILTERS_KEY])
+      .catch(() => ({})),
     listCollections().catch(() => []),
     listDecisions().catch(() => []),
     getAllMastery(),
@@ -2671,21 +3554,33 @@ async function init() {
         notesMap.set(k.slice('repolens_note_'.length), v.trim());
       }
     }
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
   // Drift alert: show banner if background worker found stale repos
-  chrome.storage.local.get('repolens_drift').then(({ repolens_drift: drift }) => {
-    if (drift?.staleCount && !sessionStorage.getItem('drift_dismissed')) {
-      const banner = document.getElementById('drift-banner');
-      const msg = banner?.querySelector('.drift-msg');
-      if (banner && msg) { msg.textContent = `${drift.staleCount} repos haven't been scanned in 14+ days.`; banner.classList.remove('hidden'); }
-    }
-  }).catch(() => {});
+  chrome.storage.local
+    .get('repolens_drift')
+    .then(({ repolens_drift: drift }) => {
+      if (drift?.staleCount && !sessionStorage.getItem('drift_dismissed')) {
+        const banner = document.getElementById('drift-banner');
+        const msg = banner?.querySelector('.drift-msg');
+        if (banner && msg) {
+          msg.textContent = `${drift.staleCount} repos haven't been scanned in 14+ days.`;
+          banner.classList.remove('hidden');
+        }
+      }
+    })
+    .catch(() => {});
 
   if (prefs?.librarySort) state.sort = prefs.librarySort;
   if (prefs?.libraryDensity === 'compact') {
     document.getElementById('grid')?.classList.add('density-compact');
     const btn = document.getElementById('density-toggle');
-    if (btn) { btn.textContent = '⊞'; btn.classList.add('on'); btn.title = 'Switch to comfortable view'; }
+    if (btn) {
+      btn.textContent = '⊞';
+      btn.classList.add('on');
+      btn.title = 'Switch to comfortable view';
+    }
   }
   const mascotOn = prefs?.mascotEnabled !== false; // default on
   collections = savedCollections;
@@ -2698,7 +3593,9 @@ async function init() {
   const cacheRows = cachedList.filter((c) => c && c.repoId).map((c) => libraryRow(c));
   allRows = mergeRows(savedRows, cacheRows).map((r) => {
     const cached = cacheByRepo.get(r.repoId);
-    const searchParts = [cached?.eli5, cached?.technical, (cached?.use_cases || []).join(' ')].filter(Boolean);
+    const searchParts = [cached?.eli5, cached?.technical, (cached?.use_cases || []).join(' ')].filter(
+      Boolean
+    );
     return {
       ...r,
       hasCache: !!cached,
@@ -2732,7 +3629,9 @@ async function init() {
     }
     // veeSvg() and EMPTY_GLYPH are static, code-owned strings — safe for the
     // STATIC-only showEmpty (no user data ever reaches innerHTML here).
-    const vee = mascotOn ? `<div class="vee is-empty" aria-hidden="true" style="margin-bottom:14px">${veeSvg()}</div>` : EMPTY_GLYPH;
+    const vee = mascotOn
+      ? `<div class="vee is-empty" aria-hidden="true" style="margin-bottom:14px">${veeSvg()}</div>`
+      : EMPTY_GLYPH;
     showEmpty(
       `${vee}<h2>No repos yet</h2><p>Open any <b>GitHub / GitLab / npm / PyPI</b> page and click the RepoLens icon —<br>every scan lands here automatically.</p><button id="lib-tour-chip" class="lib-tour-chip" type="button">✦ New here? Take the tour</button>`
     );
@@ -2743,10 +3642,21 @@ async function init() {
   if (allRows.some((r) => isDemo(r))) {
     const { onboardingSeen } = await chrome.storage.local.get('onboardingSeen').catch(() => ({}));
     if (onboardingSeen && !sessionStorage.getItem(INTRO_PENDING)) {
-      for (const r of allRows) if (isDemo(r)) { await deleteRepo(r.repoId); await deleteSnapshots(r.repoId); }
-      try { await deleteScene(demoScene().id); } catch { /* scene may not exist */ }
+      for (const r of allRows)
+        if (isDemo(r)) {
+          await deleteRepo(r.repoId);
+          await deleteSnapshots(r.repoId);
+        }
+      try {
+        await deleteScene(demoScene().id);
+      } catch {
+        /* scene may not exist */
+      }
       allRows = allRows.filter((r) => !isDemo(r));
-      if (!allRows.length) { location.reload(); return; } // back to the clean empty state
+      if (!allRows.length) {
+        location.reload();
+        return;
+      } // back to the clean empty state
     }
   }
   renderCaps();
@@ -2766,13 +3676,18 @@ async function init() {
   const askBtn = document.getElementById('ask-btn');
   const doAsk = () => submitAsk(askInput?.value);
   askBtn?.addEventListener('click', doAsk);
-  askInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAsk(); });
+  askInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doAsk();
+  });
 
   const searchEl = document.getElementById('search');
   let searchTimer = null;
   searchEl.addEventListener('input', (e) => {
     state.query = e.target.value;
-    if (nlFilter) { nlFilter = null; renderNlFilterBanner(); }
+    if (nlFilter) {
+      nlFilter = null;
+      renderNlFilterBanner();
+    }
     clearTimeout(searchTimer);
     searchTimer = setTimeout(render, 180); // debounce: don't re-render the whole grid on every keystroke
   });
@@ -2805,7 +3720,7 @@ async function init() {
       const docs = buildAskDocs();
       try {
         const resp = await chrome.runtime.sendMessage({ type: 'FILTER_LIBRARY', question, docs });
-        nlFilter = { question, ids: resp?.ok ? (resp.ids || []) : [], error: resp?.error };
+        nlFilter = { question, ids: resp?.ok ? resp.ids || [] : [], error: resp?.error };
       } catch (err) {
         nlFilter = { question, ids: [], error: err?.message || 'Filter failed' };
       }
@@ -2819,7 +3734,8 @@ async function init() {
   // '/' focuses search; Escape clears it when search is focused.
   document.addEventListener('keydown', (e) => {
     const t = e.target;
-    const inInput = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
+    const inInput =
+      t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
     if (e.key === '/' && !inInput) {
       e.preventDefault();
       searchEl.focus();

@@ -24,12 +24,15 @@ export async function requestXaiDeviceCode() {
   return res.json();
 }
 
-export async function pollXaiDeviceToken(deviceCode, { intervalSec = 5, expiresInSec = 600, onPending } = {}) {
+export async function pollXaiDeviceToken(
+  deviceCode,
+  { intervalSec = 5, expiresInSec = 600, onPending } = {}
+) {
   const interval = intervalSec * 1000;
-  const deadline = Date.now() + (expiresInSec * 1000);
+  const deadline = Date.now() + expiresInSec * 1000;
 
   while (Date.now() < deadline) {
-    await new Promise(r => setTimeout(r, interval));
+    await new Promise((r) => setTimeout(r, interval));
 
     const res = await fetch(XAI_TOKEN_URL, {
       method: 'POST',
@@ -49,7 +52,7 @@ export async function pollXaiDeviceToken(deviceCode, { intervalSec = 5, expiresI
       continue;
     }
     if (err.error === 'slow_down') {
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise((r) => setTimeout(r, 5000));
       continue;
     }
     throw new Error(err.error_description || err.error || 'Token polling failed');
@@ -62,7 +65,7 @@ export async function storeXaiOAuthTokens(token) {
   const structured = {
     access_token: token.access_token,
     refresh_token: token.refresh_token,
-    expires_at: Date.now() + (token.expires_in * 1000),
+    expires_at: Date.now() + token.expires_in * 1000,
   };
   await chrome.storage.local.set({
     xaiCredentials: structured,
@@ -75,9 +78,7 @@ export async function storeXaiOAuthTokens(token) {
 }
 
 export async function getXaiCredentials() {
-  const data = await chrome.storage.local.get([
-    'xaiCredentials', 'xaiKey', 'xaiRefresh', 'xaiExpiry'
-  ]);
+  const data = await chrome.storage.local.get(['xaiCredentials', 'xaiKey', 'xaiRefresh', 'xaiExpiry']);
   if (data.xaiCredentials && typeof data.xaiCredentials === 'object') {
     return data.xaiCredentials;
   }

@@ -15,7 +15,16 @@ export const BACKUP_VERSION = 2;
 // Upper bounds on how much a single import may write, so a hostile or corrupt
 // file can't pin the IndexedDB write lock or blow the storage quota. Anything
 // past these is dropped with a surfaced warning (never silently).
-export const MAX_ROWS = { repos: 5000, nodes: 20000, edges: 50000, cache: 5000, collections: 2000, decisions: 5000, snapshots: 5000, scenes: 2000 };
+export const MAX_ROWS = {
+  repos: 5000,
+  nodes: 20000,
+  edges: 50000,
+  cache: 5000,
+  collections: 2000,
+  decisions: 5000,
+  snapshots: 5000,
+  scenes: 2000,
+};
 
 // Per-repo snapshot ring-buffer cap — single source of truth in snapshots.js; each
 // imported snapshots row is trimmed to its most recent SNAP_CAP entries.
@@ -33,7 +42,16 @@ const sceneOk = (s) => !!(s && s.id && s.scope && Array.isArray(s.nodes) && Arra
 
 /** Empty normalized shape — the safe fallback when a file can't be parsed. */
 function emptyValue() {
-  return { repos: [], nodes: [], edges: [], cache: [], collections: [], decisions: [], snapshots: [], scenes: [] };
+  return {
+    repos: [],
+    nodes: [],
+    edges: [],
+    cache: [],
+    collections: [],
+    decisions: [],
+    snapshots: [],
+    scenes: [],
+  };
 }
 
 /**
@@ -42,14 +60,47 @@ function emptyValue() {
  * @param {{ repos?: object[], nodes?: object[], edges?: object[], cache?: object[], exportedAt?: string }} [parts]
  * @returns {object}
  */
-export function buildBackup({ repos, nodes, edges, cache, collections, decisions, snapshots, scenes, exportedAt } = {}) {
-  const r = arr(repos), n = arr(nodes), e = arr(edges), c = arr(cache), col = arr(collections), dec = arr(decisions), snap = arr(snapshots), sc = arr(scenes);
+export function buildBackup({
+  repos,
+  nodes,
+  edges,
+  cache,
+  collections,
+  decisions,
+  snapshots,
+  scenes,
+  exportedAt,
+} = {}) {
+  const r = arr(repos),
+    n = arr(nodes),
+    e = arr(edges),
+    c = arr(cache),
+    col = arr(collections),
+    dec = arr(decisions),
+    snap = arr(snapshots),
+    sc = arr(scenes);
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
     exportedAt: exportedAt || new Date().toISOString(),
-    counts: { repos: r.length, nodes: n.length, edges: e.length, cache: c.length, collections: col.length, decisions: dec.length, snapshots: snap.length, scenes: sc.length },
-    repos: r, nodes: n, edges: e, cache: c, collections: col, decisions: dec, snapshots: snap, scenes: sc,
+    counts: {
+      repos: r.length,
+      nodes: n.length,
+      edges: e.length,
+      cache: c.length,
+      collections: col.length,
+      decisions: dec.length,
+      snapshots: snap.length,
+      scenes: sc.length,
+    },
+    repos: r,
+    nodes: n,
+    edges: e,
+    cache: c,
+    collections: col,
+    decisions: dec,
+    snapshots: snap,
+    scenes: sc,
   };
 }
 
@@ -64,7 +115,12 @@ export function buildBackup({ repos, nodes, edges, cache, collections, decisions
 export function validateBackup(obj) {
   const errors = [];
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-    return { ok: false, errors: ['Not a RepoLens backup file (empty or not a JSON object).'], warnings: [], value: emptyValue() };
+    return {
+      ok: false,
+      errors: ['Not a RepoLens backup file (empty or not a JSON object).'],
+      warnings: [],
+      value: emptyValue(),
+    };
   }
   if (obj.format !== BACKUP_FORMAT) {
     errors.push(`Unrecognized file — expected a "${BACKUP_FORMAT}" export.`);
@@ -73,7 +129,9 @@ export function validateBackup(obj) {
   if (!Number.isFinite(version) || version < 1) {
     errors.push('Missing or invalid backup version.');
   } else if (version > BACKUP_VERSION) {
-    errors.push(`This backup is from a newer RepoLens (format v${version}); update the extension to import it.`);
+    errors.push(
+      `This backup is from a newer RepoLens (format v${version}); update the extension to import it.`
+    );
   }
   const warnings = [];
   const clamp = (key, list) => {
@@ -87,7 +145,10 @@ export function validateBackup(obj) {
   const filterWarn = (key, list, ok) => {
     const kept = list.filter(ok);
     const dropped = list.length - kept.length;
-    if (dropped > 0) warnings.push(`Backup has ${dropped} invalid ${key} row${dropped === 1 ? '' : 's'}; skipping ${dropped === 1 ? 'it' : 'them'}.`);
+    if (dropped > 0)
+      warnings.push(
+        `Backup has ${dropped} invalid ${key} row${dropped === 1 ? '' : 's'}; skipping ${dropped === 1 ? 'it' : 'them'}.`
+      );
     return kept;
   };
   const value = {
@@ -97,12 +158,19 @@ export function validateBackup(obj) {
     cache: clamp('cache', arr(obj.cache).filter(cacheOk)),
     collections: clamp('collections', arr(obj.collections).filter(collectionOk)),
     decisions: clamp('decisions', arr(obj.decisions).filter(decisionOk)),
-    snapshots: clamp('snapshots', arr(obj.snapshots).filter(snapshotOk).map((r) => ({
-      ...r,
-      // Trim to the cap and coerce each snap's flags to an array — a corrupt/hostile
-      // file may carry a non-array `flags` that would later throw in snapshotTrend.
-      snaps: arr(r.snaps).slice(-SNAP_CAP).map((s) => (s && typeof s === 'object' ? { ...s, flags: arr(s.flags) } : s)),
-    }))),
+    snapshots: clamp(
+      'snapshots',
+      arr(obj.snapshots)
+        .filter(snapshotOk)
+        .map((r) => ({
+          ...r,
+          // Trim to the cap and coerce each snap's flags to an array — a corrupt/hostile
+          // file may carry a non-array `flags` that would later throw in snapshotTrend.
+          snaps: arr(r.snaps)
+            .slice(-SNAP_CAP)
+            .map((s) => (s && typeof s === 'object' ? { ...s, flags: arr(s.flags) } : s)),
+        }))
+    ),
     scenes: clamp('scenes', filterWarn('scene', arr(obj.scenes), sceneOk)),
   };
   return { ok: errors.length === 0, errors, warnings, value };
@@ -116,7 +184,16 @@ export function validateBackup(obj) {
  */
 export function summarizeBackup(obj) {
   const { value } = validateBackup(obj);
-  return { repos: value.repos.length, nodes: value.nodes.length, edges: value.edges.length, cache: value.cache.length, collections: value.collections.length, decisions: value.decisions.length, snapshots: value.snapshots.length, scenes: value.scenes.length };
+  return {
+    repos: value.repos.length,
+    nodes: value.nodes.length,
+    edges: value.edges.length,
+    cache: value.cache.length,
+    collections: value.collections.length,
+    decisions: value.decisions.length,
+    snapshots: value.snapshots.length,
+    scenes: value.scenes.length,
+  };
 }
 
 /**

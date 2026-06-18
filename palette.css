@@ -3,8 +3,10 @@
    pages that don't load themes.css (e.g. share.html). */
 
 #palette-overlay {
-  position: fixed; inset: 0; z-index: 9000;
-  background: rgba(0, 0, 0, .55);
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   display: flex;
@@ -25,7 +27,9 @@
   border: 1px solid var(--border-2, #2a3a52);
   border-radius: 14px;
   width: min(560px, calc(100vw - 32px));
-  box-shadow: 0 28px 80px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255,255,255,.04) inset;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
   overflow: hidden;
   transform: translateY(-10px) scale(0.975);
   transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -68,7 +72,10 @@
 
 .pl-section {
   padding: 8px 20px 3px;
-  font: 700 9.5px/1 ui-monospace, 'SF Mono', monospace;
+  font:
+    700 9.5px/1 ui-monospace,
+    'SF Mono',
+    monospace;
   letter-spacing: 1.2px;
   text-transform: uppercase;
   color: var(--text-faint, #4a5570);
@@ -104,7 +111,9 @@
 }
 .pl-shortcut {
   margin-left: auto;
-  font: 600 10px ui-monospace, monospace;
+  font:
+    600 10px ui-monospace,
+    monospace;
   color: var(--text-faint, #4a5570);
   background: var(--surface-alt, #0d1623);
   border: 1px solid var(--border, #1c2b3e);
@@ -131,7 +140,9 @@
   gap: 14px;
 }
 #palette-footer kbd {
-  font: 600 10px ui-monospace, monospace;
+  font:
+    600 10px ui-monospace,
+    monospace;
   color: var(--text-muted, #647488);
   background: var(--surface-alt, #0d1623);
   border: 1px solid var(--border, #1c2b3e);
@@ -140,5 +151,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #palette-overlay, #palette-modal { transition: none; }
+  #palette-overlay,
+  #palette-modal {
+    transition: none;
+  }
 }

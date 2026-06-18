@@ -1,6 +1,6 @@
 {
   "name": "repolens",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "type": "module",
   "scripts": {
     "test": "vitest run",
@@ -14,11 +14,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9.13.0",
     "fake-indexeddb": "^6.2.5",
     "globals": "^15.11.0",
     "prettier": "^3.3.3",
-    "vitest": "^1.6.0"
+    "vitest": "^4.1.9"
   }
 }

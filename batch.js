@@ -39,12 +39,15 @@ function updateCount() {
 textarea.addEventListener('input', updateCount);
 
 // Pre-fill from library "Refresh stale" button
-chrome.storage.session.get('repolens_batch_prefill').then(({ repolens_batch_prefill }) => {
-  if (!repolens_batch_prefill?.length) return;
-  chrome.storage.session.remove('repolens_batch_prefill');
-  textarea.value = repolens_batch_prefill.join('\n');
-  updateCount();
-}).catch(() => {});
+chrome.storage.session
+  .get('repolens_batch_prefill')
+  .then(({ repolens_batch_prefill }) => {
+    if (!repolens_batch_prefill?.length) return;
+    chrome.storage.session.remove('repolens_batch_prefill');
+    textarea.value = repolens_batch_prefill.join('\n');
+    updateCount();
+  })
+  .catch(() => {});
 
 clearBtn.addEventListener('click', () => {
   textarea.value = '';
@@ -65,13 +68,16 @@ const FIT_LABELS = { strong: 'Strong', solid: 'Solid', care: 'Care', risky: 'Ris
 function rowHtml(item, idx) {
   const icon = STATUS_ICON[item.status] ?? '';
   const isScanning = item.status === 'scanning';
-  const iconHtml = isScanning
-    ? '<span class="row-dot"></span>'
-    : `<span class="row-icon">${icon}</span>`;
+  const iconHtml = isScanning ? '<span class="row-dot"></span>' : `<span class="row-icon">${icon}</span>`;
   const label = STATUS_LABEL[item.status] ?? item.status;
-  const fitHtml = item.fit ? `<span class="row-fit fit-${item.fit}">${FIT_LABELS[item.fit] ?? item.fit}</span>` : '';
-  const errHtml = item.error ? `<span class="row-status" style="color:var(--bad-ink)">${esc(item.error.slice(0, 60))}</span>` : '';
-  const displayId = item.repoId || item.url?.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') || `#${idx + 1}`;
+  const fitHtml = item.fit
+    ? `<span class="row-fit fit-${item.fit}">${FIT_LABELS[item.fit] ?? item.fit}</span>`
+    : '';
+  const errHtml = item.error
+    ? `<span class="row-status" style="color:var(--bad-ink)">${esc(item.error.slice(0, 60))}</span>`
+    : '';
+  const displayId =
+    item.repoId || item.url?.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') || `#${idx + 1}`;
   return `<div class="batch-row ${item.status}" data-idx="${idx}">
     ${iconHtml}
     <span class="row-id" title="${esc(displayId)}">${esc(displayId)}</span>
@@ -100,7 +106,10 @@ async function poll(key) {
   while (polling && Date.now() < deadline) {
     const stored = await chrome.storage.session.get(key).catch(() => ({}));
     const data = stored[key];
-    if (!data) { await sleep(500); continue; }
+    if (!data) {
+      await sleep(500);
+      continue;
+    }
 
     const items = data.items || [];
     const done = items.filter((i) => i.status !== 'queued' && i.status !== 'scanning').length;
@@ -118,7 +127,9 @@ async function poll(key) {
   polling = false;
 }
 
-function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 // ─── Start scan ──────────────────────────────────────────────────────────────
 
@@ -140,7 +151,9 @@ scanBtn.addEventListener('click', async () => {
 
   // Send to background
   sessionKey = 'repolens_batch_' + crypto.randomUUID();
-  await chrome.storage.session.set({ [sessionKey]: { type: 'batch', total: urls.length, items: initItems, done: false } });
+  await chrome.storage.session.set({
+    [sessionKey]: { type: 'batch', total: urls.length, items: initItems, done: false },
+  });
 
   chrome.runtime.sendMessage({ type: 'BATCH_SCAN', sessionKey, urls }).catch(() => {});
 

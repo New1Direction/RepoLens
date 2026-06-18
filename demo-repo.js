@@ -6,8 +6,12 @@ import { buildBlueprintScene } from './blueprint-adapter.js';
 export const DEMO_REPO = {
   repoId: 'honojs/hono',
   __demo__: true,
-  platform: 'github', language: 'TypeScript', license: 'MIT', stars: 21000,
-  category: 'Web framework', tags: ['edge', 'router'],
+  platform: 'github',
+  language: 'TypeScript',
+  license: 'MIT',
+  stars: 21000,
+  category: 'Web framework',
+  tags: ['edge', 'router'],
   description: 'Small, fast web framework for the edges.',
   saved_at: '2026-01-01T00:00:00.000Z',
   eli5: 'A sample read: a tiny web framework that runs on edge runtimes using web-standard requests.',
@@ -24,7 +28,12 @@ export const DEMO_REPO = {
       { id: 'context', name: 'Context', kind: 'subsystem', purpose: 'Wraps request and response per call.' },
       { id: 'middleware', name: 'middleware', kind: 'module', purpose: 'Runs before/after handlers.' },
       { id: 'handler', name: 'handler', kind: 'module', purpose: 'Your route logic.' },
-      { id: 'adapter', name: 'runtime adapter', kind: 'module', purpose: 'Binds to a runtime (Workers, Deno, Node).' },
+      {
+        id: 'adapter',
+        name: 'runtime adapter',
+        kind: 'module',
+        purpose: 'Binds to a runtime (Workers, Deno, Node).',
+      },
     ],
     lineage: {
       links: [
@@ -34,7 +43,8 @@ export const DEMO_REPO = {
         { from: 'middleware', to: 'handler', relation: 'triggers' },
         { from: 'app', to: 'adapter', relation: 'depends-on' },
       ],
-      roots: ['app'], leaves: ['handler'],
+      roots: ['app'],
+      leaves: ['handler'],
     },
   },
 };
@@ -43,7 +53,14 @@ export const DEMO_REPO = {
  *  Tagged __demo__ so exportStores can drop it without coupling the store to this
  *  fixture (saveScene persists the scene verbatim, so the tag survives). */
 export function demoScene() {
-  return { ...buildBlueprintScene({ deepDive: DEMO_REPO.deepDive, repoId: DEMO_REPO.repoId, title: DEMO_REPO.repoId }), __demo__: true };
+  return {
+    ...buildBlueprintScene({
+      deepDive: DEMO_REPO.deepDive,
+      repoId: DEMO_REPO.repoId,
+      title: DEMO_REPO.repoId,
+    }),
+    __demo__: true,
+  };
 }
 
 /** True only for the seeded demo row. */
@@ -69,5 +86,7 @@ export async function clearDemoEverywhere() {
       // Defense-in-depth: clear any snapshot orphan left by an already-seeded user.
       await deleteSnapshots(DEMO_REPO.repoId);
     }
-  } catch { /* best-effort teardown */ }
+  } catch {
+    /* best-effort teardown */
+  }
 }

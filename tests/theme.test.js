@@ -10,9 +10,13 @@ beforeEach(() => {
   const attrs = {};
   global.document = {
     documentElement: {
-      setAttribute: (k, v) => { attrs[k] = v; },
+      setAttribute: (k, v) => {
+        attrs[k] = v;
+      },
       getAttribute: (k) => (k in attrs ? attrs[k] : null),
-      removeAttribute: (k) => { delete attrs[k]; },
+      removeAttribute: (k) => {
+        delete attrs[k];
+      },
     },
   };
   const store = {};
@@ -20,7 +24,9 @@ beforeEach(() => {
     storage: {
       local: {
         get: vi.fn(async (k) => (typeof k === 'string' ? { [k]: store[k] } : { ...store })),
-        set: vi.fn(async (obj) => { Object.assign(store, obj); }),
+        set: vi.fn(async (obj) => {
+          Object.assign(store, obj);
+        }),
       },
     },
   };
@@ -28,9 +34,21 @@ beforeEach(() => {
 
 describe('THEMES', () => {
   it('has all themes with key, label, swatch', () => {
-    expect(THEMES.map(t => t.key)).toEqual([
-      'monoink', 'midnight', 'paper', 'terminal', 'synthwave', 'bmw', 'xai', 'claude',
-      'apple', 'nord', 'gruvbox', 'rosepine', 'latte', 'solarized',
+    expect(THEMES.map((t) => t.key)).toEqual([
+      'monoink',
+      'midnight',
+      'paper',
+      'terminal',
+      'synthwave',
+      'bmw',
+      'xai',
+      'claude',
+      'apple',
+      'nord',
+      'gruvbox',
+      'rosepine',
+      'latte',
+      'solarized',
     ]);
     for (const t of THEMES) {
       expect(t.label).toBeTruthy();
@@ -77,24 +95,43 @@ describe('saveTheme', () => {
 });
 
 describe('themes.css Mono Ink block', () => {
-  const css = readFileSync(
-    resolve(dirname(fileURLToPath(import.meta.url)), '../themes.css'),
-    'utf8',
-  );
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../themes.css'), 'utf8');
+
+  const monoinkSelector = /\[data-theme=(['"])monoink\1\]/;
+  const monoinkBlock = () => {
+    const match = css.match(monoinkSelector);
+    if (match?.index == null) return '';
+    const monoink = css.slice(match.index);
+    return monoink.slice(0, monoink.indexOf('}') + 1);
+  };
 
   it('defines a [data-theme="monoink"] block', () => {
-    expect(css).toContain('[data-theme="monoink"]');
+    expect(monoinkSelector.test(css)).toBe(true);
   });
 
   it('maps the full per-theme token vocabulary', () => {
-    const monoink = css.slice(css.indexOf('[data-theme="monoink"]'));
-    const block = monoink.slice(0, monoink.indexOf('}') + 1);
+    const block = monoinkBlock();
     const REQUIRED = [
-      '--body-bg', '--bg', '--surface', '--surface-alt', '--border', '--border-2',
-      '--text', '--text-strong', '--text-body', '--text-sub', '--text-muted',
-      '--text-faint', '--text-fainter',
-      '--accent', '--accent-deep', '--accent-deep-hover', '--accent-grad',
-      '--font', '--mono', '--card-shadow',
+      '--body-bg',
+      '--bg',
+      '--surface',
+      '--surface-alt',
+      '--border',
+      '--border-2',
+      '--text',
+      '--text-strong',
+      '--text-body',
+      '--text-sub',
+      '--text-muted',
+      '--text-faint',
+      '--text-fainter',
+      '--accent',
+      '--accent-deep',
+      '--accent-deep-hover',
+      '--accent-grad',
+      '--font',
+      '--mono',
+      '--card-shadow',
     ];
     for (const token of REQUIRED) {
       expect(block.includes(token), `monoink block is missing ${token}`).toBe(true);
@@ -102,8 +139,6 @@ describe('themes.css Mono Ink block', () => {
   });
 
   it('uses the cobalt accent for monoink', () => {
-    const monoink = css.slice(css.indexOf('[data-theme="monoink"]'));
-    const block = monoink.slice(0, monoink.indexOf('}') + 1);
-    expect(block).toContain('#2563eb');
+    expect(monoinkBlock()).toContain('#2563eb');
   });
 });

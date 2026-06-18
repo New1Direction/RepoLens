@@ -10,10 +10,11 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || undefined;
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
-  output: 'export',            // static HTML export — hostable on GitHub Pages / any static host
+  output: 'export', // static HTML export — hostable on GitHub Pages / any static host
   images: { unoptimized: true }, // required by `output: export`
   basePath,
-  trailingSlash: false,        // rely on GitHub Pages serving `foo.html` for `/foo`
+  outputFileTracingRoot: process.cwd(), // website/ owns its own lockfile; keep Next from inferring the repo root
+  trailingSlash: false, // rely on GitHub Pages serving `foo.html` for `/foo`
 };
 
 export default withMDX(config);

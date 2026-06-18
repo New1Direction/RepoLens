@@ -115,7 +115,9 @@ describe('parseDocsQuality', () => {
   });
 
   it('clamps scores to 0–100', () => {
-    const r = parseDocsQuality(wrap({ ...validResult, score: 150, sections: [{ name: 'X', score: -10, verdict: 'v', missing: [] }] }));
+    const r = parseDocsQuality(
+      wrap({ ...validResult, score: 150, sections: [{ name: 'X', score: -10, verdict: 'v', missing: [] }] })
+    );
     expect(r.score).toBe(100);
     expect(r.sections[0].score).toBe(0);
   });

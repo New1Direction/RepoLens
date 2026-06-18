@@ -7,9 +7,9 @@ const RUBRIC_KEY = 'repolens_rubric';
 const EVALS_KEY = 'repolens_evaluations';
 
 export const DEFAULT_RUBRIC = [
-  { id: 'docs',   name: 'Documentation', weight: 1 },
-  { id: 'types',  name: 'Type safety',   weight: 1 },
-  { id: 'maint',  name: 'Maintenance',   weight: 1 },
+  { id: 'docs', name: 'Documentation', weight: 1 },
+  { id: 'types', name: 'Type safety', weight: 1 },
+  { id: 'maint', name: 'Maintenance', weight: 1 },
 ];
 
 /** Load the current rubric (falls back to DEFAULT_RUBRIC). */
@@ -64,7 +64,8 @@ export async function listEvals() {
  */
 export function computeScore(evaluation, rubric) {
   if (!evaluation?.scores || !rubric?.length) return null;
-  let sum = 0, totalWeight = 0;
+  let sum = 0,
+    totalWeight = 0;
   for (const crit of rubric) {
     const score = evaluation.scores[crit.id];
     if (score >= 1 && score <= 5) {

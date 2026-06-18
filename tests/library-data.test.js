@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { libraryRow, sortRows, filterRows, allCapabilities, relativeTime, sourceUrl, mergeRows } from '../library-data.js';
+import {
+  libraryRow,
+  sortRows,
+  filterRows,
+  allCapabilities,
+  relativeTime,
+  sourceUrl,
+  mergeRows,
+} from '../library-data.js';
 
 const mk = (repoId, score, warns, caps = [], extra = {}) => ({
   repoId,
@@ -13,7 +21,9 @@ const mk = (repoId, score, warns, caps = [], extra = {}) => ({
 
 describe('libraryRow', () => {
   it('maps a payload into a row with a derived fit', () => {
-    const row = libraryRow(mk('facebook/react', 92, 0, ['ui'], { description: 'A UI lib', languages: [{ name: 'JS', pct: 90 }] }));
+    const row = libraryRow(
+      mk('facebook/react', 92, 0, ['ui'], { description: 'A UI lib', languages: [{ name: 'JS', pct: 90 }] })
+    );
     expect(row.repoId).toBe('facebook/react');
     expect(row.name).toBe('react');
     expect(row.fit.level).toBe('strong');
@@ -31,16 +41,22 @@ describe('libraryRow', () => {
     expect(libraryRow(mk('o/r', 92, 0)).fit.level).toBe('strong');
   });
   it('carries saved_at through as savedAt (empty string when absent)', () => {
-    expect(libraryRow(mk('o/r', 92, 0, [], { saved_at: '2026-06-01T00:00:00Z' })).savedAt).toBe('2026-06-01T00:00:00Z');
+    expect(libraryRow(mk('o/r', 92, 0, [], { saved_at: '2026-06-01T00:00:00Z' })).savedAt).toBe(
+      '2026-06-01T00:00:00Z'
+    );
     expect(libraryRow(mk('o/r', 92, 0)).savedAt).toBe('');
   });
   it('carries platform and maps a cache cachedAt (unix ms) to an ISO savedAt', () => {
-    const row = libraryRow(mk('o/r', 92, 0, [], { platform: 'npm', cachedAt: Date.parse('2026-06-01T00:00:00Z') }));
+    const row = libraryRow(
+      mk('o/r', 92, 0, [], { platform: 'npm', cachedAt: Date.parse('2026-06-01T00:00:00Z') })
+    );
     expect(row.platform).toBe('npm');
     expect(row.savedAt).toBe('2026-06-01T00:00:00.000Z');
   });
   it('prefers saved_at over cachedAt when both exist', () => {
-    const row = libraryRow(mk('o/r', 92, 0, [], { saved_at: '2026-06-02T00:00:00Z', cachedAt: Date.parse('2026-06-01T00:00:00Z') }));
+    const row = libraryRow(
+      mk('o/r', 92, 0, [], { saved_at: '2026-06-02T00:00:00Z', cachedAt: Date.parse('2026-06-01T00:00:00Z') })
+    );
     expect(row.savedAt).toBe('2026-06-02T00:00:00Z');
   });
 
@@ -85,12 +101,19 @@ describe('sourceUrl', () => {
 });
 
 describe('mergeRows', () => {
-  const a = [{ repoId: 'o/a', src: 'saved' }, { repoId: 'o/b', src: 'saved' }];
-  const b = [{ repoId: 'o/b', src: 'cache' }, { repoId: 'o/c', src: 'cache' }, { repoId: '', src: 'cache' }];
+  const a = [
+    { repoId: 'o/a', src: 'saved' },
+    { repoId: 'o/b', src: 'saved' },
+  ];
+  const b = [
+    { repoId: 'o/b', src: 'cache' },
+    { repoId: 'o/c', src: 'cache' },
+    { repoId: '', src: 'cache' },
+  ];
   it('unions by repoId with primary precedence; drops blank ids', () => {
     const merged = mergeRows(a, b);
-    expect(merged.map(r => r.repoId)).toEqual(['o/a', 'o/b', 'o/c']);
-    expect(merged.find(r => r.repoId === 'o/b').src).toBe('saved');
+    expect(merged.map((r) => r.repoId)).toEqual(['o/a', 'o/b', 'o/c']);
+    expect(merged.find((r) => r.repoId === 'o/b').src).toBe('saved');
   });
   it('does not mutate either input', () => {
     mergeRows(a, b);
@@ -98,7 +121,7 @@ describe('mergeRows', () => {
     expect(b.length).toBe(3);
   });
   it('handles empty inputs', () => {
-    expect(mergeRows([], b).map(r => r.repoId)).toEqual(['o/b', 'o/c']);
+    expect(mergeRows([], b).map((r) => r.repoId)).toEqual(['o/b', 'o/c']);
     expect(mergeRows(a, [])).toHaveLength(2);
   });
 });
@@ -106,7 +129,10 @@ describe('mergeRows', () => {
 describe('relativeTime', () => {
   const now = Date.parse('2026-06-09T12:00:00Z'); // fixed reference for deterministic tests
   const ago = (ms) => new Date(now - ms).toISOString();
-  const SEC = 1000, MIN = 60 * SEC, HOUR = 60 * MIN, DAY = 24 * HOUR;
+  const SEC = 1000,
+    MIN = 60 * SEC,
+    HOUR = 60 * MIN,
+    DAY = 24 * HOUR;
 
   it('returns empty string for missing or unparseable input', () => {
     expect(relativeTime('', now)).toBe('');
@@ -131,17 +157,19 @@ describe('relativeTime', () => {
 });
 
 describe('sortRows', () => {
-  const rows = [mk('o/risky', 30, 4), mk('o/strong', 95, 0), mk('o/care', 55, 2), mk('o/solid', 78, 1)].map(libraryRow);
+  const rows = [mk('o/risky', 30, 4), mk('o/strong', 95, 0), mk('o/care', 55, 2), mk('o/solid', 78, 1)].map(
+    libraryRow
+  );
   it("by 'fit' orders strong → risky", () => {
-    expect(sortRows(rows, 'fit').map(r => r.fit.level)).toEqual(['strong', 'solid', 'care', 'risky']);
+    expect(sortRows(rows, 'fit').map((r) => r.fit.level)).toEqual(['strong', 'solid', 'care', 'risky']);
   });
   it("by 'health' orders score desc", () => {
-    expect(sortRows(rows, 'health').map(r => r.health)).toEqual([95, 78, 55, 30]);
+    expect(sortRows(rows, 'health').map((r) => r.health)).toEqual([95, 78, 55, 30]);
   });
   it("by 'name' orders alphabetically and does not mutate the input", () => {
-    const before = rows.map(r => r.repoId);
-    expect(sortRows(rows, 'name').map(r => r.name)).toEqual(['care', 'risky', 'solid', 'strong']);
-    expect(rows.map(r => r.repoId)).toEqual(before); // immutability
+    const before = rows.map((r) => r.repoId);
+    expect(sortRows(rows, 'name').map((r) => r.name)).toEqual(['care', 'risky', 'solid', 'strong']);
+    expect(rows.map((r) => r.repoId)).toEqual(before); // immutability
   });
   it("by 'recent' orders by savedAt desc", () => {
     const rs = [
@@ -149,7 +177,7 @@ describe('sortRows', () => {
       mk('o/new', 80, 0, [], { saved_at: '2026-06-01T00:00:00Z' }),
       mk('o/mid', 80, 0, [], { saved_at: '2026-03-01T00:00:00Z' }),
     ].map(libraryRow);
-    expect(sortRows(rs, 'recent').map(r => r.name)).toEqual(['new', 'mid', 'old']);
+    expect(sortRows(rs, 'recent').map((r) => r.name)).toEqual(['new', 'mid', 'old']);
   });
   it("by 'stars' orders by star count desc", () => {
     const rs = [
@@ -157,17 +185,25 @@ describe('sortRows', () => {
       mk('o/b', 80, 0, [], { stars: 9000 }),
       mk('o/c', 80, 0, [], { stars: 500 }),
     ].map(libraryRow);
-    expect(sortRows(rs, 'stars').map(r => r.name)).toEqual(['b', 'c', 'a']);
+    expect(sortRows(rs, 'stars').map((r) => r.name)).toEqual(['b', 'c', 'a']);
   });
 });
 
 describe('filterRows', () => {
-  const rows = [mk('facebook/react', 90, 0, ['ui']), mk('vuejs/core', 88, 0, ['ui', 'reactivity']), mk('rust-lang/rust', 95, 0, ['compiler'])].map(libraryRow);
+  const rows = [
+    mk('facebook/react', 90, 0, ['ui']),
+    mk('vuejs/core', 88, 0, ['ui', 'reactivity']),
+    mk('rust-lang/rust', 95, 0, ['compiler']),
+  ].map(libraryRow);
   it('filters by name substring (case-insensitive)', () => {
-    expect(filterRows(rows, { query: 'RUST' }).map(r => r.name)).toEqual(['rust']);
+    expect(filterRows(rows, { query: 'RUST' }).map((r) => r.name)).toEqual(['rust']);
   });
   it('filters by capability exact match', () => {
-    expect(filterRows(rows, { capability: 'ui' }).map(r => r.name).sort()).toEqual(['core', 'react']);
+    expect(
+      filterRows(rows, { capability: 'ui' })
+        .map((r) => r.name)
+        .sort()
+    ).toEqual(['core', 'react']);
   });
   it('empty filter returns all', () => {
     expect(filterRows(rows, {}).length).toBe(3);
@@ -183,17 +219,29 @@ describe('allCapabilities', () => {
 
 describe('filterRows — searchText', () => {
   it('matches against searchText when blurb does not contain the term', () => {
-    const row = { ...libraryRow(mk('owner/thing', 80, 0, [])), blurb: 'A generic tool', searchText: 'reduces Redux boilerplate dramatically' };
+    const row = {
+      ...libraryRow(mk('owner/thing', 80, 0, [])),
+      blurb: 'A generic tool',
+      searchText: 'reduces Redux boilerplate dramatically',
+    };
     const result = filterRows([row], { query: 'boilerplate' });
     expect(result).toHaveLength(1);
   });
   it('does not include a row when neither blurb nor searchText matches', () => {
-    const row = { ...libraryRow(mk('owner/thing', 80, 0, [])), blurb: 'A generic tool', searchText: 'fast streaming' };
+    const row = {
+      ...libraryRow(mk('owner/thing', 80, 0, [])),
+      blurb: 'A generic tool',
+      searchText: 'fast streaming',
+    };
     const result = filterRows([row], { query: 'boilerplate' });
     expect(result).toHaveLength(0);
   });
   it('multi-word query matches across blurb and searchText', () => {
-    const row = { ...libraryRow(mk('owner/thing', 80, 0, [])), blurb: 'React state', searchText: 'handles async effects cleanly' };
+    const row = {
+      ...libraryRow(mk('owner/thing', 80, 0, [])),
+      blurb: 'React state',
+      searchText: 'handles async effects cleanly',
+    };
     const result = filterRows([row], { query: 'state async' });
     expect(result).toHaveLength(1);
   });

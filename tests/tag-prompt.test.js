@@ -13,7 +13,10 @@ describe('buildTagPrompt', () => {
 
 describe('parseTags', () => {
   it('returns only valid taxonomy tags from the JSON', () => {
-    expect(parseTags(JSON.stringify({ capabilities: ['vector-index', 'made-up', 'cli'] }))).toEqual(['vector-index', 'cli']);
+    expect(parseTags(JSON.stringify({ capabilities: ['vector-index', 'made-up', 'cli'] }))).toEqual([
+      'vector-index',
+      'cli',
+    ]);
   });
   it('tolerates code fences and returns [] on junk', () => {
     expect(parseTags('```json\n{"capabilities":["rag"]}\n```')).toEqual(['rag']);

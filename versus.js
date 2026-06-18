@@ -38,7 +38,7 @@ export function parseVersus(rawText) {
   return {
     summary_a: d.summary_a || '',
     summary_b: d.summary_b || '',
-    dimensions: arr(d.dimensions).map(x => ({
+    dimensions: arr(d.dimensions).map((x) => ({
       label: x.label || '',
       a: x.a || '',
       b: x.b || '',

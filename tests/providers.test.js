@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   COMPAT_PROVIDERS,
   COMPAT_IDS,
-  compatProviderById,
   provKeyName,
   provModelName,
   provBaseName,
@@ -112,7 +111,9 @@ describe('compatProtocol', () => {
 
 describe('URL normalization', () => {
   it('openai: leaves a full chat-completions URL alone', () => {
-    expect(normalizeOpenAiUrl('https://x.test/v1/chat/completions')).toBe('https://x.test/v1/chat/completions');
+    expect(normalizeOpenAiUrl('https://x.test/v1/chat/completions')).toBe(
+      'https://x.test/v1/chat/completions'
+    );
   });
   it('openai: appends /chat/completions to a versioned base', () => {
     expect(normalizeOpenAiUrl('https://x.test/v1')).toBe('https://x.test/v1/chat/completions');
@@ -121,7 +122,9 @@ describe('URL normalization', () => {
     expect(normalizeOpenAiUrl('https://x.test/')).toBe('https://x.test/v1/chat/completions');
   });
   it('anthropic: leaves a full messages URL alone and handles bases', () => {
-    expect(normalizeAnthropicUrl('https://x.test/anthropic/v1/messages')).toBe('https://x.test/anthropic/v1/messages');
+    expect(normalizeAnthropicUrl('https://x.test/anthropic/v1/messages')).toBe(
+      'https://x.test/anthropic/v1/messages'
+    );
     expect(normalizeAnthropicUrl('https://x.test/anthropic')).toBe('https://x.test/anthropic/v1/messages');
     expect(normalizeAnthropicUrl('https://x.test/v1')).toBe('https://x.test/v1/messages');
   });
@@ -142,22 +145,32 @@ describe('compatEndpoint', () => {
     expect(compatEndpoint('deepseek', {})).toBe('https://api.deepseek.com/v1/chat/completions');
   });
   it('honors a per-provider override, normalized by protocol', () => {
-    expect(compatEndpoint('deepseek', { deepseekBaseUrl: 'https://proxy.test/v1' }))
-      .toBe('https://proxy.test/v1/chat/completions');
-    expect(compatEndpoint('minimax', { minimaxBaseUrl: 'https://proxy.test/anthropic' }))
-      .toBe('https://proxy.test/anthropic/v1/messages');
+    expect(compatEndpoint('deepseek', { deepseekBaseUrl: 'https://proxy.test/v1' })).toBe(
+      'https://proxy.test/v1/chat/completions'
+    );
+    expect(compatEndpoint('minimax', { minimaxBaseUrl: 'https://proxy.test/anthropic' })).toBe(
+      'https://proxy.test/anthropic/v1/messages'
+    );
   });
   it('custom builds from its base + protocol', () => {
-    expect(compatEndpoint('custom', { customBaseUrl: 'https://my.test', customProto: 'anthropic' }))
-      .toBe('https://my.test/v1/messages');
-    expect(compatEndpoint('custom', { customBaseUrl: 'https://my.test/v1' }))
-      .toBe('https://my.test/v1/chat/completions');
+    expect(compatEndpoint('custom', { customBaseUrl: 'https://my.test', customProto: 'anthropic' })).toBe(
+      'https://my.test/v1/messages'
+    );
+    expect(compatEndpoint('custom', { customBaseUrl: 'https://my.test/v1' })).toBe(
+      'https://my.test/v1/chat/completions'
+    );
   });
   it('azure embeds the deployment + api-version and needs a resource endpoint + model', () => {
-    expect(compatEndpoint('azure', { azureBaseUrl: 'https://r.openai.azure.com/', azureModel: 'gpt4o', azureApiVersion: '2024-10-21' }))
-      .toBe('https://r.openai.azure.com/openai/deployments/gpt4o/chat/completions?api-version=2024-10-21');
-    expect(compatEndpoint('azure', { azureBaseUrl: 'https://r.openai.azure.com', azureModel: 'd1' }))
-      .toMatch(/\/openai\/deployments\/d1\/chat\/completions\?api-version=/); // default version
+    expect(
+      compatEndpoint('azure', {
+        azureBaseUrl: 'https://r.openai.azure.com/',
+        azureModel: 'gpt4o',
+        azureApiVersion: '2024-10-21',
+      })
+    ).toBe('https://r.openai.azure.com/openai/deployments/gpt4o/chat/completions?api-version=2024-10-21');
+    expect(compatEndpoint('azure', { azureBaseUrl: 'https://r.openai.azure.com', azureModel: 'd1' })).toMatch(
+      /\/openai\/deployments\/d1\/chat\/completions\?api-version=/
+    ); // default version
     expect(compatEndpoint('azure', { azureBaseUrl: 'https://r.openai.azure.com' })).toBe(''); // no deployment yet
   });
 });
@@ -166,16 +179,26 @@ describe('azure connectivity', () => {
   it('needs both a resource endpoint and a key', () => {
     expect(isCompatConnected('azure', { azureBaseUrl: 'https://r.openai.azure.com' })).toBe(false);
     expect(isCompatConnected('azure', { azureKey: 'k' })).toBe(false);
-    expect(isCompatConnected('azure', { azureBaseUrl: 'https://r.openai.azure.com', azureKey: 'k' })).toBe(true);
+    expect(isCompatConnected('azure', { azureBaseUrl: 'https://r.openai.azure.com', azureKey: 'k' })).toBe(
+      true
+    );
   });
 });
 
 describe('request bodies + response parsers', () => {
   it('openaiBody shapes a single user message', () => {
-    expect(openaiBody('m', 'hi', 10)).toEqual({ model: 'm', max_tokens: 10, messages: [{ role: 'user', content: 'hi' }] });
+    expect(openaiBody('m', 'hi', 10)).toEqual({
+      model: 'm',
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'hi' }],
+    });
   });
   it('anthropicBody shapes a single user message', () => {
-    expect(anthropicBody('m', 'hi')).toEqual({ model: 'm', max_tokens: 4096, messages: [{ role: 'user', content: 'hi' }] });
+    expect(anthropicBody('m', 'hi')).toEqual({
+      model: 'm',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: 'hi' }],
+    });
   });
   it('parseOpenAiText reads choices[0].message.content', () => {
     expect(parseOpenAiText({ choices: [{ message: { content: 'out' } }] })).toBe('out');
@@ -185,7 +208,14 @@ describe('request bodies + response parsers', () => {
   });
   it('parseAnthropicText reads the first text block', () => {
     expect(parseAnthropicText({ content: [{ type: 'text', text: 'out' }] })).toBe('out');
-    expect(parseAnthropicText({ content: [{ type: 'thinking', text: 't' }, { type: 'text', text: 'real' }] })).toBe('real');
+    expect(
+      parseAnthropicText({
+        content: [
+          { type: 'thinking', text: 't' },
+          { type: 'text', text: 'real' },
+        ],
+      })
+    ).toBe('real');
   });
   it('parseAnthropicText throws on empty', () => {
     expect(() => parseAnthropicText({ content: [] })).toThrow(/no text/i);

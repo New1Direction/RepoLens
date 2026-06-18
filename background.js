@@ -2,7 +2,16 @@ import { detectPlatform } from './url-detector.js';
 import { fetchRepoData } from './fetcher.js';
 import { buildPrompt } from './prompt.js';
 import { parseClaudeResponse } from './parser.js';
-import { saveAnalysis, searchLibrary, upsertNode, addEdge, scrollLibrary, scrollPoints, saveRepo, setConcepts } from './store.js';
+import {
+  saveAnalysis,
+  searchLibrary,
+  upsertNode,
+  addEdge,
+  scrollLibrary,
+  scrollPoints,
+  saveRepo,
+  setConcepts,
+} from './store.js';
 import { buildAttemptPlan } from './routing.js';
 import {
   COMPAT_PROVIDERS,
@@ -32,6 +41,13 @@ import { combineCandidates } from './combinator.js';
 import { buildCombinatorPrompt, parseCombinator } from './combinator-prompt.js';
 import { refreshXaiToken, XAI_CHAT_PROXY } from './oauth-xai.js';
 import {
+  ANTHROPIC_ACCESS_KEY,
+  ANTHROPIC_EXPIRY_KEY,
+  ANTHROPIC_REFRESH_KEY,
+  clearAnthropicOAuthTokens,
+  refreshAnthropicAccessToken,
+} from './oauth-anthropic.js';
+import {
   OPENAI_OAUTH_ERROR_KEY,
   OPENAI_OAUTH_STATE_KEY,
   OPENAI_OAUTH_VERIFIER_KEY,
@@ -44,9 +60,12 @@ import {
 } from './oauth-openai.js';
 import {
   fetchSource,
-  buildAtomsPrompt, parseAtoms,
-  buildLineagePrompt, parseLineage,
-  buildFeynmanPrompt, parseFeynman,
+  buildAtomsPrompt,
+  parseAtoms,
+  buildLineagePrompt,
+  parseLineage,
+  buildFeynmanPrompt,
+  parseFeynman,
 } from './deepdive.js';
 import { scanRepo } from './runner.js';
 import { buildSystemsPrompt, parseSystems, isFramework } from './systems.js';
@@ -102,8 +121,16 @@ async function linkRepos({ source, sourcePayload, targetKey, targetPayload, labe
     const tgt = nodeIdFor(targetKey);
     await upsertNode(src, sourcePayload);
     await upsertNode(tgt, targetPayload);
-    await addEdge({ id: edgeIdFor(src, label, tgt), source: src, target: tgt, label, properties: properties || {} });
-  } catch { /* best-effort: additive graph, write error = skip */ }
+    await addEdge({
+      id: edgeIdFor(src, label, tgt),
+      source: src,
+      target: tgt,
+      label,
+      properties: properties || {},
+    });
+  } catch {
+    /* best-effort: additive graph, write error = skip */
+  }
 }
 
 // Pin a generated combo as a first-class IDEA node + COMBINES edges (best-effort, non-fatal).
@@ -111,14 +138,28 @@ async function pinIdea({ title, pitch, sources = [], novelty = 0, feasibility = 
   try {
     const ideaId = ideaIdFor(sources);
     await upsertNode(ideaId, {
-      kind: 'idea', title: title || '', pitch: pitch || '', sources,
-      novelty: Number(novelty) || 0, feasibility: Number(feasibility) || 0, analyzed: false, created: createdIso || '',
+      kind: 'idea',
+      title: title || '',
+      pitch: pitch || '',
+      sources,
+      novelty: Number(novelty) || 0,
+      feasibility: Number(feasibility) || 0,
+      analyzed: false,
+      created: createdIso || '',
     });
     for (const src of sources) {
       const srcId = nodeIdFor(src);
-      await addEdge({ id: edgeIdFor(srcId, 'COMBINES', ideaId), source: srcId, target: ideaId, label: 'COMBINES', properties: { title: title || '' } });
+      await addEdge({
+        id: edgeIdFor(srcId, 'COMBINES', ideaId),
+        source: srcId,
+        target: ideaId,
+        label: 'COMBINES',
+        properties: { title: title || '' },
+      });
     }
-  } catch { /* best-effort: ontology is additive, write error = skip */ }
+  } catch {
+    /* best-effort: ontology is additive, write error = skip */
+  }
 }
 
 // Build the analyzed-repo node payload from a parsed scan (shared by every write site).
@@ -156,9 +197,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   try {
     const points = await scrollPoints({ limit: 2000 });
     const STALE_MS = 14 * 24 * 60 * 60 * 1000;
-    const staleCount = points.filter(p => p.payload?.saved_at && (Date.now() - Date.parse(p.payload.saved_at)) > STALE_MS).length;
+    const staleCount = points.filter(
+      (p) => p.payload?.saved_at && Date.now() - Date.parse(p.payload.saved_at) > STALE_MS
+    ).length;
     await chrome.storage.local.set({ repolens_drift: { staleCount, checkedAt: new Date().toISOString() } });
-  } catch { /* offline or IDB unavailable */ }
+  } catch {
+    /* offline or IDB unavailable */
+  }
 });
 
 // Scan a link right-clicked anywhere — detect platform from the href, open output tab.
@@ -168,15 +213,40 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
   const detected = detectPlatform(url);
   if (!detected) {
     const sessionKey = SESSION_KEY_PREFIX + crypto.randomUUID();
-    await chrome.storage.session.set({ [sessionKey]: { loading: false, error: `Not a supported repo URL: ${url}` } });
+    await chrome.storage.session.set({
+      [sessionKey]: { loading: false, error: `Not a supported repo URL: ${url}` },
+    });
     chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${sessionKey}`) });
     return;
   }
-  const gateKeys = await chrome.storage.local.get(['anthropicKey', 'googleKey', 'openrouterKey', 'xaiKey', 'nousKey', ...compatStorageKeys()]);
-  const hasKey = gateKeys.anthropicKey || gateKeys.googleKey || gateKeys.openrouterKey || gateKeys.xaiKey || gateKeys.nousKey || compatStorageKeys().some(k => gateKeys[k]);
+  const gateKeys = await chrome.storage.local.get([
+    'anthropicKey',
+    ANTHROPIC_ACCESS_KEY,
+    ANTHROPIC_REFRESH_KEY,
+    'googleKey',
+    'openrouterKey',
+    'xaiKey',
+    'nousKey',
+    ...compatStorageKeys(),
+  ]);
+  const hasKey =
+    gateKeys.anthropicKey ||
+    gateKeys[ANTHROPIC_ACCESS_KEY] ||
+    gateKeys[ANTHROPIC_REFRESH_KEY] ||
+    gateKeys.googleKey ||
+    gateKeys.openrouterKey ||
+    gateKeys.xaiKey ||
+    gateKeys.nousKey ||
+    compatStorageKeys().some((k) => gateKeys[k]);
   const sessionKey = SESSION_KEY_PREFIX + crypto.randomUUID();
   if (!hasKey) {
-    await chrome.storage.session.set({ [sessionKey]: { loading: false, error: 'No AI provider configured — open Settings to add a key.', errorKind: 'none' } });
+    await chrome.storage.session.set({
+      [sessionKey]: {
+        loading: false,
+        error: 'No AI provider configured — open Settings to add a key.',
+        errorKind: 'none',
+      },
+    });
     chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${sessionKey}`) });
     return;
   }
@@ -191,7 +261,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'REPO_PAGE' && sender.tab?.id) {
     chrome.action.setIcon({
       tabId: sender.tab.id,
-      path: { 16: 'icons/icon16.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' }
+      path: { 16: 'icons/icon16.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' },
     });
     return;
   }
@@ -217,17 +287,47 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   // Framework lenses from the output tab — accept one or many frameworks; run sequentially.
-  if (msg.type === 'SYSTEMS' && msg.sessionKey && msg.platform && msg.repoId && Array.isArray(msg.frameworks)) {
+  if (
+    msg.type === 'SYSTEMS' &&
+    msg.sessionKey &&
+    msg.platform &&
+    msg.repoId &&
+    Array.isArray(msg.frameworks)
+  ) {
     const fws = msg.frameworks.filter(isFramework);
-    if (fws.length) { sendResponse({ ok: true }); runFrameworkLens(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId }, fws, SYSTEMS_LENS); return true; }
+    if (fws.length) {
+      sendResponse({ ok: true });
+      runFrameworkLens(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId }, fws, SYSTEMS_LENS);
+      return true;
+    }
   }
-  if (msg.type === 'IDEATE' && msg.sessionKey && msg.platform && msg.repoId && Array.isArray(msg.frameworks)) {
+  if (
+    msg.type === 'IDEATE' &&
+    msg.sessionKey &&
+    msg.platform &&
+    msg.repoId &&
+    Array.isArray(msg.frameworks)
+  ) {
     const fws = msg.frameworks.filter(isIdeateFramework);
-    if (fws.length) { sendResponse({ ok: true }); runFrameworkLens(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId }, fws, IDEATE_LENS); return true; }
+    if (fws.length) {
+      sendResponse({ ok: true });
+      runFrameworkLens(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId }, fws, IDEATE_LENS);
+      return true;
+    }
   }
-  if (msg.type === 'PRIORITIZE' && msg.sessionKey && msg.platform && msg.repoId && Array.isArray(msg.frameworks)) {
+  if (
+    msg.type === 'PRIORITIZE' &&
+    msg.sessionKey &&
+    msg.platform &&
+    msg.repoId &&
+    Array.isArray(msg.frameworks)
+  ) {
     const fws = msg.frameworks.filter(isHeuristicFramework);
-    if (fws.length) { sendResponse({ ok: true }); runFrameworkLens(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId }, fws, PRIORITIZE_LENS); return true; }
+    if (fws.length) {
+      sendResponse({ ok: true });
+      runFrameworkLens(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId }, fws, PRIORITIZE_LENS);
+      return true;
+    }
   }
 
   // SKTPG directional-intelligence skill from the output tab — one-tap, one run.
@@ -259,13 +359,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'COMBINATOR' && msg.sessionKey && msg.platform && msg.repoId) {
     sendResponse({ ok: true });
-    runCombinator(msg.sessionKey, { platform: msg.platform, repoId: msg.repoId }, { mode: msg.mode || 'repo', wildness: Number(msg.wildness) || 0 });
+    runCombinator(
+      msg.sessionKey,
+      { platform: msg.platform, repoId: msg.repoId },
+      { mode: msg.mode || 'repo', wildness: Number(msg.wildness) || 0 }
+    );
     return true;
   }
   if (msg.type === 'PIN_IDEA' && msg.sessionKey && msg.idea && Array.isArray(msg.idea.sources)) {
     sendResponse({ ok: true });
     (async () => {
-      const cur = (await chrome.storage.session.get(msg.sessionKey))[msg.sessionKey] || {};
       await pinIdea({ ...msg.idea, createdIso: new Date().toISOString() });
     })();
     return true;
@@ -312,7 +415,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const getSession = async () => (await chrome.storage.session.get(msg.sessionKey))[msg.sessionKey] || {};
       const setAsk = async (patch) => {
         const cur = await getSession();
-        await chrome.storage.session.set({ [msg.sessionKey]: { ...cur, askRepo: { ...(cur.askRepo || {}), ...patch } } });
+        await chrome.storage.session.set({
+          [msg.sessionKey]: { ...cur, askRepo: { ...(cur.askRepo || {}), ...patch } },
+        });
       };
       try {
         const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
@@ -323,12 +428,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           try {
             const persisted = await chrome.storage.local.get(`repolens_ask_${cur.repoId}`);
             sessionHistory = persisted[`repolens_ask_${cur.repoId}`] || [];
-          } catch (_) {}
+          } catch {}
         }
         const history = sessionHistory.slice(-4); // keep last 4 completed pairs for AI context
         await setAsk({ pending: { status: 'thinking', question: msg.question }, history });
         const prompt = buildAskRepoPrompt(msg.question, cur, history);
-        if (!prompt) { await setAsk({ pending: { status: 'error', question: msg.question, error: 'Not enough context — try re-scanning first.' }, history }); return; }
+        if (!prompt) {
+          await setAsk({
+            pending: {
+              status: 'error',
+              question: msg.question,
+              error: 'Not enough context — try re-scanning first.',
+            },
+            history,
+          });
+          return;
+        }
         const text = await callAI(keys, prompt, 'ask');
         const answer = parseAskRepoAnswer(text);
         const updated = [...history, { question: msg.question, answer }].slice(-5);
@@ -339,7 +454,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       } catch (e) {
         const cur = await getSession();
         const history = cur.askRepo?.history || [];
-        await setAsk({ pending: { status: 'error', question: msg.question, error: e?.message || 'Ask failed' }, history });
+        await setAsk({
+          pending: { status: 'error', question: msg.question, error: e?.message || 'Ask failed' },
+          history,
+        });
       }
     })();
     return true;
@@ -351,7 +469,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       try {
         const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
         const prompt = buildAskRepoPrompt(msg.question, msg.analysis);
-        if (!prompt) { sendResponse({ ok: false, error: 'Not enough context.' }); return; }
+        if (!prompt) {
+          sendResponse({ ok: false, error: 'Not enough context.' });
+          return;
+        }
         const text = await callAI(keys, prompt, 'ask');
         sendResponse({ ok: true, answer: parseAskRepoAnswer(text) });
       } catch (e) {
@@ -367,10 +488,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       try {
         const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
         const prompt = buildComparePrompt(msg.a, msg.b);
-        if (!prompt) { sendResponse({ ok: false, error: 'Not enough context to compare.' }); return; }
+        if (!prompt) {
+          sendResponse({ ok: false, error: 'Not enough context to compare.' });
+          return;
+        }
         const text = await callAI(keys, prompt, 'ask');
         const result = parseCompareResult(text);
-        if (!result) { sendResponse({ ok: false, error: 'Could not parse comparison result.' }); return; }
+        if (!result) {
+          sendResponse({ ok: false, error: 'Could not parse comparison result.' });
+          return;
+        }
         sendResponse({ ok: true, result });
       } catch (e) {
         sendResponse({ ok: false, error: e?.message || 'Comparison failed' });
@@ -385,7 +512,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       try {
         const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
         const prompt = buildFilterPrompt(msg.question, msg.docs);
-        if (!prompt) { sendResponse({ ok: false, error: 'No question or context provided.' }); return; }
+        if (!prompt) {
+          sendResponse({ ok: false, error: 'No question or context provided.' });
+          return;
+        }
         const text = await callAI(keys, prompt, 'ask');
         const ids = parseFilterResult(text);
         sendResponse({ ok: true, ids });
@@ -402,7 +532,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       try {
         const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
         const prompt = buildAskPrompt(msg.question, msg.docs);
-        if (!prompt) { sendResponse({ ok: false, error: 'No question or context provided.' }); return; }
+        if (!prompt) {
+          sendResponse({ ok: false, error: 'No question or context provided.' });
+          return;
+        }
         const text = await callAI(keys, prompt, 'ask');
         sendResponse({ ok: true, answer: parseAskAnswer(text) });
       } catch (e) {
@@ -431,7 +564,10 @@ function resolveCompetitor(input) {
   const s = (input || '').trim();
   const detected = detectPlatform(s); // handles full GitHub/GitLab/npm/PyPI URLs
   if (detected) return detected;
-  const repoId = s.replace(/^https?:\/\/(www\.)?github\.com\//i, '').replace(/\.git$/, '').replace(/^\/+|\/+$/g, '');
+  const repoId = s
+    .replace(/^https?:\/\/(www\.)?github\.com\//i, '')
+    .replace(/\.git$/, '')
+    .replace(/^\/+|\/+$/g, '');
   return { platform: 'github', repoId };
 }
 
@@ -462,10 +598,7 @@ async function handleOpenAIOAuthCallback(rawUrl, tabId) {
   const errorDesc = url.searchParams.get('error_description');
 
   const cleanupFlowMarkers = async () => {
-    await chrome.storage.local.remove([
-      OPENAI_OAUTH_VERIFIER_KEY,
-      OPENAI_OAUTH_STATE_KEY,
-    ]).catch(() => {});
+    await chrome.storage.local.remove([OPENAI_OAUTH_VERIFIER_KEY, OPENAI_OAUTH_STATE_KEY]).catch(() => {});
   };
 
   if (error) {
@@ -528,7 +661,13 @@ chrome.action.onClicked.addListener(async (tab) => {
   const detected = detectPlatform(tab.url);
   if (!detected) {
     const sessionKey = SESSION_KEY_PREFIX + crypto.randomUUID();
-    await chrome.storage.session.set({ [sessionKey]: { loading: false, error: 'Not a supported page. Navigate to a GitHub, GitLab, npm, or PyPI repo page and click the icon there.' } });
+    await chrome.storage.session.set({
+      [sessionKey]: {
+        loading: false,
+        error:
+          'Not a supported page. Navigate to a GitHub, GitLab, npm, or PyPI repo page and click the icon there.',
+      },
+    });
     chrome.tabs.create({ url: `output-tab.html?key=${sessionKey}` });
     return;
   }
@@ -545,11 +684,26 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 
   // Gate: at least one provider must be configured (runAnalysis reads the rest).
-  const gateKeys = await chrome.storage.local.get(
-    ['anthropicKey', 'googleKey', 'openrouterKey', 'xaiKey', 'xaiRefresh', 'nousKey', ...compatStorageKeys()]
-  );
-  const firstClass = gateKeys.anthropicKey || gateKeys.googleKey || gateKeys.openrouterKey ||
-    gateKeys.xaiKey || gateKeys.xaiRefresh || gateKeys.nousKey;
+  const gateKeys = await chrome.storage.local.get([
+    'anthropicKey',
+    ANTHROPIC_ACCESS_KEY,
+    ANTHROPIC_REFRESH_KEY,
+    'googleKey',
+    'openrouterKey',
+    'xaiKey',
+    'xaiRefresh',
+    'nousKey',
+    ...compatStorageKeys(),
+  ]);
+  const firstClass =
+    gateKeys.anthropicKey ||
+    gateKeys[ANTHROPIC_ACCESS_KEY] ||
+    gateKeys[ANTHROPIC_REFRESH_KEY] ||
+    gateKeys.googleKey ||
+    gateKeys.openrouterKey ||
+    gateKeys.xaiKey ||
+    gateKeys.xaiRefresh ||
+    gateKeys.nousKey;
   const anyCompat = COMPAT_PROVIDERS.some((p) => isCompatConnected(p.id, gateKeys));
   if (!firstClass && !anyCompat) {
     chrome.runtime.openOptionsPage();
@@ -566,9 +720,20 @@ chrome.action.onClicked.addListener(async (tab) => {
 // call is made. Single source of truth — add a provider here and every scan path
 // picks it up.
 const PROVIDER_KEYS = [
-  'anthropicKey', 'anthropicModel', 'googleKey', 'googleModel',
-  'openrouterKey', 'openrouterModel', 'xaiKey', 'xaiRefresh', 'xaiModel',
-  'nousKey', 'nousModel',
+  'anthropicKey',
+  ANTHROPIC_ACCESS_KEY,
+  ANTHROPIC_REFRESH_KEY,
+  ANTHROPIC_EXPIRY_KEY,
+  'anthropicModel',
+  'googleKey',
+  'googleModel',
+  'openrouterKey',
+  'openrouterModel',
+  'xaiKey',
+  'xaiRefresh',
+  'xaiModel',
+  'nousKey',
+  'nousModel',
   ...compatStorageKeys(), // registry providers' key / model / endpoint / enabled / proto slots
   OPENAI_CREDENTIALS_KEY, // ChatGPT-login OAuth record (drives re-mint on 401)
   'partRouting', // per-part model routing map (loaded alongside provider keys)
@@ -585,7 +750,9 @@ async function runBatchScan(batchKey, urls) {
   });
 
   const writeBatch = (done = false) =>
-    chrome.storage.session.set({ [batchKey]: { type: 'batch', total: items.length, items: items.map((i) => ({ ...i })), done } });
+    chrome.storage.session.set({
+      [batchKey]: { type: 'batch', total: items.length, items: items.map((i) => ({ ...i })), done },
+    });
 
   await writeBatch(false);
 
@@ -597,7 +764,9 @@ async function runBatchScan(batchKey, urls) {
 
     const subKey = SESSION_KEY_PREFIX + crypto.randomUUID();
     try {
-      await chrome.storage.session.set({ [subKey]: { loading: true, status: 'fetching', platform: items[i].platform, repoId: items[i].repoId } });
+      await chrome.storage.session.set({
+        [subKey]: { loading: true, status: 'fetching', platform: items[i].platform, repoId: items[i].repoId },
+      });
       runAnalysis(subKey, { platform: items[i].platform, repoId: items[i].repoId });
 
       // Poll until the sub-analysis finishes (max 90 s per repo)
@@ -635,9 +804,7 @@ async function runBatchScan(batchKey, urls) {
   try {
     const done = items.filter((i) => i.status === 'done').length;
     const errors = items.filter((i) => i.status === 'error').length;
-    const msg = errors
-      ? `${done} saved, ${errors} failed`
-      : `${done} repo${done === 1 ? '' : 's'} saved`;
+    const msg = errors ? `${done} saved, ${errors} failed` : `${done} repo${done === 1 ? '' : 's'} saved`;
     chrome.notifications.create(`rl_batch_${batchKey}`, {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icons/icon128.png'),
@@ -645,7 +812,9 @@ async function runBatchScan(batchKey, urls) {
       message: msg,
       silent: true,
     });
-  } catch { /* notifications are best-effort */ }
+  } catch {
+    /* notifications are best-effort */
+  }
 }
 
 // Fetch → AI → parse → store. Used by the initial click and by RERUN (retry).
@@ -662,7 +831,9 @@ async function runAnalysis(sessionKey, detected, tabId) {
     const prevCached = await getCached(detected.platform, detected.repoId).catch(() => null);
 
     // Fetch metadata + README
-    await chrome.storage.session.set({ [sessionKey]: { loading: true, status: 'fetching', statusMsg: 'Fetching repo metadata…', ...detected } });
+    await chrome.storage.session.set({
+      [sessionKey]: { loading: true, status: 'fetching', statusMsg: 'Fetching repo metadata…', ...detected },
+    });
     const repoData = await fetchRepoData(detected.platform, detected.repoId);
 
     // Write quick snapshot so the output tab can render something while AI thinks.
@@ -680,12 +851,17 @@ async function runAnalysis(sessionKey, detected, tabId) {
     try {
       const plan = buildAttemptPlan({ routing: settings.partRouting || {}, part: 'core', keys: settings });
       if (plan[0]) primaryProvider = providerLabel(plan[0].provider);
-    } catch { /* leave blank — the tab falls back to a generic phrase */ }
+    } catch {
+      /* leave blank — the tab falls back to a generic phrase */
+    }
     await chrome.storage.session.set({
       [sessionKey]: {
-        loading: true, status: 'thinking',
+        loading: true,
+        status: 'thinking',
         statusMsg: primaryProvider ? `Asking ${primaryProvider}…` : 'Analysing with AI…',
-        quickData, ...detected, provider: primaryProvider,
+        quickData,
+        ...detected,
+        provider: primaryProvider,
       },
     });
 
@@ -719,7 +895,12 @@ async function runAnalysis(sessionKey, detected, tabId) {
 
       await chrome.storage.session.set({
         [sessionKey]: saveErr
-          ? { ...fullData, diff, saved: false, saveError: saveErr.message || 'Could not save to your library' }
+          ? {
+              ...fullData,
+              diff,
+              saved: false,
+              saveError: saveErr.message || 'Could not save to your library',
+            }
           : { ...fullData, diff, saved: true, saveError: null },
       });
 
@@ -727,12 +908,15 @@ async function runAnalysis(sessionKey, detected, tabId) {
       // Best-effort — never throws.
       if (!saveErr) {
         const sourcePayload = repoNodePayload(fullData.repoId, fullData, true);
-        for (const alt of (fullData.alternatives || [])) {
+        for (const alt of fullData.alternatives || []) {
           if (!alt?.name) continue;
           await linkRepos({
-            source: fullData.repoId, sourcePayload,
-            targetKey: alt.name, targetPayload: { name: alt.name, analyzed: false },
-            label: 'ALTERNATIVE_TO', properties: { name: alt.name, when: alt.when || '' },
+            source: fullData.repoId,
+            sourcePayload,
+            targetKey: alt.name,
+            targetPayload: { name: alt.name, analyzed: false },
+            label: 'ALTERNATIVE_TO',
+            properties: { name: alt.name, when: alt.when || '' },
           });
         }
       }
@@ -743,7 +927,9 @@ async function runAnalysis(sessionKey, detected, tabId) {
     try {
       const repoName = fullData.repoId?.split('/').pop() || fullData.repoId || 'Repo';
       const fit = deriveFit(fullData);
-      const fitMsg = { strong: 'Strong fit', solid: 'Solid fit', care: 'Use with care', risky: 'Risky' }[fit.level] || 'Analysis ready';
+      const fitMsg =
+        { strong: 'Strong fit', solid: 'Solid fit', care: 'Use with care', risky: 'Risky' }[fit.level] ||
+        'Analysis ready';
       const tabUrl = chrome.runtime.getURL(`output-tab.html?key=${sessionKey}`);
       chrome.notifications.create(`rl_scan_${tabUrl}`, {
         type: 'basic',
@@ -752,7 +938,9 @@ async function runAnalysis(sessionKey, detected, tabId) {
         message: fitMsg,
         silent: true,
       });
-    } catch { /* notifications are best-effort */ }
+    } catch {
+      /* notifications are best-effort */
+    }
 
     stopScanAnim(tabId); // success: reset to the static icon
   } catch (err) {
@@ -761,16 +949,14 @@ async function runAnalysis(sessionKey, detected, tabId) {
     // parse) get classified here so the tab can still route the error CTA.
     const errorKind = err.kind || categorizeError(err).kind;
     await chrome.storage.session.set({
-      [sessionKey]: { ...detected, loading: false, error: err.message, errorKind }
+      [sessionKey]: { ...detected, loading: false, error: err.message, errorKind },
     });
   }
 }
 
 // ─── Deep Dive: multi-stage source analysis (on-demand from the output tab) ───
 async function runDeepDive(sessionKey, detected) {
-  const keys = await chrome.storage.local.get(
-    [...PROVIDER_KEYS, 'tone', 'runnerUrl']
-  );
+  const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone', 'runnerUrl']);
 
   // Merge a patch into the session entry's deepDive object without clobbering analysis.
   const setDeep = async (patch) => {
@@ -795,15 +981,21 @@ async function runDeepDive(sessionKey, detected) {
     const facts = await scanRepo(keys.runnerUrl, detected.platform, detected.repoId);
 
     await setDeep({ status: 'atoms', degraded: !!source.degraded, facts });
-    const { atoms } = parseAtoms(await callAI(keys, withTone(keys.tone, buildAtomsPrompt(repoData, source, facts)), 'deepdive'));
+    const { atoms } = parseAtoms(
+      await callAI(keys, withTone(keys.tone, buildAtomsPrompt(repoData, source, facts)), 'deepdive')
+    );
     await setDeep({ atoms });
 
     await setDeep({ status: 'lineage' });
-    const lineage = parseLineage(await callAI(keys, withTone(keys.tone, buildLineagePrompt(atoms)), 'deepdive'));
+    const lineage = parseLineage(
+      await callAI(keys, withTone(keys.tone, buildLineagePrompt(atoms)), 'deepdive')
+    );
     await setDeep({ lineage });
 
     await setDeep({ status: 'feynman' });
-    const feynman = parseFeynman(await callAI(keys, withTone(keys.tone, buildFeynmanPrompt(repoData, atoms, lineage)), 'deepdive'));
+    const feynman = parseFeynman(
+      await callAI(keys, withTone(keys.tone, buildFeynmanPrompt(repoData, atoms, lineage)), 'deepdive')
+    );
     await setDeep({ feynman });
 
     // Knowledge-Graph substrate: persist atoms, with embeddings when the configured
@@ -818,7 +1010,9 @@ async function runDeepDive(sessionKey, detected) {
         embedModel: emb ? emb.model : null,
         computedAt: new Date().toISOString(),
       });
-    } catch { /* substrate is additive; ignore */ }
+    } catch {
+      /* substrate is additive; ignore */
+    }
 
     await setDeep({ status: 'done' });
   } catch (err) {
@@ -830,16 +1024,28 @@ async function runDeepDive(sessionKey, detected) {
 // per-framework state under `slot` via the lens-runs reducer. Source is fetched once
 // and reused across frameworks. Each AI call still flows through the throttled callAI,
 // so "Run all" can't burst a provider; one framework's error doesn't sink the batch.
-const SYSTEMS_LENS    = { slot: 'systems',    build: buildSystemsPrompt,    parse: parseSystems,    label: 'Systems analysis' };
-const IDEATE_LENS     = { slot: 'ideate',     build: buildIdeatePrompt,     parse: parseIdeate,     label: 'Ideation' };
-const PRIORITIZE_LENS = { slot: 'prioritize', build: buildHeuristicsPrompt, parse: parseHeuristics, label: 'Prioritization' };
+const SYSTEMS_LENS = {
+  slot: 'systems',
+  build: buildSystemsPrompt,
+  parse: parseSystems,
+  label: 'Systems analysis',
+};
+const IDEATE_LENS = { slot: 'ideate', build: buildIdeatePrompt, parse: parseIdeate, label: 'Ideation' };
+const PRIORITIZE_LENS = {
+  slot: 'prioritize',
+  build: buildHeuristicsPrompt,
+  parse: parseHeuristics,
+  label: 'Prioritization',
+};
 
 async function runFrameworkLens(sessionKey, detected, frameworks, cfg) {
   const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
   const cur0 = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
   const repoData = {
-    repoId: detected.repoId, platform: detected.platform,
-    description: cur0.description || '', language: cur0.language || '',
+    repoId: detected.repoId,
+    platform: detected.platform,
+    description: cur0.description || '',
+    language: cur0.language || '',
   };
 
   const setRun = async (fw, patch) => {
@@ -854,7 +1060,10 @@ async function runFrameworkLens(sessionKey, detected, frameworks, cfg) {
       await setRun(fw, { status: 'fetching', error: null, result: null });
       if (!source) source = await fetchSource(detected.platform, detected.repoId);
       await setRun(fw, { status: 'running' });
-      const result = cfg.parse(fw, await callAI(keys, withTone(keys.tone, cfg.build(fw, repoData, source)), 'lens'));
+      const result = cfg.parse(
+        fw,
+        await callAI(keys, withTone(keys.tone, cfg.build(fw, repoData, source)), 'lens')
+      );
       await setRun(fw, { status: 'done', result });
     } catch (err) {
       await setRun(fw, { status: 'error', error: err.message || `${cfg.label} failed` });
@@ -864,9 +1073,7 @@ async function runFrameworkLens(sessionKey, detected, frameworks, cfg) {
 
 // ─── SKTPG: one-tap directional-intelligence skill (on-demand) ────────────────
 async function runSktpg(sessionKey, detected) {
-  const keys = await chrome.storage.local.get(
-    [...PROVIDER_KEYS, 'tone']
-  );
+  const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
 
   const setSk = async (patch) => {
     const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
@@ -888,7 +1095,9 @@ async function runSktpg(sessionKey, detected) {
     const source = await fetchSource(detected.platform, detected.repoId);
 
     await setSk({ status: 'running' });
-    const result = parseSktpg(await callAI(keys, withTone(keys.tone, buildSktpgPrompt(repoData, source)), 'sktpg'));
+    const result = parseSktpg(
+      await callAI(keys, withTone(keys.tone, buildSktpgPrompt(repoData, source)), 'sktpg')
+    );
 
     await setSk({ status: 'done', result });
   } catch (err) {
@@ -961,7 +1170,11 @@ async function runMaintenance(sessionKey, detected) {
 
     await setM({ status: 'running' });
     const result = parseMaintenance(
-      await callAI(keys, withTone(keys.tone, buildMaintenancePrompt(repoData, signals, source.tree)), 'maintenance'),
+      await callAI(
+        keys,
+        withTone(keys.tone, buildMaintenancePrompt(repoData, signals, source.tree)),
+        'maintenance'
+      ),
       signals
     );
     await setM({ status: 'done', result });
@@ -974,7 +1187,9 @@ async function runMaintenance(sessionKey, detected) {
 async function runFitsStack(sessionKey, detected) {
   const setF = async (patch) => {
     const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
-    await chrome.storage.session.set({ [sessionKey]: { ...cur, fitsStack: { ...(cur.fitsStack || {}), ...patch } } });
+    await chrome.storage.session.set({
+      [sessionKey]: { ...cur, fitsStack: { ...(cur.fitsStack || {}), ...patch } },
+    });
   };
   try {
     const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
@@ -988,18 +1203,24 @@ async function runFitsStack(sessionKey, detected) {
       capabilities: cur.capabilities || [],
     };
     const nearestRepos = await searchLibrary({
-      query: [repoData.language, repoData.category, ...(repoData.capabilities || [])].filter(Boolean).join(' '),
+      query: [repoData.language, repoData.category, ...(repoData.capabilities || [])]
+        .filter(Boolean)
+        .join(' '),
       topK: 8,
       excludeRepoId: detected.repoId,
     });
 
     if (!nearestRepos.length) {
-      await setF({ status: 'done', result: {
-        verdict: 'new-paradigm',
-        summary: 'Your library is empty — scan a few repos first to get a personalised stack fit.',
-        integrations: [], risks: [],
-        recommendation: 'Scan more repos, then re-run Fits MY Stack?',
-      }});
+      await setF({
+        status: 'done',
+        result: {
+          verdict: 'new-paradigm',
+          summary: 'Your library is empty — scan a few repos first to get a personalised stack fit.',
+          integrations: [],
+          risks: [],
+          recommendation: 'Scan more repos, then re-run Fits MY Stack?',
+        },
+      });
       return;
     }
 
@@ -1026,11 +1247,11 @@ async function runStackBuild(sessionKey, repoIds) {
 
     // Gather repo data from the library + cache.
     const libRepos = await scrollLibrary({ limit: 500 });
-    const libMap = new Map(libRepos.map(r => [r.repoId, r]));
+    const libMap = new Map(libRepos.map((r) => [r.repoId, r]));
     const cacheList = await listCached().catch(() => []);
-    const cacheMap = new Map(cacheList.map(c => [c.repoId, c]));
+    const cacheMap = new Map(cacheList.map((c) => [c.repoId, c]));
 
-    const repos = repoIds.map(id => {
+    const repos = repoIds.map((id) => {
       const lib = libMap.get(id) || {};
       const cached = cacheMap.get(id) || {};
       return {
@@ -1055,9 +1276,7 @@ async function runStackBuild(sessionKey, repoIds) {
 
 // ─── Versus: head-to-head comparison (on-demand) ──────────────────────────────
 async function runVersus(sessionKey, detectedA, competitorInput) {
-  const keys = await chrome.storage.local.get(
-    [...PROVIDER_KEYS, 'tone']
-  );
+  const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
 
   const setVs = async (patch) => {
     const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
@@ -1069,7 +1288,14 @@ async function runVersus(sessionKey, detectedA, competitorInput) {
   const compB = resolveCompetitor(competitorInput);
   try {
     if (!compB.repoId) throw new Error('Enter a competitor repo (e.g. vuejs/vue or a repo URL).');
-    await setVs({ status: 'fetching', competitor: compB.repoId, a: detectedA.repoId, b: compB.repoId, error: null, result: null });
+    await setVs({
+      status: 'fetching',
+      competitor: compB.repoId,
+      a: detectedA.repoId,
+      b: compB.repoId,
+      error: null,
+      result: null,
+    });
 
     const [a, b] = await Promise.all([
       fetchRepoData(detectedA.platform, detectedA.repoId),
@@ -1084,9 +1310,12 @@ async function runVersus(sessionKey, detectedA, competitorInput) {
     // Semantic graph: A compared-to B (best-effort).
     const curVs = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
     await linkRepos({
-      source: detectedA.repoId, sourcePayload: repoNodePayload(detectedA.repoId, curVs, true),
-      targetKey: compB.repoId, targetPayload: repoNodePayload(compB.repoId, compB, false),
-      label: 'COMPARED_TO', properties: { verdict: result?.verdict || '' },
+      source: detectedA.repoId,
+      sourcePayload: repoNodePayload(detectedA.repoId, curVs, true),
+      targetKey: compB.repoId,
+      targetPayload: repoNodePayload(compB.repoId, compB, false),
+      label: 'COMPARED_TO',
+      properties: { verdict: result?.verdict || '' },
     });
   } catch (err) {
     await setVs({ status: 'error', error: err.message || `Couldn't compare against "${compB.repoId}".` });
@@ -1095,9 +1324,7 @@ async function runVersus(sessionKey, detectedA, competitorInput) {
 
 // ─── Synergies: complementary repos grounded in the library ───────────────────
 async function runSynergies(sessionKey, detected) {
-  const keys = await chrome.storage.local.get(
-    [...PROVIDER_KEYS, 'tone']
-  );
+  const keys = await chrome.storage.local.get([...PROVIDER_KEYS, 'tone']);
 
   const setSyn = async (patch) => {
     const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
@@ -1109,27 +1336,43 @@ async function runSynergies(sessionKey, detected) {
   try {
     const cur = (await chrome.storage.session.get(sessionKey))[sessionKey] || {};
     const repoData = {
-      repoId: detected.repoId, platform: detected.platform,
-      description: cur.description || '', language: cur.language || '',
-      category: cur.category || '', eli5: cur.eli5 || '',
+      repoId: detected.repoId,
+      platform: detected.platform,
+      description: cur.description || '',
+      language: cur.language || '',
+      category: cur.category || '',
+      eli5: cur.eli5 || '',
     };
 
     await setSyn({ status: 'running', error: null, result: null });
     // Seed candidates from the user's library (same ecosystem, by language).
-    const candidates = await searchLibrary({ query: repoData.language, topK: 12, excludeRepoId: repoData.repoId });
-    const result = parseSynergies(await callAI(keys, withTone(keys.tone, buildSynergiesPrompt(repoData, candidates)), 'synergies'));
+    const candidates = await searchLibrary({
+      query: repoData.language,
+      topK: 12,
+      excludeRepoId: repoData.repoId,
+    });
+    const result = parseSynergies(
+      await callAI(keys, withTone(keys.tone, buildSynergiesPrompt(repoData, candidates)), 'synergies')
+    );
 
     await setSyn({ status: 'done', result });
 
     // Semantic graph: target synergizes-with each complement (best-effort).
     const synSource = repoNodePayload(repoData.repoId, repoData, true);
-    for (const s of (result?.synergies || [])) {
+    for (const s of result?.synergies || []) {
       if (!s?.repoId) continue;
       await linkRepos({
-        source: repoData.repoId, sourcePayload: synSource,
+        source: repoData.repoId,
+        sourcePayload: synSource,
         targetKey: s.repoId,
-        targetPayload: { repoId: s.repoId, name: s.repoId.split('/').pop() || s.repoId, category: s.category || '', analyzed: !!s.in_library },
-        label: 'SYNERGIZES_WITH', properties: { why: s.synergy || '' },
+        targetPayload: {
+          repoId: s.repoId,
+          name: s.repoId.split('/').pop() || s.repoId,
+          category: s.category || '',
+          analyzed: !!s.in_library,
+        },
+        label: 'SYNERGIZES_WITH',
+        properties: { why: s.synergy || '' },
       });
     }
   } catch (err) {
@@ -1155,11 +1398,19 @@ async function runCombinator(sessionKey, detected, { mode = 'repo', wildness = 0
     let rows = await scrollLibrary();
     if (mode === 'repo') {
       // Repo-anchored: ensure the current repo (the seed) is represented with its capabilities.
-      const seedCaps = (Array.isArray(cur.capabilities) && cur.capabilities.length) ? cur.capabilities : deriveCapabilities(cur);
-      const seedRow = { repoId: detected.repoId, name: detected.repoId.split('/').pop() || detected.repoId, capabilities: seedCaps, eli5: cur.eli5 || '' };
+      const seedCaps =
+        Array.isArray(cur.capabilities) && cur.capabilities.length
+          ? cur.capabilities
+          : deriveCapabilities(cur);
+      const seedRow = {
+        repoId: detected.repoId,
+        name: detected.repoId.split('/').pop() || detected.repoId,
+        capabilities: seedCaps,
+        eli5: cur.eli5 || '',
+      };
       // Immutable: rebuild rather than mutate the objects scrollLibrary returned.
-      rows = rows.some(r => r.repoId === detected.repoId)
-        ? rows.map(r => (r.repoId === detected.repoId ? { ...r, capabilities: seedRow.capabilities } : r))
+      rows = rows.some((r) => r.repoId === detected.repoId)
+        ? rows.map((r) => (r.repoId === detected.repoId ? { ...r, capabilities: seedRow.capabilities } : r))
         : [...rows, seedRow];
     }
 
@@ -1167,15 +1418,23 @@ async function runCombinator(sessionKey, detected, { mode = 'repo', wildness = 0
     const seed = mode === 'library' ? null : detected.repoId;
     const sizes = mode === 'library' ? [2] : [2, 3];
     const candidates = combineCandidates(rows, { seed, sizes, wildness, topK: 6 });
-    if (!candidates.length) { await setC({ status: 'done', results: [], total: 0 }); return; }
+    if (!candidates.length) {
+      await setC({ status: 'done', results: [], total: 0 });
+      return;
+    }
     await setC({ status: 'running', total: candidates.length });
 
     const results = [];
     for (const cand of candidates) {
       try {
-        const idea = parseCombinator(await callAI(keys, withTone(keys.tone, buildCombinatorPrompt(cand.rows)), 'combinator'), cand.repoIds);
+        const idea = parseCombinator(
+          await callAI(keys, withTone(keys.tone, buildCombinatorPrompt(cand.rows)), 'combinator'),
+          cand.repoIds
+        );
         results.push({ repoIds: cand.repoIds, ...idea });
-      } catch { /* skip a single failed synthesis, keep going */ }
+      } catch {
+        /* skip a single failed synthesis, keep going */
+      }
       await setC({ status: 'running', results: [...results] }); // incremental render
     }
     await setC({ status: 'done', results });
@@ -1200,7 +1459,9 @@ async function runTagLibrary(sessionKey) {
         const meta = pt.payload || {};
         const caps = parseTags(await callAI(keys, buildTagPrompt(meta), 'retag'));
         if (caps.length) await saveRepo({ ...meta, capabilities: caps }); // re-save preserves the full payload
-      } catch { /* skip a single repo, keep going */ }
+      } catch {
+        /* skip a single repo, keep going */
+      }
       done++;
       await setT({ status: 'running', total: points.length, done });
     }
@@ -1236,7 +1497,13 @@ function callAI(keys, prompt, part) {
   return run;
 }
 
-const PROVIDER_LABEL = { nous: 'Nous', google: 'Gemini', openrouter: 'OpenRouter', xai: 'Grok', anthropic: 'Anthropic' };
+const PROVIDER_LABEL = {
+  nous: 'Nous',
+  google: 'Gemini',
+  openrouter: 'OpenRouter',
+  xai: 'Grok',
+  anthropic: 'Anthropic',
+};
 
 function providerLabel(provider) {
   return PROVIDER_LABEL[provider] || compatProviderById(provider)?.label || provider;
@@ -1247,11 +1514,16 @@ function providerLabel(provider) {
 // served by the generic OpenAI/Anthropic-compatible engines.
 function dispatch(provider, model, keys, prompt) {
   switch (provider) {
-    case 'nous': return callNous(keys.nousKey, model, prompt);
-    case 'google': return callGemini(keys.googleKey, model, prompt);
-    case 'openrouter': return callOpenRouter(keys.openrouterKey, model, prompt);
-    case 'xai': return callXAI(model, prompt);
-    case 'anthropic': return callAnthropic(model, prompt);
+    case 'nous':
+      return callNous(keys.nousKey, model, prompt);
+    case 'google':
+      return callGemini(keys.googleKey, model, prompt);
+    case 'openrouter':
+      return callOpenRouter(keys.openrouterKey, model, prompt);
+    case 'xai':
+      return callXAI(model, prompt);
+    case 'anthropic':
+      return callAnthropic(model, prompt);
     default:
       // OpenAI connected via "Sign in with ChatGPT": mint/refresh the API key from the
       // OAuth session on demand instead of using a statically-stored key.
@@ -1276,7 +1548,11 @@ function callCompat(provider, model, keys, prompt) {
   }
   // OpenAI-compatible (and Azure, which differs only in the auth header).
   return callOpenAICompatible({
-    endpoint, key, model: m, prompt, label: providerLabel(provider),
+    endpoint,
+    key,
+    model: m,
+    prompt,
+    label: providerLabel(provider),
     headerStyle: protocol === 'azure' ? 'azure' : 'bearer',
   });
 }
@@ -1301,17 +1577,29 @@ async function fetchWithTimeout(url, opts = {}, label = 'Provider', ms = AI_FETC
 
 // OpenAI-compatible chat completion. `key` may be empty for keyless local servers (Ollama).
 // headerStyle 'azure' sends `api-key: <key>` (Azure OpenAI); otherwise `Authorization: Bearer`.
-async function callOpenAICompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096, headerStyle = 'bearer' }) {
+async function callOpenAICompatible({
+  endpoint,
+  key,
+  model,
+  prompt,
+  label = 'Provider',
+  maxTokens = 4096,
+  headerStyle = 'bearer',
+}) {
   const headers = { 'Content-Type': 'application/json' };
   if (key) {
     if (headerStyle === 'azure') headers['api-key'] = key;
     else headers['Authorization'] = `Bearer ${key}`;
   }
-  const res = await fetchWithTimeout(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(openaiBody(model, prompt, maxTokens)),
-  }, label);
+  const res = await fetchWithTimeout(
+    endpoint,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(openaiBody(model, prompt, maxTokens)),
+    },
+    label
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? err.message ?? `${label} API error ${res.status}`);
@@ -1372,25 +1660,40 @@ async function mintAndStoreOpenAIKey() {
 
 // Bare OpenAI chat request returning the raw Response, so callers can branch on 401.
 function openaiChat(key, model, prompt) {
-  return fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(openaiBody(model, prompt, 4096)),
-  }, 'OpenAI');
+  return fetchWithTimeout(
+    'https://api.openai.com/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(openaiBody(model, prompt, 4096)),
+    },
+    'OpenAI'
+  );
 }
 
 // Anthropic-compatible Messages API (x-api-key + anthropic-version).
-async function callAnthropicCompatible({ endpoint, key, model, prompt, label = 'Provider', maxTokens = 4096 }) {
-  const res = await fetchWithTimeout(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'x-api-key': key,
+async function callAnthropicCompatible({
+  endpoint,
+  key,
+  model,
+  prompt,
+  label = 'Provider',
+  maxTokens = 4096,
+}) {
+  const res = await fetchWithTimeout(
+    endpoint,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'x-api-key': key,
+      },
+      body: JSON.stringify(anthropicBody(model, prompt, maxTokens)),
     },
-    body: JSON.stringify(anthropicBody(model, prompt, maxTokens)),
-  }, label);
+    label
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? err.message ?? `${label} API error ${res.status}`);
@@ -1406,7 +1709,12 @@ async function testProvider(provider, keys) {
   // OpenAI connected via "Sign in with ChatGPT" exercises the OAuth → mint → call path.
   const isOpenAiOAuth = provider === 'openai' && !!keys[OPENAI_CREDENTIALS_KEY]?.refresh_token;
   if (!isCompatConnected(provider, keys) && !isOpenAiOAuth) {
-    return { ok: false, connection: false, function: false, detail: 'Not configured — add a key / endpoint first.' };
+    return {
+      ok: false,
+      connection: false,
+      function: false,
+      detail: 'Not configured — add a key / endpoint first.',
+    };
   }
   const out = { ok: false, connection: false, function: false, detail: '' };
   try {
@@ -1417,13 +1725,17 @@ async function testProvider(provider, keys) {
     out.connection = true;
     out.function = /ready/i.test(reply || '');
     out.ok = out.function;
-    out.detail = out.function ? 'Model responded correctly.' : `Reached the model, but the reply was unexpected: ${String(reply).slice(0, 80)}`;
+    out.detail = out.function
+      ? 'Model responded correctly.'
+      : `Reached the model, but the reply was unexpected: ${String(reply).slice(0, 80)}`;
   } catch (e) {
     const msg = e?.message || String(e);
     // A structured API error (auth/model/quota) still proves the endpoint is reachable.
     const reachable = !/Failed to fetch|NetworkError|ENOTFOUND|ECONNREFUSED|load failed/i.test(msg);
     out.connection = reachable;
-    out.detail = reachable ? `Endpoint reachable, but the call failed: ${msg}` : `Could not reach the endpoint: ${msg}`;
+    out.detail = reachable
+      ? `Endpoint reachable, but the call failed: ${msg}`
+      : `Could not reach the endpoint: ${msg}`;
   }
   return out;
 }
@@ -1458,30 +1770,50 @@ async function callAIInner(keys, prompt, part) {
   throw err;
 }
 
-// Anthropic Messages API with a standard Console API key (sk-ant-api…) via x-api-key.
-// Subscription/OAuth sign-in was removed: Anthropic binds Claude-subscription tokens to
-// the Claude Code client (server-side identity checks) and, as of 2026, prohibits using
-// subscription auth in third-party apps — so the only supported path is a Console key.
+// Anthropic Messages API. Supports either a standard Console API key (x-api-key)
+// or Claude Pro/Max OAuth tokens via the same Claude Code beta flow that Pi uses.
 async function callAnthropic(model = 'claude-sonnet-4-6', prompt) {
-  const { anthropicKey } = await chrome.storage.local.get('anthropicKey');
-  if (!anthropicKey) throw new Error('No Anthropic API key — add one in Settings');
+  const s = await chrome.storage.local.get(['anthropicKey', ANTHROPIC_ACCESS_KEY, ANTHROPIC_REFRESH_KEY]);
+  if (!s.anthropicKey && !s[ANTHROPIC_ACCESS_KEY] && !s[ANTHROPIC_REFRESH_KEY]) {
+    throw new Error('No Anthropic credentials — connect Claude or add an API key in Settings');
+  }
 
-  const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'Content-Type': 'application/json',
-      'x-api-key': anthropicKey,
+  const oauth = !s.anthropicKey;
+  const headers = {
+    accept: 'application/json',
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true',
+    'Content-Type': 'application/json',
+  };
+  if (oauth) {
+    headers.Authorization = `Bearer ${await refreshAnthropicAccessToken()}`;
+    headers['anthropic-beta'] = 'claude-code-20250219,oauth-2025-04-20';
+    headers['x-app'] = 'cli';
+  } else {
+    headers['x-api-key'] = s.anthropicKey;
+  }
+
+  const body = {
+    model,
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: prompt }],
+  };
+  if (oauth) {
+    body.system = "You are Claude Code, Anthropic's official CLI for Claude.";
+  }
+
+  const res = await fetchWithTimeout(
+    'https://api.anthropic.com/v1/messages',
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  }, 'Anthropic');
+    'Anthropic'
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (oauth && (res.status === 401 || res.status === 403)) await clearAnthropicOAuthTokens();
     throw new Error(err.error?.message ?? `Anthropic API error ${res.status}`);
   }
   const data = await res.json();
@@ -1490,16 +1822,24 @@ async function callAnthropic(model = 'claude-sonnet-4-6', prompt) {
   return text;
 }
 
-async function callGemini(key, model = 'gemini-2.5-flash', prompt) {
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
-  const res = await fetchWithTimeout(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 }
-    })
-  }, 'Gemini');
+async function callGemini(key, model = 'gemini-3.1-pro-preview', prompt) {
+  const url =
+    'https://generativelanguage.googleapis.com/v1beta/models/' +
+    encodeURIComponent(model) +
+    ':generateContent?key=' +
+    encodeURIComponent(key);
+  const res = await fetchWithTimeout(
+    url,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 },
+      }),
+    },
+    'Gemini'
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? `Gemini API error ${res.status}`);
@@ -1521,15 +1861,19 @@ async function callNous(key, model = 'stepfun/step-3.7-flash', prompt) {
   const body = JSON.stringify({
     model: model || 'stepfun/step-3.7-flash',
     max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }]
+    messages: [{ role: 'user', content: prompt }],
   });
 
   for (let attempt = 0; ; attempt++) {
-    const res = await fetchWithTimeout('https://inference-api.nousresearch.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body,
-    }, 'Nous');
+    const res = await fetchWithTimeout(
+      'https://inference-api.nousresearch.com/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body,
+      },
+      'Nous'
+    );
 
     // Rate-limited / transient — back off and retry (honor Retry-After), up to 3 times.
     if ((res.status === 429 || res.status === 503) && attempt < 3) {
@@ -1544,7 +1888,9 @@ async function callNous(key, model = 'stepfun/step-3.7-flash', prompt) {
       // The endpoint answers a valid model with an x402 payment challenge when the
       // caller isn't drawing on membership credits — surface that plainly.
       if (err.x402Version || res.status === 402) {
-        throw new Error('Nous returned a pay-per-request (x402) challenge — your key isn’t drawing on membership credits. Check your plan/key at portal.nousresearch.com.');
+        throw new Error(
+          'Nous returned a pay-per-request (x402) challenge — your key isn’t drawing on membership credits. Check your plan/key at portal.nousresearch.com.'
+        );
       }
       throw new Error(err.error?.message ?? err.message ?? `Nous API error ${res.status}`);
     }
@@ -1557,15 +1903,19 @@ async function callNous(key, model = 'stepfun/step-3.7-flash', prompt) {
 }
 
 async function callOpenRouter(key, model = 'x-ai/grok-4.3', prompt) {
-  const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: model || 'x-ai/grok-4.3',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  }, 'OpenRouter');
+  const res = await fetchWithTimeout(
+    'https://openrouter.ai/api/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model || 'x-ai/grok-4.3',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    },
+    'OpenRouter'
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message ?? `OpenRouter API error ${res.status}`);
@@ -1585,11 +1935,11 @@ async function callXAI(model = 'grok-4.3', prompt) {
   const token = isOAuth ? await refreshXaiToken() : xaiKey;
   if (!token) throw new Error('No xAI credential — connect in Settings');
 
-  const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+  const headers = { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' };
   const body = JSON.stringify({
     model: model || 'grok-4.3',
     max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }]
+    messages: [{ role: 'user', content: prompt }],
   });
 
   // For OAuth tokens: try api.x.ai first (standard API), then chat proxy as fallback
@@ -1614,7 +1964,7 @@ async function callXAI(model = 'grok-4.3', prompt) {
     }
     const err = await res.json().catch(() => ({}));
     console.warn('[RepoLens xAI]', endpoint, res.status, JSON.stringify(err));
-    lastErr = err.error?.message || ('xAI API error ' + res.status + ' at ' + endpoint);
+    lastErr = err.error?.message || 'xAI API error ' + res.status + ' at ' + endpoint;
     if (res.status === 401 && isOAuth) {
       await chrome.storage.local.remove(['xaiKey', 'xaiRefresh', 'xaiExpiry', 'xaiCredentials']);
       throw new Error('xAI session expired — please reconnect in Settings');

@@ -3,14 +3,19 @@ import { buildAttemptPlan, isConnected, modelFor, CHAIN, DEFAULT_MODELS } from '
 
 // All five providers connected, each on its default model.
 const allKeys = {
-  nousKey: 'n', googleKey: 'g', openrouterKey: 'o', xaiKey: 'x', anthropicKey: 'a',
+  nousKey: 'n',
+  googleKey: 'g',
+  openrouterKey: 'o',
+  xaiKey: 'x',
+  anthropicKey: 'a',
 };
 const ids = (plan) => plan.map((p) => p.provider);
 
 describe('isConnected', () => {
-  it('treats xai refresh token as connected', () => {
+  it('treats refresh-token providers as connected', () => {
     expect(isConnected('xai', { xaiRefresh: 'r' })).toBe(true);
     expect(isConnected('xai', {})).toBe(false);
+    expect(isConnected('anthropic', { anthropicRefresh: 'r' })).toBe(true);
   });
 });
 
@@ -33,7 +38,11 @@ describe('buildAttemptPlan', () => {
   });
 
   it('override with a connected provider is tried first, then the chain (de-duped)', () => {
-    const plan = buildAttemptPlan({ routing: { core: 'anthropic:claude-opus-4-8' }, part: 'core', keys: allKeys });
+    const plan = buildAttemptPlan({
+      routing: { core: 'anthropic:claude-opus-4-8' },
+      part: 'core',
+      keys: allKeys,
+    });
     expect(plan[0]).toEqual({ provider: 'anthropic', model: 'claude-opus-4-8' });
     // anthropic default (sonnet) still appears once later as fallback; opus not duplicated
     expect(plan.filter((p) => p.provider === 'anthropic')).toEqual([
@@ -44,14 +53,22 @@ describe('buildAttemptPlan', () => {
   });
 
   it('override identical to the chain entry is not duplicated', () => {
-    const plan = buildAttemptPlan({ routing: { core: 'anthropic:claude-sonnet-4-6' }, part: 'core', keys: allKeys });
+    const plan = buildAttemptPlan({
+      routing: { core: 'anthropic:claude-sonnet-4-6' },
+      part: 'core',
+      keys: allKeys,
+    });
     expect(plan.filter((p) => p.provider === 'anthropic')).toHaveLength(1);
     expect(plan[0]).toEqual({ provider: 'anthropic', model: 'claude-sonnet-4-6' });
   });
 
   it('override pointing at an unconnected provider is ignored', () => {
     const onlyGoogle = { googleKey: 'g' };
-    const plan = buildAttemptPlan({ routing: { core: 'anthropic:claude-opus-4-8' }, part: 'core', keys: onlyGoogle });
+    const plan = buildAttemptPlan({
+      routing: { core: 'anthropic:claude-opus-4-8' },
+      part: 'core',
+      keys: onlyGoogle,
+    });
     expect(ids(plan)).toEqual(['google']);
   });
 

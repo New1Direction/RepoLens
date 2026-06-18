@@ -35,16 +35,35 @@ export function deriveCheckResult(questions, ratings) {
   const rs = Array.isArray(ratings) ? ratings : [];
   const total = qs.length;
   if (total === 0) {
-    return { level: MASTERY_LEVELS.NEW, score: 0, gotIt: 0, shaky: 0, missed: 0, total: 0, glows: [], grows: [] };
+    return {
+      level: MASTERY_LEVELS.NEW,
+      score: 0,
+      gotIt: 0,
+      shaky: 0,
+      missed: 0,
+      total: 0,
+      glows: [],
+      grows: [],
+    };
   }
-  let gotIt = 0, shaky = 0, missed = 0;
-  const glows = [], grows = [];
+  let gotIt = 0,
+    shaky = 0,
+    missed = 0;
+  const glows = [],
+    grows = [];
   qs.forEach((q, i) => {
     const text = (q && q.q) || '';
     const r = rs[i];
-    if (r === 'gotIt') { gotIt++; glows.push(text); }
-    else if (r === 'shaky') { shaky++; grows.push(text); }
-    else { missed++; grows.push(text); }
+    if (r === 'gotIt') {
+      gotIt++;
+      glows.push(text);
+    } else if (r === 'shaky') {
+      shaky++;
+      grows.push(text);
+    } else {
+      missed++;
+      grows.push(text);
+    }
   });
   const score = gotIt / total;
   const level = score >= UNDERSTOOD_THRESHOLD ? MASTERY_LEVELS.UNDERSTOOD : MASTERY_LEVELS.EXPLORED;

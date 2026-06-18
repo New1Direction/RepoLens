@@ -11,7 +11,12 @@ const params = new URLSearchParams(location.search);
 const sessionKey = params.get('key');
 const main = document.getElementById('main');
 
-const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = (s) =>
+  String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 // ── Stack Studio: render the result on the interactive canvas (toggle) ──
 let latestResult = null;
@@ -22,7 +27,10 @@ function toggleStackCanvas() {
   if (!host || !latestResult) return;
   if (!host.classList.contains('hidden')) {
     host.classList.add('hidden');
-    if (stackCanvasApi) { stackCanvasApi.destroy(); stackCanvasApi = null; }
+    if (stackCanvasApi) {
+      stackCanvasApi.destroy();
+      stackCanvasApi = null;
+    }
     if (btn) btn.textContent = '▦ View on canvas';
     return;
   }
@@ -62,33 +70,41 @@ function render(data) {
   latestResult = r;
   document.getElementById('stack-view-canvas')?.removeAttribute('hidden');
 
-  const rolesHtml = (r.roles || []).map(role => {
-    const layer = STACK_LAYERS.includes(role.layer) ? role.layer : 'tooling';
-    return `<div class="role-card">
+  const rolesHtml = (r.roles || [])
+    .map((role) => {
+      const layer = STACK_LAYERS.includes(role.layer) ? role.layer : 'tooling';
+      return `<div class="role-card">
       <span class="role-layer ${layer}">${layer}</span>
       <div>
         <div class="role-name">${esc(role.repoId)}</div>
         <div class="role-desc">${esc(role.role)}</div>
       </div>
     </div>`;
-  }).join('');
+    })
+    .join('');
 
-  const integHtml = (r.integrations || []).map(i => `
+  const integHtml = (r.integrations || [])
+    .map(
+      (i) => `
     <div class="integ-row">
       <span class="integ-from">${esc(i.from.split('/').pop() || i.from)}</span>
       <span class="integ-arrow">→</span>
       <span class="integ-to">${esc(i.to.split('/').pop() || i.to)}</span>
       <span class="integ-glue">${esc(i.glue)}</span>
-    </div>`).join('');
+    </div>`
+    )
+    .join('');
 
-  const gapsHtml = (r.gaps || []).map(g => `<div class="gap-item">${esc(g)}</div>`).join('');
+  const gapsHtml = (r.gaps || []).map((g) => `<div class="gap-item">${esc(g)}</div>`).join('');
 
   const orderHtml = (() => {
     const steps = r.order || [];
-    return steps.map((id, i) => {
-      const name = String(id).split('/').pop() || id;
-      return `<span class="order-step"><span class="order-num">${i + 1}</span>${esc(name)}</span>${i < steps.length - 1 ? '<span class="order-arrow">→</span>' : ''}`;
-    }).join('');
+    return steps
+      .map((id, i) => {
+        const name = String(id).split('/').pop() || id;
+        return `<span class="order-step"><span class="order-num">${i + 1}</span>${esc(name)}</span>${i < steps.length - 1 ? '<span class="order-arrow">→</span>' : ''}`;
+      })
+      .join('');
   })();
 
   main.innerHTML = `
@@ -108,7 +124,7 @@ async function poll() {
     const data = stored[sessionKey];
     render(data);
     if (data && !data.loading) return;
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 400));
   }
   main.innerHTML = `<div class="st-error"><h2>Timed out</h2><p>The stack build took too long. Please try again.</p></div>`;
 }

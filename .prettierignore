@@ -1,6 +1,8 @@
 node_modules
 coverage
 website
+docs/audits
+docs/superpowers
 package-lock.json
 *.min.js
 icons

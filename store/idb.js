@@ -7,7 +7,17 @@ const DB_NAME = 'repolens';
 // (the Knowledge-Graph concept substrate). Each upgrade is additive —
 // onupgradeneeded creates any new store, so existing data survives.
 const DB_VERSION = 7;
-const STORES = ['repos', 'nodes', 'edges', 'collections', 'decisions', 'snapshots', 'scenes', 'mastery', 'concepts'];
+const STORES = [
+  'repos',
+  'nodes',
+  'edges',
+  'collections',
+  'decisions',
+  'snapshots',
+  'scenes',
+  'mastery',
+  'concepts',
+];
 
 let dbPromise = null;
 

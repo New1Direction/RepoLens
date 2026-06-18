@@ -17,7 +17,7 @@ export function firstSentence(text) {
 export function deriveFit(d) {
   const score = Number(d && d.health && d.health.score);
   const hasScore = Number.isFinite(score) && score > 0;
-  const warns = ((d && d.red_flags) || []).filter(f => f && f.severity !== 'ok').length;
+  const warns = ((d && d.red_flags) || []).filter((f) => f && f.severity !== 'ok').length;
   const pros = ((d && d.pros) || []).length;
   const cons = ((d && d.cons) || []).length;
 
@@ -56,7 +56,9 @@ export function verdictCopyText(d) {
     score != null ? `Health ${score}/100` : null,
     starStr ? `${starStr} ★` : null,
     d?.license && d.license !== 'Unknown' ? d.license : null,
-  ].filter(Boolean).join(' · ');
+  ]
+    .filter(Boolean)
+    .join(' · ');
   if (meta) lines.push(meta);
 
   if (what) lines.push('', what);
@@ -66,13 +68,13 @@ export function verdictCopyText(d) {
   const cons = ((d && d.cons) || []).slice(0, 2);
   if (pros.length || cons.length) {
     lines.push('');
-    if (pros.length) lines.push(...pros.map(p => `+ ${p}`));
-    if (cons.length) lines.push(...cons.map(c => `- ${c}`));
+    if (pros.length) lines.push(...pros.map((p) => `+ ${p}`));
+    if (cons.length) lines.push(...cons.map((c) => `- ${c}`));
   }
 
-  const warns = ((d && d.red_flags) || []).filter(f => f && f.severity !== 'ok').slice(0, 3);
+  const warns = ((d && d.red_flags) || []).filter((f) => f && f.severity !== 'ok').slice(0, 3);
   if (warns.length) {
-    lines.push('', 'Flags:', ...warns.map(f => `⚠ ${f.title}: ${f.text}`));
+    lines.push('', 'Flags:', ...warns.map((f) => `⚠ ${f.title}: ${f.text}`));
   }
   return lines.join('\n').trim();
 }

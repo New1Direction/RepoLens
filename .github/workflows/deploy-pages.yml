@@ -34,7 +34,7 @@ jobs:
           cache-dependency-path: website/package-lock.json
       - name: Install deps
         working-directory: website
-        run: npm install
+        run: npm ci
       - name: Build static export
         working-directory: website
         env:

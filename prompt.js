@@ -39,7 +39,7 @@ export function buildPrompt(repoData) {
   // Sanitize before the final truncation so an injection phrase straddling the
   // 6000-char cut is still defanged; the 12000 window bounds the regex work.
   const readme = sanitizeReadme((repoData.readme || '').slice(0, 12000)).slice(0, 6000);
-  const depNames = (repoData.dependencies || []).map(d => d.name).slice(0, 25);
+  const depNames = (repoData.dependencies || []).map((d) => d.name).slice(0, 25);
   const depsBlock = depNames.length
     ? `\nDeclared dependencies (real, from the registry): ${depNames.join(', ')}\n`
     : '';

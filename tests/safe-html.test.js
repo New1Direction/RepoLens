@@ -36,8 +36,12 @@ describe('html tagged template', () => {
     expect(out).toContain('&quot;&gt;&lt;img');
   });
   it('joins arrays of values', () => {
-    const out = String(html`<ul>${['a', 'b', 'c'].map((x) => html`<li>${x}</li>`)}</ul>`);
-    expect(out).toBe('<ul><li>a</li><li>b</li><li>c</li></ul>');
+    const out = String(
+      html`<ul>
+        ${['a', 'b', 'c'].map((x) => html`<li>${x}</li>`)}
+      </ul>`
+    );
+    expect(out.replace(/\s+/g, '')).toBe('<ul><li>a</li><li>b</li><li>c</li></ul>');
   });
   it('passes raw()/nested html`` through without double-escaping', () => {
     const inner = html`<b>${'A & B'}</b>`;

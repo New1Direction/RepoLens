@@ -18,14 +18,19 @@ import { categorizeError, errorActions } from './errors.js';
 import { renderMascot, setMascotState, setMascotFromFit } from './mascot.js';
 import { DOCS_GRADES } from './docs-quality.js';
 import { MAINT_BANDS, BUS_FACTORS } from './maintenance.js';
-import { bucketFor, bucketLabel, checkLibraryCompat } from './license-compat.js';
+import { bucketLabel, checkLibraryCompat } from './license-compat.js';
 import { allLicenses } from './store.js';
 import { DECISIONS, DECISION_META } from './decision-log.js';
 import { saveDecision, getDecision, clearDecision } from './store.js';
 import { encodeShareCard } from './share-card.js';
 import { FITS_VERDICTS } from './fits-stack.js';
 import { initPalette } from './palette.js';
-import { toggleRepoInCollection, collectionContains, sortedCollections, COLLECTION_COLORS } from './collections.js';
+import {
+  toggleRepoInCollection,
+  collectionContains,
+  sortedCollections,
+  COLLECTION_COLORS,
+} from './collections.js';
 import { detectPlatform } from './url-detector.js';
 import { listSnapshots } from './store.js';
 import { hashId } from './scene.js';
@@ -46,7 +51,9 @@ import { setMastery } from './store.js';
 // Apply the saved theme ASAP (before render) to minimise flash.
 initTheme();
 // Mirror the OS reduced-motion preference into storage for the service worker.
-chrome.storage.local.set({ reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches });
+chrome.storage.local.set({
+  reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+});
 
 function renderThemeSwitcher() {
   const host = document.getElementById('theme-switcher');
@@ -61,7 +68,7 @@ function renderThemeSwitcher() {
     b.setAttribute('aria-label', t.label);
     b.addEventListener('click', async () => {
       await saveTheme(t.key);
-      host.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      host.querySelectorAll('.swatch').forEach((s) => s.classList.remove('active'));
       b.classList.add('active');
     });
     host.appendChild(b);
@@ -81,17 +88,18 @@ const main = document.getElementById('main-content');
 let mascotOn = false;
 let headerVee = null;
 async function isMascotEnabled() {
-  try { const { mascotEnabled } = await chrome.storage.local.get('mascotEnabled'); return mascotEnabled !== false; }
-  catch { return true; }
+  try {
+    const { mascotEnabled } = await chrome.storage.local.get('mascotEnabled');
+    return mascotEnabled !== false;
+  } catch {
+    return true;
+  }
 }
 function veeToVerdict() {
   if (mascotOn && headerVee && lastData) setMascotFromFit(headerVee, deriveFit(lastData).level);
 }
 
-const FETCH_PHRASES = [
-  'Pulling the README…',
-  'Grabbing the metadata…',
-];
+const FETCH_PHRASES = ['Pulling the README…', 'Grabbing the metadata…'];
 
 const THINK_PHRASES = [
   'Mapping the architecture…',
@@ -114,7 +122,10 @@ function setLoadingMsg(msg) {
   const el = document.getElementById('loading-msg');
   if (!el) return;
   el.style.opacity = '0';
-  setTimeout(() => { el.textContent = msg; el.style.opacity = '1'; }, 150);
+  setTimeout(() => {
+    el.textContent = msg;
+    el.style.opacity = '1';
+  }, 150);
 }
 
 function setLoadingName(name) {
@@ -145,15 +156,24 @@ async function waitForData() {
       const stored = await chrome.storage.session.get(sessionKey);
       const data = stored[sessionKey];
 
-      if (!data) { await sleep(150); continue; }
+      if (!data) {
+        await sleep(150);
+        continue;
+      }
 
       if (data.loading) {
         let changed = false;
         if (data.repoId) setLoadingName(data.repoId);
         if (data.statusMsg) {
-          if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null; }
+          if (cycleTimer) {
+            clearInterval(cycleTimer);
+            cycleTimer = null;
+          }
           setLoadingMsg(data.statusMsg);
-          if (data.status !== lastStatus) { lastStatus = data.status; changed = true; }
+          if (data.status !== lastStatus) {
+            lastStatus = data.status;
+            changed = true;
+          }
         } else if (data.status !== lastStatus) {
           lastStatus = data.status;
           changed = true;
@@ -163,9 +183,7 @@ async function waitForData() {
         // Progress bar: fetching=15%, quickData ready=40%, thinking=55-90% (animated)
         const bar = document.getElementById('loading-bar');
         if (bar) {
-          const pct = data.status === 'thinking'
-            ? (data.quickData ? 55 : 40)
-            : 15;
+          const pct = data.status === 'thinking' ? (data.quickData ? 55 : 40) : 15;
           bar.style.width = pct + '%';
           if (data.status === 'thinking') {
             bar.style.transition = 'width 25s cubic-bezier(.1,0,.4,1)';
@@ -187,17 +205,32 @@ async function waitForData() {
   }
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 function renderQuickVerdict(qd) {
   const host = document.getElementById('quick-verdict');
   if (!host || !qd?.repoId) return;
-  const fmtStars = (n) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n || 0);
+  const fmtStars = (n) =>
+    n >= 1_000_000
+      ? (n / 1_000_000).toFixed(1) + 'M'
+      : n >= 1000
+        ? (n / 1000).toFixed(1) + 'k'
+        : String(n || 0);
   const pills = [
-    qd.language ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${esc(qd.language)}</span>` : '',
-    qd.stars ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${fmtStars(qd.stars)} ★</span>` : '',
-    qd.license && qd.license !== 'Unknown' ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${esc(qd.license)}</span>` : '',
-  ].filter(Boolean).join('');
+    qd.language
+      ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${esc(qd.language)}</span>`
+      : '',
+    qd.stars
+      ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${fmtStars(qd.stars)} ★</span>`
+      : '',
+    qd.license && qd.license !== 'Unknown'
+      ? `<span style="font:600 10px ui-monospace,monospace;background:var(--surface-alt);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-sub)">${esc(qd.license)}</span>`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('');
   host.innerHTML = `
     <div style="font:700 10px/1 ui-monospace,monospace;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px">Quick Info</div>
     <div style="font:700 13px var(--font);color:var(--text);margin-bottom:4px">${esc(qd.repoId)}</div>
@@ -210,7 +243,13 @@ function renderQuickVerdict(qd) {
 async function initOutputPalette(data) {
   const commands = [
     // Navigation
-    { section: 'Navigation', name: 'Verdict', description: 'Overall fit + score', shortcut: 'V', action: () => show(9) },
+    {
+      section: 'Navigation',
+      name: 'Verdict',
+      description: 'Overall fit + score',
+      shortcut: 'V',
+      action: () => show(9),
+    },
     { name: 'ELI5', description: 'Plain-English summary', shortcut: 'E', action: () => show(0) },
     { name: 'Technical', description: 'Architecture & internals', action: () => show(1) },
     { name: 'Use Cases', description: "Who it's for", action: () => show(2) },
@@ -227,29 +266,128 @@ async function initOutputPalette(data) {
     { name: 'Connections', description: 'Dependency graph', action: () => show(19) },
     { name: 'Combine', description: 'What you can build together', action: () => show(20) },
     // On-demand lenses
-    { section: 'Lenses', name: 'Run Deep Dive', description: 'Full strategic analysis', action: () => { show(10); startDeepDive(data); } },
-    { name: 'Run Docs Quality', description: 'Documentation score', action: () => { show(21); startDocsQuality(data); } },
-    { name: 'Run Maintenance', description: 'Long-term upkeep signal', action: () => { show(22); startMaintenance(data); } },
+    {
+      section: 'Lenses',
+      name: 'Run Deep Dive',
+      description: 'Full strategic analysis',
+      action: () => {
+        show(10);
+        startDeepDive(data);
+      },
+    },
+    {
+      name: 'Run Docs Quality',
+      description: 'Documentation score',
+      action: () => {
+        show(21);
+        startDocsQuality(data);
+      },
+    },
+    {
+      name: 'Run Maintenance',
+      description: 'Long-term upkeep signal',
+      action: () => {
+        show(22);
+        startMaintenance(data);
+      },
+    },
     { name: 'Run License Check', description: 'License compatibility', action: () => show(23) },
-    { name: 'Run Since Last Scan', description: 'What changed since you last looked', action: () => show(24) },
-    { name: 'Run Fits MY Stack?', description: 'Match against your tech stack', action: () => { show(25); startFitsStack(data); } },
+    {
+      name: 'Run Since Last Scan',
+      description: 'What changed since you last looked',
+      action: () => show(24),
+    },
+    {
+      name: 'Run Fits MY Stack?',
+      description: 'Match against your tech stack',
+      action: () => {
+        show(25);
+        startFitsStack(data);
+      },
+    },
     { name: 'Ask This Repo', description: 'Ask a specific question about this repo', action: () => show(26) },
     { name: 'Run All Lenses', description: 'Fire every on-demand lens', action: () => runAllLenses() },
     // Actions
-    { section: 'Actions', name: 'Add to Board', description: 'Save this repo to a collection', action: () => document.getElementById('add-to-board')?.click() },
-    { name: 'Open Library', description: 'Browse your saved repos', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }) },
-    { name: 'Batch Scan', description: 'Scan multiple repos at once', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }) },
-    { name: 'Run Fresh Scan', description: 'Bypass cache and re-analyse this repo', shortcut: 'F', action: () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true })) },
-    { name: 'Open Repo Source', description: 'Open the GitHub / npm / PyPI page', shortcut: 'O', action: () => { if (lastData) { const url = repoSourceUrl(lastData.platform, lastData.repoId); if (url) chrome.tabs.create({ url }); } } },
-    { name: 'Share Verdict Card', description: 'Generate a shareable verdict card', action: () => document.getElementById('v-share')?.click() },
-    { name: 'Copy URL', description: 'Copy the repo source URL', shortcut: 'U', action: () => document.getElementById('copy-url')?.click() },
-    { name: 'Copy Markdown', description: 'Copy this analysis as MD', shortcut: 'M', action: () => document.getElementById('copy-md')?.click() },
-    { name: 'Copy Slack Post', description: 'Copy compact summary for Slack/Discord', action: () => copySlackBtn?.click() },
-    { name: 'Export Scaffold', description: 'Download CLAUDE.md scaffold', action: () => document.getElementById('export-scaffold')?.click() },
-    { name: 'Export HTML', description: 'Download self-contained report', action: () => document.getElementById('export-html')?.click() },
-    { name: 'Open Settings', description: 'Configure API keys and providers', action: () => chrome.runtime.openOptionsPage() },
-    { name: 'Open Guide', description: 'Feature overview and keyboard shortcuts', action: () => document.getElementById('open-guide')?.click() },
-    { name: "What's New", description: 'Release notes and recent features', action: () => chrome.tabs.create({ url: chrome.runtime.getURL('whats-new.html') }) },
+    {
+      section: 'Actions',
+      name: 'Add to Board',
+      description: 'Save this repo to a collection',
+      action: () => document.getElementById('add-to-board')?.click(),
+    },
+    {
+      name: 'Open Library',
+      description: 'Browse your saved repos',
+      action: () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }),
+    },
+    {
+      name: 'Batch Scan',
+      description: 'Scan multiple repos at once',
+      action: () => chrome.tabs.create({ url: chrome.runtime.getURL('batch.html') }),
+    },
+    {
+      name: 'Run Fresh Scan',
+      description: 'Bypass cache and re-analyse this repo',
+      shortcut: 'F',
+      action: () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true })),
+    },
+    {
+      name: 'Open Repo Source',
+      description: 'Open the GitHub / npm / PyPI page',
+      shortcut: 'O',
+      action: () => {
+        if (lastData) {
+          const url = repoSourceUrl(lastData.platform, lastData.repoId);
+          if (url) chrome.tabs.create({ url });
+        }
+      },
+    },
+    {
+      name: 'Share Verdict Card',
+      description: 'Generate a shareable verdict card',
+      action: () => document.getElementById('v-share')?.click(),
+    },
+    {
+      name: 'Copy URL',
+      description: 'Copy the repo source URL',
+      shortcut: 'U',
+      action: () => document.getElementById('copy-url')?.click(),
+    },
+    {
+      name: 'Copy Markdown',
+      description: 'Copy this analysis as MD',
+      shortcut: 'M',
+      action: () => document.getElementById('copy-md')?.click(),
+    },
+    {
+      name: 'Copy Slack Post',
+      description: 'Copy compact summary for Slack/Discord',
+      action: () => copySlackBtn?.click(),
+    },
+    {
+      name: 'Export Scaffold',
+      description: 'Download CLAUDE.md scaffold',
+      action: () => document.getElementById('export-scaffold')?.click(),
+    },
+    {
+      name: 'Export HTML',
+      description: 'Download self-contained report',
+      action: () => document.getElementById('export-html')?.click(),
+    },
+    {
+      name: 'Open Settings',
+      description: 'Configure API keys and providers',
+      action: () => chrome.runtime.openOptionsPage(),
+    },
+    {
+      name: 'Open Guide',
+      description: 'Feature overview and keyboard shortcuts',
+      action: () => document.getElementById('open-guide')?.click(),
+    },
+    {
+      name: "What's New",
+      description: 'Release notes and recent features',
+      action: () => chrome.tabs.create({ url: chrome.runtime.getURL('whats-new.html') }),
+    },
   ];
 
   // Append recent repos from library as jump targets (opens library pre-searched to that repo)
@@ -265,11 +403,14 @@ async function initOutputPalette(data) {
           section: i === 0 ? 'Recent repos' : undefined,
           name: r.repoId,
           description: r.blurb || r.category || 'Open in library',
-          action: () => chrome.tabs.create({ url: chrome.runtime.getURL(`library.html#search=${encodeURIComponent(r.repoId)}`) }),
+          action: () =>
+            chrome.tabs.create({
+              url: chrome.runtime.getURL(`library.html#search=${encodeURIComponent(r.repoId)}`),
+            }),
         }));
       allCommands.push(...recentCmds);
     }
-  } catch (_) {}
+  } catch {}
 
   initPalette(allCommands);
   document.getElementById('open-palette')?.addEventListener('click', () => {
@@ -323,10 +464,11 @@ async function init() {
     const actions = errorActions(kind, canRetry);
     const HINTS = {
       none: 'Add an API key in Settings → it only takes 30 seconds.',
-      auth: 'Your API key was rejected. Regenerate it from the provider\'s console, then paste it in Settings.',
-      rate_limit: 'You\'ve hit the rate limit. Wait a minute and retry — or switch to a different provider in Settings.',
+      auth: "Your API key was rejected. Regenerate it from the provider's console, then paste it in Settings.",
+      rate_limit:
+        "You've hit the rate limit. Wait a minute and retry — or switch to a different provider in Settings.",
       not_found: 'The model name is unrecognised. Open Settings and pick a valid model from the dropdown.',
-      network: 'Can\'t reach the provider. Check your internet connection, then retry.',
+      network: "Can't reach the provider. Check your internet connection, then retry.",
       server: 'The provider is temporarily down. Retry in a few seconds.',
       timeout: 'The provider took too long. Retry, or pick a faster model/provider in Settings.',
     };
@@ -335,7 +477,8 @@ async function init() {
     if (!hintEl) {
       hintEl = document.createElement('div');
       hintEl.id = 'error-hint';
-      hintEl.style.cssText = 'font-size:12px;color:var(--text-muted);text-align:center;max-width:360px;line-height:1.6;margin-top:-4px';
+      hintEl.style.cssText =
+        'font-size:12px;color:var(--text-muted);text-align:center;max-width:360px;line-height:1.6;margin-top:-4px';
       errorMsg.insertAdjacentElement('afterend', hintEl);
     }
     hintEl.textContent = hint || '';
@@ -345,13 +488,16 @@ async function init() {
     if (pasteForm) {
       pasteForm.style.display = 'flex';
       // Pre-fill if clipboard has a recognized URL (silent — no browser prompt shown).
-      navigator.clipboard?.readText?.().then((txt) => {
-        const trimmed = (txt || '').trim();
-        if (detectPlatform(trimmed)) {
-          const inp = document.getElementById('paste-url-input');
-          if (inp && !inp.value) inp.value = trimmed;
-        }
-      }).catch(() => {});
+      navigator.clipboard
+        ?.readText?.()
+        .then((txt) => {
+          const trimmed = (txt || '').trim();
+          if (detectPlatform(trimmed)) {
+            const inp = document.getElementById('paste-url-input');
+            if (inp && !inp.value) inp.value = trimmed;
+          }
+        })
+        .catch(() => {});
     }
     if (mascotOn) renderMascot(document.getElementById('error-vee'), 'error');
     errorState.style.display = 'flex';
@@ -373,11 +519,14 @@ async function init() {
   if (hashTab != null) {
     show(hashTab, { updateHash: false });
   } else if (data.repoId) {
-    chrome.storage.local.get(`repolens_tab_${data.repoId}`).then((res) => {
-      const stored = res[`repolens_tab_${data.repoId}`];
-      if (stored != null && stored !== 9) show(stored, { updateHash: true });
-      else show(9, { updateHash: false });
-    }).catch(() => show(9, { updateHash: false }));
+    chrome.storage.local
+      .get(`repolens_tab_${data.repoId}`)
+      .then((res) => {
+        const stored = res[`repolens_tab_${data.repoId}`];
+        if (stored != null && stored !== 9) show(stored, { updateHash: true });
+        else show(9, { updateHash: false });
+      })
+      .catch(() => show(9, { updateHash: false }));
   } else {
     show(9, { updateHash: false });
   }
@@ -394,10 +543,12 @@ async function init() {
 
   watchSaveStatus(data);
   loadLibraryComparison(data);
-  getLibraryIndex().then(m => {
-    const btn = document.getElementById('open-library');
-    if (btn && m.size > 0) btn.title = `Browse your ${m.size} analyzed repo${m.size === 1 ? '' : 's'}`;
-  }).catch(() => {});
+  getLibraryIndex()
+    .then((m) => {
+      const btn = document.getElementById('open-library');
+      if (btn && m.size > 0) btn.title = `Browse your ${m.size} analyzed repo${m.size === 1 ? '' : 's'}`;
+    })
+    .catch(() => {});
   renderThemeSwitcher();
   renderDeepDive(data);
   renderFrameworkLens(data, SYSTEMS_CFG);
@@ -421,7 +572,10 @@ async function init() {
 function renderCacheBanner(d) {
   const banner = document.getElementById('cache-banner');
   if (!banner) return;
-  if (!d.cached) { banner.style.display = 'none'; return; }
+  if (!d.cached) {
+    banner.style.display = 'none';
+    return;
+  }
   banner.style.display = 'flex';
   const span = banner.querySelector('span');
   if (!span) return;
@@ -442,8 +596,11 @@ function renderCacheBanner(d) {
 document.getElementById('rerun-fresh')?.addEventListener('click', async () => {
   const d = lastData;
   if (!d) return;
-  try { await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey, platform: d.platform, repoId: d.repoId }); }
-  catch { /* reload anyway */ }
+  try {
+    await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey, platform: d.platform, repoId: d.repoId });
+  } catch {
+    /* reload anyway */
+  }
   location.reload();
 });
 
@@ -481,11 +638,18 @@ function renderSynergies(d) {
   }
 
   const items = syn.result?.synergies || [];
-  if (!items.length) { host.innerHTML = '<p class="atom-purpose">No synergies surfaced.</p>'; return; }
-  host.innerHTML = `<div class="dd-section-title first">Pairs well with</div>${items.map(s => `<div class="idea-card">
+  if (!items.length) {
+    host.innerHTML = '<p class="atom-purpose">No synergies surfaced.</p>';
+    return;
+  }
+  host.innerHTML = `<div class="dd-section-title first">Pairs well with</div>${items
+    .map(
+      (s) => `<div class="idea-card">
     <div class="head"><span class="title">${esc(s.repoId)}</span>${s.category ? `<span class="idea-badge">${esc(s.category)}</span>` : ''}${s.in_library ? '<span class="flag-pill green">★ in library</span>' : '<span class="flag-pill yellow">suggested</span>'}</div>
     <div class="body">${esc(s.synergy)}</div>
-  </div>`).join('')}`;
+  </div>`
+    )
+    .join('')}`;
 }
 
 // ─── Similar Repos tab (from your library; no AI call) ────────────────
@@ -493,18 +657,27 @@ function renderSynergies(d) {
 async function renderSimilar(d) {
   const host = document.getElementById('t16');
   if (!host) return;
-  host.innerHTML = '<div class="dd-progress"><span class="dot"></span>Finding similar repos in your library…</div>';
+  host.innerHTML =
+    '<div class="dd-progress"><span class="dot"></span>Finding similar repos in your library…</div>';
   let similar = [];
-  try { similar = await findSimilar(d); } catch { similar = []; }
+  try {
+    similar = await findSimilar(d);
+  } catch {
+    similar = [];
+  }
   if (!similar.length) {
     host.innerHTML = `<div class="dd-cta"><h3>Similar Repos</h3><p>Repos you've already analysed that are close to <b>${esc(d.repoId)}</b> — by language and category, pulled from your library — show up here. Analyse a few more and they'll appear.</p></div>`;
     return;
   }
-  host.innerHTML = `<div class="dd-section-title first">From your library</div>${similar.map(s => `<div class="idea-card">
+  host.innerHTML = `<div class="dd-section-title first">From your library</div>${similar
+    .map(
+      (s) => `<div class="idea-card">
     <div class="head"><span class="title">${esc(s.repoId)}</span></div>
     ${s.eli5 ? `<div class="body">${esc(s.eli5)}</div>` : ''}
     ${s.compare_hooks ? `<div class="body" style="color:var(--text-muted);font-style:italic">${esc(s.compare_hooks)}</div>` : ''}
-  </div>`).join('')}`;
+  </div>`
+    )
+    .join('')}`;
 }
 
 // ─── Connections tab — walkable semantic ego-graph (local graph engine) ─────
@@ -517,10 +690,12 @@ const CN_LEGEND = `<div class="cn-legend">
 </div>`;
 
 function cnCrumbs(trail) {
-  return `<div class="cn-crumbs">${trail.map((t, i) => {
-    const name = t.split('/').pop() || t;
-    return `<span class="cn-crumb${i === trail.length - 1 ? ' current' : ''}" data-crumb="${i}">${esc(name)}</span>`;
-  }).join('<span class="cn-sep">›</span>')}</div>`;
+  return `<div class="cn-crumbs">${trail
+    .map((t, i) => {
+      const name = t.split('/').pop() || t;
+      return `<span class="cn-crumb${i === trail.length - 1 ? ' current' : ''}" data-crumb="${i}">${esc(name)}</span>`;
+    })
+    .join('<span class="cn-sep">›</span>')}</div>`;
 }
 
 function cnWireCrumbs(host, d, trail) {
@@ -534,33 +709,51 @@ function cnWireCrumbs(host, d, trail) {
 
 async function cnDraw(host, d, trail) {
   const repoId = trail[trail.length - 1];
-  host.innerHTML = cnCrumbs(trail) + '<div class="dd-progress"><span class="dot"></span>Mapping connections…</div>';
+  host.innerHTML =
+    cnCrumbs(trail) + '<div class="dd-progress"><span class="dot"></span>Mapping connections…</div>';
   let graph = null;
-  try { graph = await getEgoGraph(repoId); } catch { graph = null; }
+  try {
+    graph = await getEgoGraph(repoId);
+  } catch {
+    graph = null;
+  }
 
   if (!graph || !graph.neighbors.length) {
-    host.innerHTML = cnCrumbs(trail) + `<div class="dd-cta"><h3>Connections</h3>
+    host.innerHTML =
+      cnCrumbs(trail) +
+      `<div class="dd-cta"><h3>Connections</h3>
       <p>No connections yet for <b>${esc(repoId)}</b> — run <b>Synergies</b> or <b>Versus</b>, or analyse one of its alternatives, to start building the map.</p></div>`;
     cnWireCrumbs(host, d, trail);
     return;
   }
 
-  host.innerHTML = cnCrumbs(trail) + CN_LEGEND + `<div class="cn-stage">${egoGraphSvg(graph.center, graph.neighbors, graph.edges)}</div>`;
+  host.innerHTML =
+    cnCrumbs(trail) +
+    CN_LEGEND +
+    `<div class="cn-stage">${egoGraphSvg(graph.center, graph.neighbors, graph.edges)}</div>`;
   cnWireCrumbs(host, d, trail);
 
   host.querySelectorAll('.cn-node').forEach((g) => {
     const id = g.dataset.node;
-    const nb = graph.neighbors.find(n => String(n.id) === id);
+    const nb = graph.neighbors.find((n) => String(n.id) === id);
     if (!nb) return; // center node — already focused
     g.addEventListener('click', () => {
       if (nb.kind === 'idea') {
         let panel = host.querySelector('.cn-idea-detail');
-        if (!panel) { panel = document.createElement('div'); panel.className = 'cn-idea-detail'; host.appendChild(panel); }
+        if (!panel) {
+          panel = document.createElement('div');
+          panel.className = 'cn-idea-detail';
+          host.appendChild(panel);
+        }
         panel.innerHTML = `<b>${esc(nb.name)}</b> — ${esc(nb.pitch || 'a pinned idea')}`;
       } else if (nb.repoId) {
         cnDraw(host, d, [...trail, nb.repoId]); // walk: re-center on the analyzed repo
       } else {
-        window.open(`https://github.com/search?q=${encodeURIComponent(nb.name)}&type=repositories`, '_blank', 'noopener');
+        window.open(
+          `https://github.com/search?q=${encodeURIComponent(nb.name)}&type=repositories`,
+          '_blank',
+          'noopener'
+        );
       }
     });
   });
@@ -578,12 +771,13 @@ function renderConnections(d) {
 // wires the engine, a guided tour, and SVG/.excalidraw export.
 async function renderCanvas(d) {
   const hostWrap = document.querySelector('#t27 .canvas-host');
-  if (!hostWrap || hostWrap.dataset.mounted === '1') return;   // mount once per page
+  if (!hostWrap || hostWrap.dataset.mounted === '1') return; // mount once per page
   const dd = d && d.deepDive;
   if (!dd || !dd.atoms || !dd.atoms.length) {
     // No atoms yet — show the CTA and leave the guard UNclaimed so a later Deep Dive
     // (B-3) can re-render this same host into a real Blueprint.
-    hostWrap.innerHTML = '<div class="dd-cta">Run <b>Deep Dive</b> first — the Blueprint is built from its atoms &amp; lineage.</div>';
+    hostWrap.innerHTML =
+      '<div class="dd-cta">Run <b>Deep Dive</b> first — the Blueprint is built from its atoms &amp; lineage.</div>';
     return;
   }
   // Claim the guard synchronously, before the first await — otherwise two concurrent
@@ -602,29 +796,53 @@ async function mountBlueprint(hostWrap, d, dd) {
   const sceneId = 'repo:' + hashId(d.repoId);
   let scene = await getScene(sceneId);
   if (!scene) {
-    scene = buildBlueprintScene({ deepDive: dd, repoId: d.repoId, title: d.repoId, scanAt: d.saved_at || null });
+    scene = buildBlueprintScene({
+      deepDive: dd,
+      repoId: d.repoId,
+      title: d.repoId,
+      scanAt: d.saved_at || null,
+    });
     await saveScene(scene);
   }
   const api = mountCanvas(hostWrap, scene, { onChange: (s) => saveScene(s).catch(() => {}) });
 
   const bar = document.createElement('div');
   bar.className = 'canvas-export-bar';
-  const tourBtn = document.createElement('button'); tourBtn.textContent = '▶ Guided Tour';
+  const tourBtn = document.createElement('button');
+  tourBtn.textContent = '▶ Guided Tour';
   let activeTour = null;
   tourBtn.onclick = () => {
-    if (activeTour) activeTour.exit();   // tear down a prior tour first — don't stack cards/listeners on re-launch
-    activeTour = startTour({ host: hostWrap, engine: api, steps: buildTour(api.getScene(), { roots: (dd.lineage && dd.lineage.roots) || [] }), autoplay: false });
+    if (activeTour) activeTour.exit(); // tear down a prior tour first — don't stack cards/listeners on re-launch
+    activeTour = startTour({
+      host: hostWrap,
+      engine: api,
+      steps: buildTour(api.getScene(), { roots: (dd.lineage && dd.lineage.roots) || [] }),
+      autoplay: false,
+    });
   };
-  const exEx = document.createElement('button'); exEx.textContent = '.excalidraw';
-  exEx.onclick = () => download(`${slugify(d.repoId)}.excalidraw`, 'application/json', toExcalidraw(api.getScene()));
-  const exSvg = document.createElement('button'); exSvg.textContent = 'SVG';
+  const exEx = document.createElement('button');
+  exEx.textContent = '.excalidraw';
+  exEx.onclick = () =>
+    download(`${slugify(d.repoId)}.excalidraw`, 'application/json', toExcalidraw(api.getScene()));
+  const exSvg = document.createElement('button');
+  exSvg.textContent = 'SVG';
   exSvg.onclick = () => download(`${slugify(d.repoId)}.svg`, 'image/svg+xml', toCanvasSvg(api.getScene()));
   bar.append(tourBtn, exEx, exSvg);
   hostWrap.appendChild(bar);
 
-  const legend = document.createElement('div'); legend.className = 'canvas-legend';
-  for (const [k, lab] of [['entrypoint', 'Entry'], ['subsystem', 'Core'], ['module', 'Module'], ['data', 'Data'], ['concept', 'Concept']]) {
-    const sw = document.createElement('span'); sw.className = `lg lg-${k}`; sw.textContent = lab; legend.appendChild(sw);
+  const legend = document.createElement('div');
+  legend.className = 'canvas-legend';
+  for (const [k, lab] of [
+    ['entrypoint', 'Entry'],
+    ['subsystem', 'Core'],
+    ['module', 'Module'],
+    ['data', 'Data'],
+    ['concept', 'Concept'],
+  ]) {
+    const sw = document.createElement('span');
+    sw.className = `lg lg-${k}`;
+    sw.textContent = lab;
+    legend.appendChild(sw);
   }
   hostWrap.appendChild(legend);
 }
@@ -633,7 +851,10 @@ async function mountBlueprint(hostWrap, d, dd) {
 function download(filename, type, content) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -641,15 +862,24 @@ function download(filename, type, content) {
 function startCombinator(d) {
   const mode = document.querySelector('input[name="cb-mode"]:checked')?.value || 'repo';
   const wildness = (Number(document.getElementById('cb-wildness')?.value) || 0) / 100;
-  chrome.runtime.sendMessage({ type: 'COMBINATOR', sessionKey, platform: d.platform, repoId: d.repoId, mode, wildness });
+  chrome.runtime.sendMessage({
+    type: 'COMBINATOR',
+    sessionKey,
+    platform: d.platform,
+    repoId: d.repoId,
+    mode,
+    wildness,
+  });
   renderCombinator({ ...d, combinator: { status: 'running', results: [], mode, wildness } }); // optimistic
 }
 
 function comboCard(c, idx) {
   const clamp = (n) => Math.max(0, Math.min(5, Number(n) || 0));
   const dots = (n) => '●'.repeat(clamp(n)) + '○'.repeat(5 - clamp(n));
-  const chips = (c.repoIds || []).map(r => `<span class="cb-chip">${esc(r)}</span>`).join('');
-  const contribs = (c.contributions || []).map(x => `<div class="cb-contrib"><b>${esc(x.repoId)}</b> — ${esc(x.role)}</div>`).join('');
+  const chips = (c.repoIds || []).map((r) => `<span class="cb-chip">${esc(r)}</span>`).join('');
+  const contribs = (c.contributions || [])
+    .map((x) => `<div class="cb-contrib"><b>${esc(x.repoId)}</b> — ${esc(x.role)}</div>`)
+    .join('');
   return `<div class="cb-card">
     <div class="cb-head"><span class="cb-title">${esc(c.title || 'Untitled combo')}</span></div>
     <div class="cb-pitch">${esc(c.pitch || '')}</div>
@@ -662,8 +892,10 @@ function comboCard(c, idx) {
 
 function retagLine(d) {
   const rt = d.retag;
-  if (rt && rt.status === 'running') return `<div class="cb-retag-prog"><span class="dot"></span>Re-tagging library… ${rt.done || 0}/${rt.total || '?'}</div>`;
-  if (rt && rt.status === 'done') return `<div class="cb-retag-prog done">✓ Re-tagged ${rt.total || 0} repos with AI</div>`;
+  if (rt && rt.status === 'running')
+    return `<div class="cb-retag-prog"><span class="dot"></span>Re-tagging library… ${rt.done || 0}/${rt.total || '?'}</div>`;
+  if (rt && rt.status === 'done')
+    return `<div class="cb-retag-prog done">✓ Re-tagged ${rt.total || 0} repos with AI</div>`;
   return `<div class="cb-retag-hint">Tags are auto-derived. <button class="cb-retag" id="cb-retag">Re-tag library with AI →</button></div>`;
 }
 
@@ -693,7 +925,9 @@ function renderCombinator(d) {
   }
   if (cb.status === 'error') {
     host.innerHTML = `<div class="dd-cta"><h3>Combine failed</h3><p>${esc(cb.error || 'Something went wrong.')}</p><button class="dd-run" id="cb-run">Back</button></div>`;
-    document.getElementById('cb-run')?.addEventListener('click', () => renderCombinator({ ...d, combinator: undefined }));
+    document
+      .getElementById('cb-run')
+      ?.addEventListener('click', () => renderCombinator({ ...d, combinator: undefined }));
     return;
   }
 
@@ -705,21 +939,41 @@ function renderCombinator(d) {
   }
   if (!results.length) {
     host.innerHTML = `<div class="dd-cta"><h3>No combinations yet</h3><p>Analyse a few more repos (so there's a library to combine with), then try again.</p><button class="dd-run" id="cb-run">Back</button></div>`;
-    document.getElementById('cb-run')?.addEventListener('click', () => renderCombinator({ ...d, combinator: undefined }));
+    document
+      .getElementById('cb-run')
+      ?.addEventListener('click', () => renderCombinator({ ...d, combinator: undefined }));
     return;
   }
-  const usedLabel = (cb.mode === 'library' ? 'across the library' : 'from this repo') + (cb.wildness ? ` · wildness ${Math.round(cb.wildness * 100)}%` : '');
+  const usedLabel =
+    (cb.mode === 'library' ? 'across the library' : 'from this repo') +
+    (cb.wildness ? ` · wildness ${Math.round(cb.wildness * 100)}%` : '');
   host.innerHTML =
     `<div class="cb-bar"><span class="cb-used">${esc(usedLabel)}</span><button class="cb-change" id="cb-change">↻ change</button></div>` +
     results.map((c, i) => comboCard(c, i)).join('') +
-    (running ? `<div class="dd-progress"><span class="dot"></span>generating… (${results.length}/${cb.total || '?'})</div>` : '');
-  document.getElementById('cb-change')?.addEventListener('click', () => renderCombinator({ ...d, combinator: undefined }));
+    (running
+      ? `<div class="dd-progress"><span class="dot"></span>generating… (${results.length}/${cb.total || '?'})</div>`
+      : '');
+  document
+    .getElementById('cb-change')
+    ?.addEventListener('click', () => renderCombinator({ ...d, combinator: undefined }));
   host.querySelectorAll('.cb-pin').forEach((btn) => {
     btn.addEventListener('click', () => {
       const c = results[Number(btn.dataset.idx)];
       if (!c) return;
-      chrome.runtime.sendMessage({ type: 'PIN_IDEA', sessionKey, idea: { title: c.title, pitch: c.pitch, sources: c.repoIds, novelty: c.novelty, feasibility: c.feasibility } });
-      btn.textContent = '★ pinned'; btn.disabled = true; btn.classList.add('pinned');
+      chrome.runtime.sendMessage({
+        type: 'PIN_IDEA',
+        sessionKey,
+        idea: {
+          title: c.title,
+          pitch: c.pitch,
+          sources: c.repoIds,
+          novelty: c.novelty,
+          feasibility: c.feasibility,
+        },
+      });
+      btn.textContent = '★ pinned';
+      btn.disabled = true;
+      btn.classList.add('pinned');
     });
   });
 }
@@ -727,11 +981,29 @@ function renderCombinator(d) {
 // ─── Tech Stack tab (populated from the scan) ─────────────────────────────────
 
 const LANG_COLORS = {
-  JavaScript: '#f1e05a', TypeScript: '#3178c6', Python: '#3572A5', Rust: '#dea584',
-  Go: '#00ADD8', Java: '#b07219', Ruby: '#701516', 'C++': '#f34b7d', C: '#555555',
-  'C#': '#178600', PHP: '#4F5D95', Swift: '#F05138', Kotlin: '#A97BFF', Shell: '#89e051',
-  HTML: '#e34c26', CSS: '#563d7c', Vue: '#41b883', Dart: '#00B4AB', Scala: '#c22d40',
-  'Objective-C': '#438eff', Lua: '#000080', Elixir: '#6e4a7e', Haskell: '#5e5086',
+  JavaScript: '#f1e05a',
+  TypeScript: '#3178c6',
+  Python: '#3572A5',
+  Rust: '#dea584',
+  Go: '#00ADD8',
+  Java: '#b07219',
+  Ruby: '#701516',
+  'C++': '#f34b7d',
+  C: '#555555',
+  'C#': '#178600',
+  PHP: '#4F5D95',
+  Swift: '#F05138',
+  Kotlin: '#A97BFF',
+  Shell: '#89e051',
+  HTML: '#e34c26',
+  CSS: '#563d7c',
+  Vue: '#41b883',
+  Dart: '#00B4AB',
+  Scala: '#c22d40',
+  'Objective-C': '#438eff',
+  Lua: '#000080',
+  Elixir: '#6e4a7e',
+  Haskell: '#5e5086',
 };
 const langColor = (name) => LANG_COLORS[name] || '#64748b';
 
@@ -741,26 +1013,42 @@ function renderTechStack(d) {
   const ts = d.tech_stack || { built_with: [], key_dependencies: [] };
   const langs = d.languages || [];
   const deps = d.dependencies || [];
-  const verByName = Object.fromEntries(deps.map(x => [x.name, x.version]));
+  const verByName = Object.fromEntries(deps.map((x) => [x.name, x.version]));
 
-  const comp = langs.length ? `
+  const comp = langs.length
+    ? `
     <div class="dd-section-title first">Composition</div>
-    <div class="comp-bar">${langs.map(l => `<div class="comp-seg" style="width:${l.pct}%;background:${langColor(l.name)}" title="${esc(l.name)} ${l.pct}%"></div>`).join('')}</div>
-    <div class="comp-legend">${langs.map(l => `<span><i style="background:${langColor(l.name)}"></i>${esc(l.name)} ${l.pct}%</span>`).join('')}</div>` : '';
+    <div class="comp-bar">${langs.map((l) => `<div class="comp-seg" style="width:${l.pct}%;background:${langColor(l.name)}" title="${esc(l.name)} ${l.pct}%"></div>`).join('')}</div>
+    <div class="comp-legend">${langs.map((l) => `<span><i style="background:${langColor(l.name)}"></i>${esc(l.name)} ${l.pct}%</span>`).join('')}</div>`
+    : '';
 
-  const built = ts.built_with?.length ? `
+  const built = ts.built_with?.length
+    ? `
     <div class="dd-section-title${comp ? '' : ' first'}">Built With</div>
-    <div class="ts-pills">${ts.built_with.map(b => `<span class="ts-pill">${esc(b)}</span>`).join('')}</div>` : '';
+    <div class="ts-pills">${ts.built_with.map((b) => `<span class="ts-pill">${esc(b)}</span>`).join('')}</div>`
+    : '';
 
-  const keyDeps = ts.key_dependencies?.length ? `
+  const keyDeps = ts.key_dependencies?.length
+    ? `
     <div class="dd-section-title">Key Dependencies</div>
-    ${ts.key_dependencies.map(k => { const v = verByName[k.name]; return `<div class="dep-row"><span class="dep-name">${esc(k.name)}${v ? ` <span class="dep-ver">${esc(v)}</span>` : ''}</span><span class="dep-purpose">${esc(k.purpose)}</span></div>`; }).join('')}` : '';
+    ${ts.key_dependencies
+      .map((k) => {
+        const v = verByName[k.name];
+        return `<div class="dep-row"><span class="dep-name">${esc(k.name)}${v ? ` <span class="dep-ver">${esc(v)}</span>` : ''}</span><span class="dep-purpose">${esc(k.purpose)}</span></div>`;
+      })
+      .join('')}`
+    : '';
 
-  const fullList = deps.length ? `
+  const fullList = deps.length
+    ? `
     <div class="ts-more" id="ts-more">▸ Show all ${deps.length} dependencies</div>
-    <div class="ts-full" id="ts-full">${deps.map(x => `<div class="dep-row"><span class="dep-name">${esc(x.name)}</span><span class="dep-ver">${esc(x.version)}</span></div>`).join('')}</div>` : '';
+    <div class="ts-full" id="ts-full">${deps.map((x) => `<div class="dep-row"><span class="dep-name">${esc(x.name)}</span><span class="dep-ver">${esc(x.version)}</span></div>`).join('')}</div>`
+    : '';
 
-  if (!comp && !built && !keyDeps && !fullList) { host.innerHTML = '<p class="atom-purpose">No tech-stack data available for this source.</p>'; return; }
+  if (!comp && !built && !keyDeps && !fullList) {
+    host.innerHTML = '<p class="atom-purpose">No tech-stack data available for this source.</p>';
+    return;
+  }
   host.innerHTML = comp + built + keyDeps + fullList;
 
   document.getElementById('ts-more')?.addEventListener('click', () => {
@@ -772,15 +1060,32 @@ function renderTechStack(d) {
 }
 
 const HL_TAB = {
-  eli5: 0, technical: 1, use_cases: 2, skip_if: 3, enables: 4,
-  pros: 5, cons: 5, alternatives: 6, health: 7, red_flags: 8,
-  start_here: 9, tech_stack: 15,
+  eli5: 0,
+  technical: 1,
+  use_cases: 2,
+  skip_if: 3,
+  enables: 4,
+  pros: 5,
+  cons: 5,
+  alternatives: 6,
+  health: 7,
+  red_flags: 8,
+  start_here: 9,
+  tech_stack: 15,
 };
 const HL_GLYPH = { risk: '⚠', insight: '◆', opportunity: '➤' };
 const HL_LABEL = {
-  0: 'ELI5', 1: 'Technical', 2: 'Use Cases', 3: 'Skip If', 4: 'Enables',
-  5: 'Pros / Cons', 6: 'Alternatives', 7: 'Health', 8: 'Red Flags',
-  9: 'Verdict', 15: 'Tech Stack',
+  0: 'ELI5',
+  1: 'Technical',
+  2: 'Use Cases',
+  3: 'Skip If',
+  4: 'Enables',
+  5: 'Pros / Cons',
+  6: 'Alternatives',
+  7: 'Health',
+  8: 'Red Flags',
+  9: 'Verdict',
+  15: 'Tech Stack',
 };
 
 // The "✨ Worth noting" callout: the core scan's most notable/actionable findings,
@@ -789,20 +1094,25 @@ function renderHighlights(d) {
   const host = document.getElementById('highlights');
   if (!host) return;
   const items = d.highlights || [];
-  document.querySelectorAll('.tab-badge').forEach(b => b.remove()); // clear prior badges on re-render
-  if (!items.length) { host.innerHTML = ''; return; }
+  document.querySelectorAll('.tab-badge').forEach((b) => b.remove()); // clear prior badges on re-render
+  if (!items.length) {
+    host.innerHTML = '';
+    return;
+  }
 
-  const rows = items.map((h) => {
-    const tabId = HL_TAB[h.tab];
-    const hasJump = tabId != null;
-    const jump = hasJump ? `<span class="hl-jump">${esc(HL_LABEL[tabId] || '')} →</span>` : '';
-    const cls = `hl-${h.severity}` + (hasJump ? ' clickable' : '');
-    return `<div class="hl-row ${cls}"${hasJump ? ` data-jump="${tabId}"` : ''}>
+  const rows = items
+    .map((h) => {
+      const tabId = HL_TAB[h.tab];
+      const hasJump = tabId != null;
+      const jump = hasJump ? `<span class="hl-jump">${esc(HL_LABEL[tabId] || '')} →</span>` : '';
+      const cls = `hl-${h.severity}` + (hasJump ? ' clickable' : '');
+      return `<div class="hl-row ${cls}"${hasJump ? ` data-jump="${tabId}"` : ''}>
       <span class="hl-glyph">${HL_GLYPH[h.severity] || '◆'}</span>
       <span><span class="hl-text">${esc(h.text)}</span>${h.why ? ` <span class="hl-why">${esc(h.why)}</span>` : ''}</span>
       ${jump}
     </div>`;
-  }).join('');
+    })
+    .join('');
   host.innerHTML = `<div class="hl-callout"><div class="hl-head">✨ WORTH NOTING</div>${rows}</div>`;
 
   const badged = new Set();
@@ -818,7 +1128,7 @@ function renderHighlights(d) {
     }
   }
 
-  host.querySelectorAll('.hl-row.clickable').forEach(row => {
+  host.querySelectorAll('.hl-row.clickable').forEach((row) => {
     row.addEventListener('click', () => {
       const n = Number(row.dataset.jump);
       show(n);
@@ -832,7 +1142,10 @@ async function renderHistory(d) {
   const host = document.getElementById('scan-history');
   if (!host || !d || !d.repoId) return;
   const trend = snapshotTrend(await listSnapshots(d.repoId));
-  if (!trend) { host.innerHTML = ''; return; }
+  if (!trend) {
+    host.innerHTML = '';
+    return;
+  }
   const svg = sparkline(trend.series, { metric: 'health', width: 160, height: 30 }) || '';
   const sign = trend.healthDelta > 0 ? '+' : '';
   const healthLine = trend.series.map((s) => (s.health == null ? '–' : s.health)).join(' → ');
@@ -872,8 +1185,8 @@ function ddProgressHtml(status) {
   const total = DD_STAGES.length;
   const label = DD_STAGE_LABELS[status] || 'Working';
   const pct = Math.round((step / total) * 100);
-  const dots = DD_STAGES.map((s, i) =>
-    `<span class="dd-step-dot${i < step ? ' done' : i === step - 1 ? ' active' : ''}"></span>`
+  const dots = DD_STAGES.map(
+    (s, i) => `<span class="dd-step-dot${i < step ? ' done' : i === step - 1 ? ' active' : ''}"></span>`
   ).join('');
   return `<div class="dd-progress">
     <div class="dd-step-track">${dots}</div>
@@ -890,15 +1203,44 @@ function startDeepDive(d) {
 
 function factsPanel(f) {
   const langs = (f.languages || []).slice(0, 6);
-  const maxCode = Math.max(1, ...langs.map(l => l.code || 0));
-  const bars = langs.map(l => `<div class="df-lang"><span class="df-lname">${esc(l.name)}</span><span class="df-bar"><i style="width:${Math.round((l.code || 0) / maxCode * 100)}%;background:${langColor(l.name)}"></i></span><span class="df-loc">${l.code || 0}</span></div>`).join('');
+  const maxCode = Math.max(1, ...langs.map((l) => l.code || 0));
+  const bars = langs
+    .map(
+      (l) =>
+        `<div class="df-lang"><span class="df-lname">${esc(l.name)}</span><span class="df-bar"><i style="width:${Math.round(((l.code || 0) / maxCode) * 100)}%;background:${langColor(l.name)}"></i></span><span class="df-loc">${l.code || 0}</span></div>`
+    )
+    .join('');
   const dg = f.depGraph || {};
   // Prefer transitive totals (from lockfiles) when present, else direct manifest counts.
   const depCounts = ['npm', 'cargo', 'pip', 'go']
-    .map(k => [k, (dg[k] || {}).total || ((f.dependencies && f.dependencies[k]) || []).length, (dg[k] || {}).total])
+    .map((k) => [
+      k,
+      (dg[k] || {}).total || ((f.dependencies && f.dependencies[k]) || []).length,
+      (dg[k] || {}).total,
+    ])
     .filter(([, n]) => n)
-    .map(([k, n, total]) => `${k} ${n}${total ? ' total' : ''}`).join(' · ');
+    .map(([k, n, total]) => `${k} ${n}${total ? ' total' : ''}`)
+    .join(' · ');
   const arch = f.architecture || {};
+  const cg = f.codeGraph || f.graph || {};
+  const graphCounts = [
+    cg.nodes || cg.nodeCount ? `${cg.nodes || cg.nodeCount} nodes` : '',
+    cg.edges || cg.edgeCount ? `${cg.edges || cg.edgeCount} edges` : '',
+  ].filter(Boolean);
+  const symbolCounts = Object.entries(cg.symbols || {})
+    .filter(([, n]) => n)
+    .slice(0, 4)
+    .map(([k, n]) => `${n} ${k}`);
+  const graphSummary = [...graphCounts, ...symbolCounts].join(' · ');
+  const graphHotspots = (cg.hotspots || cg.hotSpots || [])
+    .slice(0, 4)
+    .map((h) => (typeof h === 'string' ? h : h.name || h.qualifiedName || h.qualified_name || h.path || ''))
+    .filter(Boolean)
+    .join(' · ');
+  const graphPanel =
+    graphSummary || graphHotspots || (cg.deadCode || cg.dead_code || []).length
+      ? `<div class="df-graph"><b>code graph</b>${graphSummary ? `<span>${esc(graphSummary)}</span>` : ''}${graphHotspots ? `<span>hotspots: ${esc(graphHotspots)}</span>` : ''}${(cg.deadCode || cg.dead_code || []).length ? `<span>${(cg.deadCode || cg.dead_code || []).length} possible dead symbols</span>` : ''}</div>`
+      : '';
   const meta = [
     f.license ? `license: ${esc(f.license.spdx)}` : '',
     f.manifests && f.manifests.length ? `manifests: ${esc(f.manifests.join(', '))}` : '',
@@ -908,11 +1250,15 @@ function factsPanel(f) {
     arch.monorepo ? 'monorepo' : '',
     arch.containerized ? 'containerized' : '',
     (f.secrets || []).length ? `<span class="df-warn">⚠ ${f.secrets.length} secret flags</span>` : '',
-  ].filter(Boolean).map(s => `<span>${s}</span>`).join('');
+  ]
+    .filter(Boolean)
+    .map((s) => `<span>${s}</span>`)
+    .join('');
   return `<div class="df-panel">
     <div class="df-head">✓ Measured facts <span class="df-sub">real checkout · ${f.fileCount || 0} files</span></div>
     <div class="df-langs">${bars}</div>
     <div class="df-meta">${meta}</div>
+    ${graphPanel}
   </div>`;
 }
 
@@ -931,7 +1277,7 @@ async function updateRunnerPill() {
 // Self-graded "Check your understanding": one card at a time (reveal → rate →
 // auto-advance). Persists mastery only on completion. Pure scoring is in mastery.js.
 function renderUnderstandCheck(host, questions, repoId) {
-  if (!host || !questions?.length) return;           // zero questions → no check, no write
+  if (!host || !questions?.length) return; // zero questions → no check, no write
   const ratings = [];
   let i = 0;
 
@@ -962,7 +1308,8 @@ function renderUnderstandCheck(host, questions, repoId) {
       lastCheckedAt: new Date().toISOString(),
       lastResult: { gotIt: result.gotIt, shaky: result.shaky, missed: result.missed, total: result.total },
     };
-    const list = (items) => items.length ? `<ul class="uc-gg">${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : '';
+    const list = (items) =>
+      items.length ? `<ul class="uc-gg">${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : '';
     host.innerHTML = `<div class="uc uc-done">
       <span class="uc-level ${result.level}">${esc(levelLabel(result.level))}</span>
       ${result.glows.length ? `<div class="uc-gg-title">Solid on</div>${list(result.glows)}` : ''}
@@ -981,11 +1328,14 @@ function renderUnderstandCheck(host, questions, repoId) {
   host.addEventListener('click', (e) => {
     const action = e.target.closest('[data-uc]')?.dataset.uc;
     if (!action) return;
-    if (action === 'reveal') { drawAnswer(); return; }
-    ratings[i] = action;          // gotIt | shaky | missed
+    if (action === 'reveal') {
+      drawAnswer();
+      return;
+    }
+    ratings[i] = action; // gotIt | shaky | missed
     i++;
     if (i < questions.length) drawCard();
-    else finish();                // persist only here, when every card is rated
+    else finish(); // persist only here, when every card is rated
   });
 
   drawCard();
@@ -1030,31 +1380,40 @@ function renderDeepDive(d) {
   const atoms = dd.atoms || [];
   const links = dd.lineage?.links || [];
   const fey = dd.feynman || {};
-  const nameById = Object.fromEntries(atoms.map(a => [a.id, a.name]));
+  const nameById = Object.fromEntries(atoms.map((a) => [a.id, a.name]));
 
-  const atomsHtml = atoms.map(a => `<div class="atom-card">
+  const atomsHtml = atoms
+    .map(
+      (a) => `<div class="atom-card">
     <div class="atom-head"><span class="atom-name">${esc(a.name)}</span><span class="atom-kind">${esc(a.kind)}</span></div>
     <div class="atom-purpose">${esc(a.purpose)}</div>
     ${a.files?.length ? `<div class="atom-files">${a.files.map(esc).join(' · ')}</div>` : ''}
-  </div>`).join('');
+  </div>`
+    )
+    .join('');
 
   const linksHtml = links.length
-    ? links.map(l => `<div class="lin-row">
+    ? links
+        .map(
+          (l) => `<div class="lin-row">
         <span class="lin-from">${esc(nameById[l.from] || l.from)}</span>
         <span class="lin-rel">${esc(l.relation)}</span>
         <span class="lin-to">${esc(nameById[l.to] || l.to)}</span>
         ${l.why ? `<span class="lin-why">${esc(l.why)}</span>` : ''}
-      </div>`).join('')
+      </div>`
+        )
+        .join('')
     : '<p class="atom-purpose">No links identified.</p>';
 
-  const listBlock = (title, items) => items?.length
-    ? `<div class="dd-section-title">${title}</div><ul class="dd-list">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
-    : '';
+  const listBlock = (title, items) =>
+    items?.length
+      ? `<div class="dd-section-title">${title}</div><ul class="dd-list">${items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
+      : '';
   const questionsBlock = fey.questions?.length
     ? '<div class="dd-section-title">Check your understanding</div><div id="dd-understand-check"></div>'
     : '';
   const confBlock = fey.confidence?.length
-    ? `<div class="dd-section-title">Confidence</div>${fey.confidence.map(c => `<div class="conf-row"><span class="conf-level conf-${esc(c.level)}">${esc(c.level)}</span><span>${esc(c.claim)}${c.note ? ` — <span style="color:var(--text-muted)">${esc(c.note)}</span>` : ''}</span></div>`).join('')}`
+    ? `<div class="dd-section-title">Confidence</div>${fey.confidence.map((c) => `<div class="conf-row"><span class="conf-level conf-${esc(c.level)}">${esc(c.level)}</span><span>${esc(c.claim)}${c.note ? ` — <span style="color:var(--text-muted)">${esc(c.note)}</span>` : ''}</span></div>`).join('')}`
     : '';
 
   host.innerHTML = `
@@ -1087,25 +1446,25 @@ function renderFrameworkLens(d, cfg) {
 
   const chip = (f) => {
     const r = runOf(lens, f.key);
-    const cls = !r ? 'todo'
-      : r.status === 'error' ? 'err'
-      : r.status === 'done' ? 'done'
-      : 'busy';
+    const cls = !r ? 'todo' : r.status === 'error' ? 'err' : r.status === 'done' ? 'done' : 'busy';
     const actCls = f.key === active ? ' active' : '';
     const mark = r?.status === 'done' ? '✓ ' : r?.status === 'error' ? '✕ ' : '';
     const tail = !r ? ' +' : '';
     return `<button class="lens-chip ${cls}${actCls}" data-fw="${f.key}" title="${esc(f.blurb)}">${mark}${esc(f.label)}${tail}</button>`;
   };
-  const unrun = cfg.frameworks.filter(f => !runOf(lens, f.key)).map(f => f.key);
-  const runAll = unrun.length > 1 ? `<button class="lens-chip runall" data-runall="1">▶ Run all</button>` : '';
+  const unrun = cfg.frameworks.filter((f) => !runOf(lens, f.key)).map((f) => f.key);
+  const runAll =
+    unrun.length > 1 ? `<button class="lens-chip runall" data-runall="1">▶ Run all</button>` : '';
   const chipBar = `<div class="lens-chips">${cfg.frameworks.map(chip).join('')}${runAll}</div>`;
 
   const g = guideFor(active);
-  const guide = g ? `<details class="lens-guide"><summary>How to use · Common misconceptions</summary>
+  const guide = g
+    ? `<details class="lens-guide"><summary>How to use · Common misconceptions</summary>
     <div class="lens-guide-grid">
       <div class="lens-guide-col"><div class="lens-guide-h use">How to use it</div><div style="font-size:12px;color:var(--text-sub);line-height:1.5">${esc(g.howToUse)}</div></div>
-      <div class="lens-guide-col"><div class="lens-guide-h mis">Common misconceptions</div><ul>${g.misconceptions.map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>
-    </div></details>` : '';
+      <div class="lens-guide-col"><div class="lens-guide-h mis">Common misconceptions</div><ul>${g.misconceptions.map((m) => `<li>${esc(m)}</li>`).join('')}</ul></div>
+    </div></details>`
+    : '';
 
   let body;
   if (!active || !run) {
@@ -1113,7 +1472,7 @@ function renderFrameworkLens(d, cfg) {
   } else if (run.status === 'error') {
     body = `<div class="dd-cta"><h3>${esc(cfg.title)} failed</h3><p>${esc(run.error || 'Something went wrong.')}</p><button class="lens-chip" data-fw="${esc(active)}">Try again</button></div>`;
   } else if (run.status !== 'done') {
-    const label = cfg.frameworks.find(f => f.key === active)?.label || 'framework';
+    const label = cfg.frameworks.find((f) => f.key === active)?.label || 'framework';
     body = `<div class="dd-progress"><span class="dot"></span>Working — ${esc(label)}…</div>`;
   } else {
     body = cfg.bodyFor(active, run.result || {});
@@ -1121,91 +1480,169 @@ function renderFrameworkLens(d, cfg) {
 
   host.innerHTML = chipBar + guide + `<div class="lens-body">${body}</div>`;
 
-  host.querySelectorAll('.lens-chip[data-fw]').forEach(c => c.addEventListener('click', () => {
-    const fw = c.dataset.fw;
-    const existing = runOf(lens, fw);
-    if (existing && existing.status === 'done') {
-      renderFrameworkLens({ ...d, [cfg.slot]: { ...lens, active: fw } }, cfg); // view it locally
-    } else {
-      chrome.runtime.sendMessage({ type: cfg.type, sessionKey, platform: d.platform, repoId: d.repoId, frameworks: [fw] });
-    }
-  }));
+  host.querySelectorAll('.lens-chip[data-fw]').forEach((c) =>
+    c.addEventListener('click', () => {
+      const fw = c.dataset.fw;
+      const existing = runOf(lens, fw);
+      if (existing && existing.status === 'done') {
+        renderFrameworkLens({ ...d, [cfg.slot]: { ...lens, active: fw } }, cfg); // view it locally
+      } else {
+        chrome.runtime.sendMessage({
+          type: cfg.type,
+          sessionKey,
+          platform: d.platform,
+          repoId: d.repoId,
+          frameworks: [fw],
+        });
+      }
+    })
+  );
   host.querySelector('.lens-chip[data-runall]')?.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: cfg.type, sessionKey, platform: d.platform, repoId: d.repoId, frameworks: unrun });
+    chrome.runtime.sendMessage({
+      type: cfg.type,
+      sessionKey,
+      platform: d.platform,
+      repoId: d.repoId,
+      frameworks: unrun,
+    });
   });
 }
 
 const SCAMPER_INITIAL = { 'Put to another use': 'P' };
 const ideaBody = (fw, r) => {
-  if (fw === 'scamper') return spine((r.items || []).map(i => ({ marker: SCAMPER_INITIAL[i.lens] || (i.lens || '?')[0], label: i.lens, body: i.idea })));
-  if (fw === 'lateral') return flow([
-    { label: 'Provocation', body: r.provocation },
-    { label: 'The Leap', body: r.leap },
-    ...(r.ideas || []).map((x, i) => ({ label: `Radical idea ${i + 1}`, body: x })),
-  ]);
+  if (fw === 'scamper')
+    return spine(
+      (r.items || []).map((i) => ({
+        marker: SCAMPER_INITIAL[i.lens] || (i.lens || '?')[0],
+        label: i.lens,
+        body: i.idea,
+      }))
+    );
+  if (fw === 'lateral')
+    return flow([
+      { label: 'Provocation', body: r.provocation },
+      { label: 'The Leap', body: r.leap },
+      ...(r.ideas || []).map((x, i) => ({ label: `Radical idea ${i + 1}`, body: x })),
+    ]);
   if (fw === 'morph') return optionMatrix(r.dimensions, r.combinations);
   // triz
   const header = `<div class="lk-flow-node lk-bottleneck"><div class="lk-flow-label">Contradiction</div><div class="lk-flow-body">Improve ${esc(r.contradiction?.improving || '')} — without worsening ${esc(r.contradiction?.worsening || '')}</div></div>`;
-  return header + spine((r.principles || []).map(p => ({ marker: '#' + (p.number ?? ''), label: p.name, body: p.application })))
-    + (r.idea ? `<div class="lk-flow-note" style="margin-top:10px">Resolution: ${esc(r.idea)}</div>` : '');
+  return (
+    header +
+    spine(
+      (r.principles || []).map((p) => ({
+        marker: '#' + (p.number ?? ''),
+        label: p.name,
+        body: p.application,
+      }))
+    ) +
+    (r.idea ? `<div class="lk-flow-note" style="margin-top:10px">Resolution: ${esc(r.idea)}</div>` : '')
+  );
 };
 
 const sysBody = (fw, r) => {
-  if (fw === 'pdca') return flow([
-    { label: 'Plan', body: r.plan }, { label: 'Do', body: r.do }, { label: 'Check', body: r.check }, { label: 'Act', body: r.act },
-  ]);
-  if (fw === 'dmaic') return spine([
-    { marker: 'D', label: 'Define', body: r.define },
-    { marker: 'M', label: 'Measure', body: (r.measure || []).join(' · ') },
-    { marker: 'A', label: 'Analyze', body: r.analyze },
-    { marker: 'I', label: 'Improve', body: (r.improve || []).join(' · ') },
-    { marker: 'C', label: 'Control', body: (r.control || []).join(' · ') },
-  ]);
+  if (fw === 'pdca')
+    return flow([
+      { label: 'Plan', body: r.plan },
+      { label: 'Do', body: r.do },
+      { label: 'Check', body: r.check },
+      { label: 'Act', body: r.act },
+    ]);
+  if (fw === 'dmaic')
+    return spine([
+      { marker: 'D', label: 'Define', body: r.define },
+      { marker: 'M', label: 'Measure', body: (r.measure || []).join(' · ') },
+      { marker: 'A', label: 'Analyze', body: r.analyze },
+      { marker: 'I', label: 'Improve', body: (r.improve || []).join(' · ') },
+      { marker: 'C', label: 'Control', body: (r.control || []).join(' · ') },
+    ]);
   if (fw === 'loops') {
-    return (r.loops || []).map(l => `<div class="loop-card ${l.type === 'balancing' ? 'balancing' : 'reinforcing'}">
+    return (
+      (r.loops || [])
+        .map(
+          (l) => `<div class="loop-card ${l.type === 'balancing' ? 'balancing' : 'reinforcing'}">
       <div class="loop-head"><span class="loop-name">${esc(l.name)}</span><span class="loop-type">${esc(l.type)}</span></div>
       ${loopSvg(l.cycle, l.type)}
       <div class="loop-cycle">${(l.cycle || []).map(esc).join(' → ')}${l.cycle?.length ? ' ↺' : ''}</div>
-      <div class="loop-effect">${esc(l.effect)}</div></div>`).join('') || '<p class="atom-purpose">No loops identified.</p>';
+      <div class="loop-effect">${esc(l.effect)}</div></div>`
+        )
+        .join('') || '<p class="atom-purpose">No loops identified.</p>'
+    );
   }
   // toc
   return flow([
-    { label: 'The Constraint', body: `${r.bottleneck?.name || ''} — ${r.bottleneck?.why || ''}`, kind: 'bottleneck' },
+    {
+      label: 'The Constraint',
+      body: `${r.bottleneck?.name || ''} — ${r.bottleneck?.why || ''}`,
+      kind: 'bottleneck',
+    },
     { label: 'Exploit it', body: (r.exploit || []).join(' · ') },
-    { label: 'Then, the next constraint', body: `${r.next_bottleneck?.name || ''} — ${r.next_bottleneck?.why || ''}` },
+    {
+      label: 'Then, the next constraint',
+      body: `${r.next_bottleneck?.name || ''} — ${r.next_bottleneck?.why || ''}`,
+    },
   ]);
 };
 
-const PCT = (s) => { const m = String(s || '').match(/(\d+)/); return m ? Number(m[1]) : 0; };
+const PCT = (s) => {
+  const m = String(s || '').match(/(\d+)/);
+  return m ? Number(m[1]) : 0;
+};
 const priBody = (fw, r) => {
-  if (fw === 'eisenhower') return matrix2x2({
-    axes: { x: 'Urgent →' },
-    cells: [
-      { label: 'Do', sub: 'Important · Urgent', items: r.do },
-      { label: 'Schedule', sub: 'Important · Not urgent', items: r.schedule },
-      { label: 'Delegate', sub: 'Urgent · Not important', items: r.delegate },
-      { label: 'Eliminate', sub: 'Neither', items: r.eliminate },
-    ],
-  });
+  if (fw === 'eisenhower')
+    return matrix2x2({
+      axes: { x: 'Urgent →' },
+      cells: [
+        { label: 'Do', sub: 'Important · Urgent', items: r.do },
+        { label: 'Schedule', sub: 'Important · Not urgent', items: r.schedule },
+        { label: 'Delegate', sub: 'Urgent · Not important', items: r.delegate },
+        { label: 'Eliminate', sub: 'Neither', items: r.eliminate },
+      ],
+    });
   // pareto
-  return ranked((r.vital_few || []).map(v => ({ label: v.factor, weight: PCT(v.share), body: v.impact })))
-    + (r.trivial_many ? `<div class="lk-flow-note" style="margin-top:10px">The trivial many: ${esc(r.trivial_many)}</div>` : '');
+  return (
+    ranked((r.vital_few || []).map((v) => ({ label: v.factor, weight: PCT(v.share), body: v.impact }))) +
+    (r.trivial_many
+      ? `<div class="lk-flow-note" style="margin-top:10px">The trivial many: ${esc(r.trivial_many)}</div>`
+      : '')
+  );
 };
 
-const SYSTEMS_CFG = { tabId: 11, slot: 'systems', type: 'SYSTEMS', title: 'Systems Analysis',
-  intro: 'View the repo as a system in motion. Pick a framework chip to run it — each is its own report. Run as many as you like.',
-  frameworks: SYSTEMS_FRAMEWORKS, bodyFor: sysBody };
-const IDEATE_CFG = { tabId: 12, slot: 'ideate', type: 'IDEATE', title: 'Creative Generation',
-  intro: 'Invent features or bypass a constraint. Pick a framework chip to run it — each is its own set of ideas. Run as many as you like.',
-  frameworks: IDEATE_FRAMEWORKS, bodyFor: ideaBody };
-const PRIORITIZE_CFG = { tabId: 13, slot: 'prioritize', type: 'PRIORITIZE', title: 'Prioritization',
-  intro: "Decide what's even worth solving. Pick a heuristic chip to run it — each is its own triage. Run as many as you like.",
-  frameworks: HEURISTICS_FRAMEWORKS, bodyFor: priBody };
+const SYSTEMS_CFG = {
+  tabId: 11,
+  slot: 'systems',
+  type: 'SYSTEMS',
+  title: 'Systems Analysis',
+  intro:
+    'View the repo as a system in motion. Pick a framework chip to run it — each is its own report. Run as many as you like.',
+  frameworks: SYSTEMS_FRAMEWORKS,
+  bodyFor: sysBody,
+};
+const IDEATE_CFG = {
+  tabId: 12,
+  slot: 'ideate',
+  type: 'IDEATE',
+  title: 'Creative Generation',
+  intro:
+    'Invent features or bypass a constraint. Pick a framework chip to run it — each is its own set of ideas. Run as many as you like.',
+  frameworks: IDEATE_FRAMEWORKS,
+  bodyFor: ideaBody,
+};
+const PRIORITIZE_CFG = {
+  tabId: 13,
+  slot: 'prioritize',
+  type: 'PRIORITIZE',
+  title: 'Prioritization',
+  intro:
+    "Decide what's even worth solving. Pick a heuristic chip to run it — each is its own triage. Run as many as you like.",
+  frameworks: HEURISTICS_FRAMEWORKS,
+  bodyFor: priBody,
+};
 
 // ─── SKTPG — one-tap directional-intelligence skill (on by default) ───────────
 
 let sktpgEnabled = true; // overridden from chrome.storage.local below; default ON
-let lastData = null;     // most recent session data, for Run-all + keyboard
+let lastData = null; // most recent session data, for Run-all + keyboard
 
 function applySktpgVisibility() {
   const btn = document.getElementById('tab-sktpg');
@@ -1231,7 +1668,10 @@ function renderSktpg(d) {
   applySktpgVisibility();
   const host = document.getElementById('t14');
   if (!host) return;
-  if (!sktpgEnabled) { host.innerHTML = ''; return; }
+  if (!sktpgEnabled) {
+    host.innerHTML = '';
+    return;
+  }
   const sk = d.sktpg;
 
   if (!sk || !sk.status) {
@@ -1258,22 +1698,60 @@ function renderSktpg(d) {
   host.innerHTML = renderSktpgResult(sk.result || {});
 }
 
-const BAND_COLOR = { Noise: '#7e7e7e', Interesting: '#60a5fa', Watchlist: '#fbbf24', Actionable: '#4ade80', Urgent: '#f87171' };
+const BAND_COLOR = {
+  Noise: '#7e7e7e',
+  Interesting: '#60a5fa',
+  Watchlist: '#fbbf24',
+  Actionable: '#4ade80',
+  Urgent: '#f87171',
+};
 
 function renderSktpgResult(r) {
-  const ev = (lvl) => `<span class="ev ev-${String(lvl || 'unknown').toLowerCase()}">${esc(lvl || 'Unknown')}</span>`;
-  const t = r.thesis || {}, sc = r.score || { value: 0, band: 'Noise' };
+  const ev = (lvl) =>
+    `<span class="ev ev-${String(lvl || 'unknown').toLowerCase()}">${esc(lvl || 'Unknown')}</span>`;
+  const t = r.thesis || {},
+    sc = r.score || { value: 0, band: 'Noise' };
   const color = BAND_COLOR[sc.band] || 'var(--accent)';
-  const br = r.base_rate || {}, bn = r.bottleneck || {}, fc = r.forecast || {};
-  const fcard = (step, txt) => `<div class="pdca-card"><div class="step">${step}</div><div class="txt">${esc(txt || '')}</div></div>`;
-  const section = (title, html) => html ? `<div class="dd-section-title">${title}</div>${html}` : '';
+  const br = r.base_rate || {},
+    bn = r.bottleneck || {},
+    fc = r.forecast || {};
+  const fcard = (step, txt) =>
+    `<div class="pdca-card"><div class="step">${step}</div><div class="txt">${esc(txt || '')}</div></div>`;
+  const section = (title, html) => (html ? `<div class="dd-section-title">${title}</div>${html}` : '');
 
-  const weak = (r.weak_signals || []).map(w => `<div class="sk-row"><span class="main">${esc(w.signal)}</span>${ev(w.evidence)}<span class="sub">${esc(w.why)}${w.forces_next ? ` → <i>${esc(w.forces_next)}</i>` : ''}</span></div>`).join('');
-  const hype = (r.hype_vs_motion || []).map(h => `<div class="sk-row"><span class="idea-badge">${esc(h.verdict)}</span><span class="main">${esc(h.claim)}</span><span class="sub">${esc(h.evidence)}</span></div>`).join('');
-  const obvious = (r.becomes_obvious || []).length ? `<ul class="dd-list">${r.becomes_obvious.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
-  const actions = (r.actions || []).map(a => `<div class="sk-row"><span class="idea-badge">${esc(a.timeframe)}</span><span class="main">${esc(a.action)}</span><span class="sub">${esc(a.why_now)}</span></div>`).join('');
-  const premortem = (r.premortem || []).map(p => `<div class="sk-row"><span class="flag-pill ${p.survives ? 'green' : 'red'}">${p.survives ? 'survives' : 'unaddressed'}</span><span class="main">${esc(p.kill_path)}</span><span class="sub">Likelihood: ${esc(p.likelihood)}</span></div>`).join('');
-  const tracking = (r.tracking || []).map(t2 => `<div class="sk-row"><span class="flag-pill ${esc(t2.flag)}">${esc(t2.flag)}</span><span class="main">${esc(t2.signal)}</span><span class="sub">${esc(t2.why)}</span></div>`).join('');
+  const weak = (r.weak_signals || [])
+    .map(
+      (w) =>
+        `<div class="sk-row"><span class="main">${esc(w.signal)}</span>${ev(w.evidence)}<span class="sub">${esc(w.why)}${w.forces_next ? ` → <i>${esc(w.forces_next)}</i>` : ''}</span></div>`
+    )
+    .join('');
+  const hype = (r.hype_vs_motion || [])
+    .map(
+      (h) =>
+        `<div class="sk-row"><span class="idea-badge">${esc(h.verdict)}</span><span class="main">${esc(h.claim)}</span><span class="sub">${esc(h.evidence)}</span></div>`
+    )
+    .join('');
+  const obvious = (r.becomes_obvious || []).length
+    ? `<ul class="dd-list">${r.becomes_obvious.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
+    : '';
+  const actions = (r.actions || [])
+    .map(
+      (a) =>
+        `<div class="sk-row"><span class="idea-badge">${esc(a.timeframe)}</span><span class="main">${esc(a.action)}</span><span class="sub">${esc(a.why_now)}</span></div>`
+    )
+    .join('');
+  const premortem = (r.premortem || [])
+    .map(
+      (p) =>
+        `<div class="sk-row"><span class="flag-pill ${p.survives ? 'green' : 'red'}">${p.survives ? 'survives' : 'unaddressed'}</span><span class="main">${esc(p.kill_path)}</span><span class="sub">Likelihood: ${esc(p.likelihood)}</span></div>`
+    )
+    .join('');
+  const tracking = (r.tracking || [])
+    .map(
+      (t2) =>
+        `<div class="sk-row"><span class="flag-pill ${esc(t2.flag)}">${esc(t2.flag)}</span><span class="main">${esc(t2.signal)}</span><span class="sub">${esc(t2.why)}</span></div>`
+    )
+    .join('');
 
   return `
     <div class="sktpg-thesis">
@@ -1343,7 +1821,12 @@ function renderDocsQualityResult(r) {
   const grade = DOCS_GRADES.includes(r.grade) ? r.grade : 'F';
   const score = Math.max(0, Math.min(100, Math.round(r.score || 0)));
   const verdict = r.overall_verdict || 'no';
-  const verdictLabel = { yes: '✓ Usable without source', partially: '~ Partially self-documenting', no: '✗ Requires reading the source' }[verdict] || verdict;
+  const verdictLabel =
+    {
+      yes: '✓ Usable without source',
+      partially: '~ Partially self-documenting',
+      no: '✗ Requires reading the source',
+    }[verdict] || verdict;
 
   const barColor = (s) => {
     if (s >= 75) return 'var(--ok)';
@@ -1351,21 +1834,25 @@ function renderDocsQualityResult(r) {
     return 'var(--bad)';
   };
 
-  const sections = (r.sections || []).map(s => `
+  const sections = (r.sections || [])
+    .map(
+      (s) => `
     <div class="dq-section-row">
       <div class="dq-section-name">${esc(s.name)}</div>
       <div class="dq-bar-track"><div class="dq-bar-fill" style="width:${s.score}%;background:${barColor(s.score)}"></div></div>
       <div class="dq-section-score">${s.score}</div>
     </div>
     ${s.verdict ? `<div class="dq-section-verdict">${esc(s.verdict)}</div>` : ''}
-  `).join('');
+  `
+    )
+    .join('');
 
   const strengths = (r.strengths || []).length
-    ? `<ul>${r.strengths.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+    ? `<ul>${r.strengths.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
     : '<p style="color:var(--text-muted);font-size:12px">—</p>';
 
   const gaps = (r.gaps || []).length
-    ? `<ul>${r.gaps.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+    ? `<ul>${r.gaps.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
     : '<p style="color:var(--text-muted);font-size:12px">—</p>';
 
   return `
@@ -1430,14 +1917,26 @@ function renderMaintenance(d) {
 
 function renderMaintenanceResult(r) {
   const band = MAINT_BANDS.includes(r.band) ? r.band : 'unknown';
-  const bandLabel = { active: 'Active', slowing: 'Slowing', stale: 'Stale', abandoned: 'Abandoned', unknown: 'Unknown' }[band] || band;
+  const bandLabel =
+    { active: 'Active', slowing: 'Slowing', stale: 'Stale', abandoned: 'Abandoned', unknown: 'Unknown' }[
+      band
+    ] || band;
   const busFactor = BUS_FACTORS.includes(r.bus_factor) ? r.bus_factor : 'unknown';
-  const busLabel = { safe: '✓ Safe bus factor', concentrated: '⚠ Concentrated', solo: '⚠ Solo maintainer', unknown: 'Bus factor unknown' }[busFactor] || busFactor;
+  const busLabel =
+    {
+      safe: '✓ Safe bus factor',
+      concentrated: '⚠ Concentrated',
+      solo: '⚠ Solo maintainer',
+      unknown: 'Bus factor unknown',
+    }[busFactor] || busFactor;
   const days = r.days_since_push != null ? `${r.days_since_push}d since last push` : '';
 
-  const watchItems = (r.watch_list || []).map(w =>
-    `<div class="maint-watch-item"><span class="maint-watch-icon">⚠</span><span>${esc(w)}</span></div>`
-  ).join('');
+  const watchItems = (r.watch_list || [])
+    .map(
+      (w) =>
+        `<div class="maint-watch-item"><span class="maint-watch-icon">⚠</span><span>${esc(w)}</span></div>`
+    )
+    .join('');
 
   return `
     <div class="maint-header">
@@ -1457,16 +1956,21 @@ function renderLicenseCompat(d) {
   if (!host) return;
 
   const currentLicense = d.license || 'Unknown';
-  const bucket = bucketFor(currentLicense);
 
   host.innerHTML = `<div class="dd-progress"><span class="dot"></span>Checking your library…</div>`;
 
-  allLicenses().then((libraryRepos) => {
-    const { currentBucket, concerns, summary, totalChecked } = checkLibraryCompat(currentLicense, libraryRepos);
+  allLicenses()
+    .then((libraryRepos) => {
+      const { currentBucket, concerns, summary, totalChecked } = checkLibraryCompat(
+        currentLicense,
+        libraryRepos
+      );
 
-    const statusIcon = (s) => s === 'conflict' ? '✗' : '⚠';
+      const statusIcon = (s) => (s === 'conflict' ? '✗' : '⚠');
 
-    const concernRows = concerns.map(c => `
+      const concernRows = concerns
+        .map(
+          (c) => `
       <div class="lc-concern-row">
         <div class="lc-concern-status" style="color:${c.status === 'conflict' ? 'var(--bad-ink)' : 'var(--warn-ink)'}">${statusIcon(c.status)}</div>
         <div class="lc-concern-body">
@@ -1474,13 +1978,16 @@ function renderLicenseCompat(d) {
           <div class="lc-concern-lic">${esc(c.license)}</div>
           <div class="lc-concern-note">${esc(c.note)}</div>
         </div>
-      </div>`).join('');
+      </div>`
+        )
+        .join('');
 
-    const noIssues = !concerns.length && totalChecked > 0
-      ? `<p class="lc-all-ok">✓ ${esc(currentLicense)} is compatible with all ${totalChecked} library repo${totalChecked === 1 ? '' : 's'} with known licenses.</p>`
-      : '';
+      const noIssues =
+        !concerns.length && totalChecked > 0
+          ? `<p class="lc-all-ok">✓ ${esc(currentLicense)} is compatible with all ${totalChecked} library repo${totalChecked === 1 ? '' : 's'} with known licenses.</p>`
+          : '';
 
-    host.innerHTML = `
+      host.innerHTML = `
       <div class="lc-compat-header">
         <span class="lc-bucket-chip ${currentBucket}">${esc(currentLicense)}</span>
         <span style="font-size:13px;color:var(--text-sub)">${esc(bucketLabel(currentBucket))}</span>
@@ -1490,9 +1997,10 @@ function renderLicenseCompat(d) {
       ${concernRows}
       ${totalChecked === 0 ? '<p style="color:var(--text-muted);font-size:12px">No repos with known licenses in your library yet — scan a few repos first.</p>' : ''}
     `;
-  }).catch(() => {
-    host.innerHTML = `<p style="color:var(--text-muted)">Could not load library licenses.</p>`;
-  });
+    })
+    .catch(() => {
+      host.innerHTML = `<p style="color:var(--text-muted)">Could not load library licenses.</p>`;
+    });
 }
 
 // ─── Diff Since I Last Looked — zero-token snapshot comparison ───────────────
@@ -1511,16 +2019,25 @@ function renderDiff(d) {
     </div>`;
     document.getElementById('diff-rescan-now')?.addEventListener('click', async () => {
       if (!lastData) return;
-      try { await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey, platform: lastData.platform, repoId: lastData.repoId }); }
-      catch { /* reload anyway */ }
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'RERUN',
+          sessionKey,
+          platform: lastData.platform,
+          repoId: lastData.repoId,
+        });
+      } catch {
+        /* reload anyway */
+      }
       location.reload();
     });
     return;
   }
 
-  const age = diff.days_since_prev != null
-    ? `<span class="diff-age">Compared to your scan ${diff.days_since_prev === 0 ? 'today' : diff.days_since_prev === 1 ? 'yesterday' : `${diff.days_since_prev} days ago`}</span>`
-    : '';
+  const age =
+    diff.days_since_prev != null
+      ? `<span class="diff-age">Compared to your scan ${diff.days_since_prev === 0 ? 'today' : diff.days_since_prev === 1 ? 'yesterday' : `${diff.days_since_prev} days ago`}</span>`
+      : '';
 
   const badge = (dir, text) =>
     `<span class="diff-badge ${dir}">${dir === 'up' ? '▲' : dir === 'down' ? '▼' : '='} ${esc(String(text))}</span>`;
@@ -1570,14 +2087,16 @@ function renderDiff(d) {
   const newFlagsHtml = diff.new_flags.length
     ? `<div class="diff-flags">
         <div class="section-title" style="margin-bottom:10px">New flags since last scan</div>
-        ${diff.new_flags.map(t => `<div class="diff-flag-row"><span class="diff-flag-sign">⚠</span><span style="color:var(--bad-ink);font-size:13px">${esc(t)}</span></div>`).join('')}
-      </div>` : '';
+        ${diff.new_flags.map((t) => `<div class="diff-flag-row"><span class="diff-flag-sign">⚠</span><span style="color:var(--bad-ink);font-size:13px">${esc(t)}</span></div>`).join('')}
+      </div>`
+    : '';
 
   const removedFlagsHtml = diff.removed_flags.length
     ? `<div class="diff-flags">
         <div class="section-title" style="margin-bottom:10px">Flags resolved since last scan</div>
-        ${diff.removed_flags.map(t => `<div class="diff-flag-row"><span class="diff-flag-sign">✓</span><span style="color:var(--ok-ink);font-size:13px">${esc(t)}</span></div>`).join('')}
-      </div>` : '';
+        ${diff.removed_flags.map((t) => `<div class="diff-flag-row"><span class="diff-flag-sign">✓</span><span style="color:var(--ok-ink);font-size:13px">${esc(t)}</span></div>`).join('')}
+      </div>`
+    : '';
 
   host.innerHTML = `
     <div class="diff-header">
@@ -1628,19 +2147,19 @@ function renderFitsStack(d) {
 
 function renderFitsStackResult(r) {
   const verdict = FITS_VERDICTS.includes(r.verdict) ? r.verdict : 'new-paradigm';
-  const verdictLabel = { 'slots-in': '✓ Slots in', 'new-paradigm': '⟳ New paradigm', 'conflict': '✗ Conflict' }[verdict] || verdict;
+  const verdictLabel =
+    { 'slots-in': '✓ Slots in', 'new-paradigm': '⟳ New paradigm', conflict: '✗ Conflict' }[verdict] ||
+    verdict;
 
   const integrations = (r.integrations || []).length
-    ? `<div class="fs-section">How it interacts with your stack</div><ul class="fs-list">${r.integrations.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+    ? `<div class="fs-section">How it interacts with your stack</div><ul class="fs-list">${r.integrations.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
     : '';
 
   const risks = (r.risks || []).length
-    ? `<div class="fs-section">Risks &amp; friction</div><ul class="fs-list">${r.risks.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+    ? `<div class="fs-section">Risks &amp; friction</div><ul class="fs-list">${r.risks.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
     : '';
 
-  const rec = r.recommendation
-    ? `<div class="fs-recommendation">${esc(r.recommendation)}</div>`
-    : '';
+  const rec = r.recommendation ? `<div class="fs-recommendation">${esc(r.recommendation)}</div>` : '';
 
   return `
     <span class="fs-verdict-chip ${verdict}">${esc(verdictLabel)}</span>
@@ -1656,7 +2175,13 @@ function renderFitsStackResult(r) {
 function startVersus(d, competitor) {
   const c = (competitor || '').trim();
   if (!c) return;
-  chrome.runtime.sendMessage({ type: 'VERSUS', sessionKey, platform: d.platform, repoId: d.repoId, competitor: c });
+  chrome.runtime.sendMessage({
+    type: 'VERSUS',
+    sessionKey,
+    platform: d.platform,
+    repoId: d.repoId,
+    competitor: c,
+  });
   renderVersus({ ...d, versus: { status: 'fetching', a: d.repoId, b: c } }); // optimistic
 }
 
@@ -1664,14 +2189,21 @@ async function loadVersusChips(d) {
   const host = document.getElementById('vs-chips');
   if (!host) return;
   let similar = [];
-  try { similar = await findSimilar(d); } catch { /* empty */ }
+  try {
+    similar = await findSimilar(d);
+  } catch {
+    /* empty */
+  }
   if (!similar.length) return;
-  host.innerHTML = `<span style="color:var(--text-muted);font-size:11px;align-self:center">from your library:</span>` +
-    similar.map(s => `<span class="vs-chip" data-repo="${esc(s.repoId)}">${esc(s.repoId)}</span>`).join('');
-  host.querySelectorAll('.vs-chip').forEach(c => c.addEventListener('click', () => {
-    const input = document.getElementById('vs-input');
-    if (input) input.value = c.dataset.repo;
-  }));
+  host.innerHTML =
+    `<span style="color:var(--text-muted);font-size:11px;align-self:center">from your library:</span>` +
+    similar.map((s) => `<span class="vs-chip" data-repo="${esc(s.repoId)}">${esc(s.repoId)}</span>`).join('');
+  host.querySelectorAll('.vs-chip').forEach((c) =>
+    c.addEventListener('click', () => {
+      const input = document.getElementById('vs-input');
+      if (input) input.value = c.dataset.repo;
+    })
+  );
 }
 
 // ─── Ask This Repo ─────────────────────────────────────────────────────────────
@@ -1686,7 +2218,8 @@ function getAskSuggestions(d) {
   }
   if (d.red_flags?.length) sugs.push('What are the main risks of using this?');
   if (d.health?.score != null && d.health.score < 65) sugs.push('Is the project still actively maintained?');
-  if (d.license && d.license !== 'Unknown') sugs.push(`What restrictions does the ${d.license} license impose?`);
+  if (d.license && d.license !== 'Unknown')
+    sugs.push(`What restrictions does the ${d.license} license impose?`);
   if (d.capabilities?.length) sugs.push(`Does it support ${d.capabilities[0]}?`);
   if (d.language && d.language !== 'Unknown') sugs.push(`Is the code idiomatic ${d.language}?`);
   // Universal fallbacks
@@ -1711,33 +2244,44 @@ async function renderAskRepo(d) {
     try {
       const stored = await chrome.storage.local.get(`repolens_ask_${d.repoId}`);
       history = stored[`repolens_ask_${d.repoId}`] || [];
-    } catch (_) {}
+    } catch {}
   }
 
-  const historyHtml = history.map(({ question, answer }) => `
+  const historyHtml = history
+    .map(
+      ({ question, answer }) => `
     <div class="ask-qa">
       <div class="ask-q">Q: <span>${esc(question)}</span></div>
       <div class="ask-a">${esc(answer)}</div>
-    </div>`).join('');
+    </div>`
+    )
+    .join('');
 
-  const pendingHtml = pending ? `
+  const pendingHtml = pending
+    ? `
     <div class="ask-qa">
       <div class="ask-q">Q: <span>${esc(pending.question || '')}</span></div>
       <div class="ask-a${pending.status === 'thinking' ? ' thinking' : pending.status === 'error' ? ' error' : ''}">
         ${pending.status === 'thinking' ? 'Thinking…' : pending.status === 'error' ? esc(pending.error || 'Something went wrong') : esc(pending.answer || '')}
       </div>
-    </div>` : '';
+    </div>`
+    : '';
 
   const asked = new Set(history.map(({ question }) => question));
   const availableSugs = getAskSuggestions(d).filter((s) => !asked.has(s));
-  const sugsHtml = !pending && availableSugs.length
-    ? `<div class="ask-suggestions">${availableSugs.slice(0, history.length ? 3 : 6).map((s) => `<button class="ask-sug">${esc(s)}</button>`).join('')}</div>`
-    : '';
+  const sugsHtml =
+    !pending && availableSugs.length
+      ? `<div class="ask-suggestions">${availableSugs
+          .slice(0, history.length ? 3 : 6)
+          .map((s) => `<button class="ask-sug">${esc(s)}</button>`)
+          .join('')}</div>`
+      : '';
 
   const isThinking = pending?.status === 'thinking';
-  const clearBtn = history.length && !pending
-    ? `<button class="ask-clear" id="ask-clear" title="Clear ask history">Clear history</button>`
-    : '';
+  const clearBtn =
+    history.length && !pending
+      ? `<button class="ask-clear" id="ask-clear" title="Clear ask history">Clear history</button>`
+      : '';
 
   host.innerHTML = `<div class="ask-wrap">
     <p class="ask-intro">Ask a specific question about <b>${esc(d.repoId || 'this repo')}</b>. Answers use the loaded analysis as context. ${clearBtn}</p>
@@ -1764,7 +2308,10 @@ async function renderAskRepo(d) {
 
   sendBtn?.addEventListener('click', doAsk);
   input?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doAsk(); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      doAsk();
+    }
   });
 
   document.getElementById('ask-clear')?.addEventListener('click', async () => {
@@ -1776,9 +2323,12 @@ async function renderAskRepo(d) {
   });
 
   if (!isThinking) {
-    host.querySelectorAll('.ask-sug').forEach(btn => {
+    host.querySelectorAll('.ask-sug').forEach((btn) => {
       btn.addEventListener('click', () => {
-        if (input) { input.value = btn.textContent; input.focus(); }
+        if (input) {
+          input.value = btn.textContent;
+          input.focus();
+        }
       });
     });
     // Scroll last answer into view when a new answer arrives
@@ -1803,15 +2353,21 @@ function renderVersus(d) {
         <button class="dd-run" id="vs-run" style="margin-top:0">Compare</button>
       </div>
     </div>`;
-    document.getElementById('vs-run')?.addEventListener('click', () => startVersus(d, document.getElementById('vs-input')?.value));
-    document.getElementById('vs-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') startVersus(d, e.target.value); });
+    document
+      .getElementById('vs-run')
+      ?.addEventListener('click', () => startVersus(d, document.getElementById('vs-input')?.value));
+    document.getElementById('vs-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startVersus(d, e.target.value);
+    });
     loadVersusChips(d);
     return;
   }
 
   if (vs.status === 'error') {
     host.innerHTML = `<div class="dd-cta"><h3>Comparison failed</h3><p>${esc(vs.error || 'Something went wrong.')}</p><button class="dd-run" id="vs-retry">Try another</button></div>`;
-    document.getElementById('vs-retry')?.addEventListener('click', () => renderVersus({ ...d, versus: null }));
+    document
+      .getElementById('vs-retry')
+      ?.addEventListener('click', () => renderVersus({ ...d, versus: null }));
     return;
   }
 
@@ -1826,13 +2382,19 @@ function renderVersus(d) {
 
 function renderVersusResult(vs, d) {
   const r = vs.result || {};
-  const a = esc(vs.a || d.repoId), b = esc(vs.b || 'B');
-  const dims = (r.dimensions || []).map(dim => `<div class="vs-row">
+  const a = esc(vs.a || d.repoId),
+    b = esc(vs.b || 'B');
+  const dims = (r.dimensions || [])
+    .map(
+      (dim) => `<div class="vs-row">
     <div class="vs-dim">${esc(dim.label)}</div>
     <div class="vs-cell ${dim.winner === 'a' ? 'win' : ''}">${esc(dim.a)}</div>
     <div class="vs-cell ${dim.winner === 'b' ? 'win' : ''}">${esc(dim.b)}</div>
-  </div>`).join('');
-  const pickWhen = (label, items) => `<div class="pdca-card"><div class="step">${label}</div>${items?.length ? `<ul class="dd-list">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<div style="color:var(--text-muted);font-size:13px">—</div>'}</div>`;
+  </div>`
+    )
+    .join('');
+  const pickWhen = (label, items) =>
+    `<div class="pdca-card"><div class="step">${label}</div>${items?.length ? `<ul class="dd-list">${items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '<div style="color:var(--text-muted);font-size:13px">—</div>'}</div>`;
   return `
     <div class="vs-head"><span class="vs-name">${a}</span><span class="vs-vs">VS</span><span class="vs-name">${b}</span>
       <button class="dd-run" id="vs-again" style="margin:0 0 0 auto;padding:6px 12px;font-size:12px">New compare</button></div>
@@ -1876,11 +2438,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
   // Tick the Run All Lenses counter when a lens transitions to done.
   if (runAllTotal > 0) {
     const wasDone = (x) => x?.status === 'done';
-    const isDone  = (x) => x?.status === 'done';
+    const isDone = (x) => x?.status === 'done';
     const ticked = [
-      [nv.deepDive,   ov.deepDive],
-      [nv.synergies,  ov.synergies],
-      [nv.sktpg,      ov.sktpg],
+      [nv.deepDive, ov.deepDive],
+      [nv.synergies, ov.synergies],
+      [nv.sktpg, ov.sktpg],
     ].filter(([n, o]) => isDone(n) && !wasDone(o)).length;
     if (ticked > 0) {
       runAllDone = Math.min(runAllDone + ticked, runAllTotal);
@@ -1907,20 +2469,19 @@ function renderHeader(d) {
 
   const pillContainer = document.querySelector('.meta-pills');
   const starLabel = formatStars(d.stars);
-  const pills = [
-    d.language,
-    starLabel ? `${starLabel} ★` : null,
-    d.license,
-    d.platform
-  ].filter(p => p && p !== 'Unknown');
-  pillContainer.innerHTML = pills.map(p => `<span class="pill">${esc(p)}</span>`).join('');
+  const pills = [d.language, starLabel ? `${starLabel} ★` : null, d.license, d.platform].filter(
+    (p) => p && p !== 'Unknown'
+  );
+  pillContainer.innerHTML = pills.map((p) => `<span class="pill">${esc(p)}</span>`).join('');
 
   // Update board button label based on current membership
-  listCollections().then((cols) => {
-    const btn = document.getElementById('add-to-board');
-    if (!btn || !d.repoId) return;
-    btn.textContent = cols.some((c) => collectionContains(c, d.repoId)) ? '✓ Board' : '+ Board';
-  }).catch(() => {});
+  listCollections()
+    .then((cols) => {
+      const btn = document.getElementById('add-to-board');
+      if (!btn || !d.repoId) return;
+      btn.textContent = cols.some((c) => collectionContains(c, d.repoId)) ? '✓ Board' : '+ Board';
+    })
+    .catch(() => {});
 
   if (d.repoId) updateDecisionBadge(d.repoId);
 }
@@ -1938,9 +2499,15 @@ function relativeTimestamp(ts) {
 function applyDecisionBadge(dec) {
   const badge = document.getElementById('decision-badge');
   if (!badge) return;
-  if (!dec) { badge.className = 'decision-badge'; return; }
+  if (!dec) {
+    badge.className = 'decision-badge';
+    return;
+  }
   const meta = DECISION_META[dec.decision];
-  if (!meta) { badge.className = 'decision-badge'; return; }
+  if (!meta) {
+    badge.className = 'decision-badge';
+    return;
+  }
   badge.textContent = meta.label;
   badge.style.cssText = `color:${meta.color};background:${meta.bg};border-color:${meta.border}`;
   badge.title = dec.note ? `Decision: ${meta.label} — ${dec.note}` : `Decision: ${meta.label}`;
@@ -1951,9 +2518,15 @@ const DECISION_ICONS = { adopt: '✅', trial: '🔬', hold: '⏸', reject: '🚫
 function applyDecisionPreview(dec) {
   const el = document.getElementById('vd-decision-preview');
   if (!el) return;
-  if (!dec) { el.innerHTML = ''; return; }
+  if (!dec) {
+    el.innerHTML = '';
+    return;
+  }
   const meta = DECISION_META[dec.decision];
-  if (!meta) { el.innerHTML = ''; return; }
+  if (!meta) {
+    el.innerHTML = '';
+    return;
+  }
   const icon = DECISION_ICONS[dec.decision] || '';
   const noteStr = dec.note ? ` — <em>${esc(dec.note)}</em>` : '';
   const timeStr = relativeTimestamp(dec.timestamp);
@@ -1965,46 +2538,81 @@ function applyDecisionPreview(dec) {
 }
 
 function updateDecisionBadge(repoId) {
-  getDecision(repoId).then(dec => {
-    applyDecisionBadge(dec);
-    applyDecisionPreview(dec);
-  }).catch(() => { applyDecisionBadge(null); applyDecisionPreview(null); });
+  getDecision(repoId)
+    .then((dec) => {
+      applyDecisionBadge(dec);
+      applyDecisionPreview(dec);
+    })
+    .catch(() => {
+      applyDecisionBadge(null);
+      applyDecisionPreview(null);
+    });
 }
 
 function verdictDashboard(d) {
   const fit = deriveFit(d);
   const what = esc(d.description || firstSentence(d.eli5) || 'A software project.');
   const line = d.bottom_line
-    ? `<div class="v-line"><span class="ai">AI BOTTOM LINE</span>${esc(d.bottom_line)}</div>` : '';
+    ? `<div class="v-line"><span class="ai">AI BOTTOM LINE</span>${esc(d.bottom_line)}</div>`
+    : '';
 
-  const langs = (d.languages || []).slice(0, 4)
-    .map(l => `<span class="v-lchip" style="background:${langColor(l.name)}">${esc(l.name)} ${l.pct}%</span>`).join(' ');
-  const depCount = (d.tech_stack?.key_dependencies?.length) || (d.dependencies?.length) || 0;
+  const langs = (d.languages || [])
+    .slice(0, 4)
+    .map(
+      (l) => `<span class="v-lchip" style="background:${langColor(l.name)}">${esc(l.name)} ${l.pct}%</span>`
+    )
+    .join(' ');
+  const depCount = d.tech_stack?.key_dependencies?.length || d.dependencies?.length || 0;
   const facts = d.deepDive?.facts;
   const score = d.health?.score ?? 0;
   const scoreWord = score >= 85 ? 'Excellent' : score >= 70 ? 'Healthy' : score > 0 ? 'Mixed' : '—';
   const cells = [
     `<div class="v-fact"><div class="v-k">Health</div><div class="v-v"><span class="v-ring" style="--p:${score}"><i>${score}</i></span>${scoreWord}</div></div>`,
-    depCount ? `<div class="v-fact"><div class="v-k">Key deps</div><div class="v-v">${depCount} listed</div></div>` : '',
-    langs ? `<div class="v-fact wide"><div class="v-k">Languages</div><div class="v-v">${langs}</div></div>` : '',
-    facts ? `<div class="v-fact"><div class="v-k">Tests</div><div class="v-v ${facts.tests?.present ? 'v-ok' : 'v-no'}">${facts.tests?.present ? '✓ present' : '— none'}</div></div>` : '',
-    facts ? `<div class="v-fact"><div class="v-k">CI</div><div class="v-v ${facts.ci?.present ? 'v-ok' : 'v-no'}">${facts.ci?.present ? '✓ present' : '— none'}</div></div>` : '',
-    d.inputTokensEstimate ? `<div class="v-fact" title="Estimated input tokens sent for the core scan — multiply by your provider's rate for cost"><div class="v-k">Scan size</div><div class="v-v">~${esc(formatTokens(d.inputTokensEstimate))} tok in</div></div>` : '',
-  ].filter(Boolean).join('');
+    depCount
+      ? `<div class="v-fact"><div class="v-k">Key deps</div><div class="v-v">${depCount} listed</div></div>`
+      : '',
+    langs
+      ? `<div class="v-fact wide"><div class="v-k">Languages</div><div class="v-v">${langs}</div></div>`
+      : '',
+    facts
+      ? `<div class="v-fact"><div class="v-k">Tests</div><div class="v-v ${facts.tests?.present ? 'v-ok' : 'v-no'}">${facts.tests?.present ? '✓ present' : '— none'}</div></div>`
+      : '',
+    facts
+      ? `<div class="v-fact"><div class="v-k">CI</div><div class="v-v ${facts.ci?.present ? 'v-ok' : 'v-no'}">${facts.ci?.present ? '✓ present' : '— none'}</div></div>`
+      : '',
+    d.inputTokensEstimate
+      ? `<div class="v-fact" title="Estimated input tokens sent for the core scan — multiply by your provider's rate for cost"><div class="v-k">Scan size</div><div class="v-v">~${esc(formatTokens(d.inputTokensEstimate))} tok in</div></div>`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('');
 
-  const warns = (d.red_flags || []).filter(f => f && f.severity !== 'ok').slice(0, 3);
-  const shown = warns.length ? warns : (d.red_flags || []).filter(f => f && f.severity === 'ok').slice(0, 2);
+  const warns = (d.red_flags || []).filter((f) => f && f.severity !== 'ok').slice(0, 3);
+  const shown = warns.length
+    ? warns
+    : (d.red_flags || []).filter((f) => f && f.severity === 'ok').slice(0, 2);
   const flags = shown.length
-    ? `<div class="v-sec">Top flags</div>` + shown.map(f =>
-        `<div class="v-flag"><span class="v-fi">${f.severity === 'ok' ? '✅' : '⚠️'}</span><span><b>${esc(f.title)}</b> — ${esc(f.text)}</span></div>`).join('')
+    ? `<div class="v-sec">Top flags</div>` +
+      shown
+        .map(
+          (f) =>
+            `<div class="v-flag"><span class="v-fi">${f.severity === 'ok' ? '✅' : '⚠️'}</span><span><b>${esc(f.title)}</b> — ${esc(f.text)}</span></div>`
+        )
+        .join('')
     : '';
 
   const entries = (d.start_here || []).length
-    ? `<div class="v-sec">Where to start</div>` + d.start_here.map(e =>
-        `<div class="entry-card"><div class="entry-icon">${esc(e.icon)}</div><div><div class="entry-title">${esc(e.title)}</div><div class="entry-desc">${esc(e.desc)}</div><span class="entry-tag">${esc(e.tag)}</span></div></div>`).join('')
+    ? `<div class="v-sec">Where to start</div>` +
+      d.start_here
+        .map(
+          (e) =>
+            `<div class="entry-card"><div class="entry-icon">${esc(e.icon)}</div><div><div class="entry-title">${esc(e.title)}</div><div class="entry-desc">${esc(e.desc)}</div><span class="entry-tag">${esc(e.tag)}</span></div></div>`
+        )
+        .join('')
     : '';
 
-  const jump = (id, label) => `<button class="v-jump" data-jump="${id}">${label} <span class="arr">→</span></button>`;
+  const jump = (id, label) =>
+    `<button class="v-jump" data-jump="${id}">${label} <span class="arr">→</span></button>`;
   const jumps = `<div class="v-jumps">${jump(7, "Why it's " + (score >= 70 ? 'healthy' : 'mixed'))}${jump(8, 'What to watch')}${jump(15, 'Tech Stack')}${jump(6, 'Alternatives')}${jump(10, 'Deep Dive')}</div>`;
 
   const diff = d.diff;
@@ -2015,15 +2623,17 @@ function verdictDashboard(d) {
       const arrow = diff.fit_delta.direction === 'up' ? '↑' : '↓';
       changes.push(`fit shifted ${arrow} (${diff.fit_delta.before} → ${diff.fit_delta.after})`);
     }
-    if (diff.new_flags?.length) changes.push(`${diff.new_flags.length} new flag${diff.new_flags.length > 1 ? 's' : ''}`);
+    if (diff.new_flags?.length)
+      changes.push(`${diff.new_flags.length} new flag${diff.new_flags.length > 1 ? 's' : ''}`);
     if (Math.abs(diff.health_delta?.delta || 0) >= 5) {
       const arrow = diff.health_delta.direction === 'up' ? '+' : '';
       changes.push(`health ${arrow}${diff.health_delta.delta}`);
     }
     if (!changes.length) return '';
-    const label = diff.days_since_prev != null
-      ? `Since your last scan (${diff.days_since_prev === 0 ? 'today' : diff.days_since_prev === 1 ? 'yesterday' : `${diff.days_since_prev}d ago`})`
-      : 'Since last scan';
+    const label =
+      diff.days_since_prev != null
+        ? `Since your last scan (${diff.days_since_prev === 0 ? 'today' : diff.days_since_prev === 1 ? 'yesterday' : `${diff.days_since_prev}d ago`})`
+        : 'Since last scan';
     return `<div class="v-diff-callout">
       <span class="v-diff-label">${esc(label)}:</span>
       <span class="v-diff-items">${changes.map(esc).join(' · ')}</span>
@@ -2048,52 +2658,65 @@ function verdictDashboard(d) {
 
 function renderTabs(d) {
   const analogies = (d.analogies || []).length
-    ? `<div class="section-title" style="margin-top:24px">Think of it like…</div>${d.analogies.map(a => `<div class="analogy">${esc(a)}</div>`).join('')}`
+    ? `<div class="section-title" style="margin-top:24px">Think of it like…</div>${d.analogies.map((a) => `<div class="analogy">${esc(a)}</div>`).join('')}`
     : '';
   setTabContent(0, `${paras(d.eli5, 'big-text')}${analogies}<div id="library-block"></div>`);
 
   setTabContent(1, paras(d.technical, 'body-text'));
 
-  setTabContent(2, `<div class="use-grid">
+  setTabContent(
+    2,
+    `<div class="use-grid">
     ${card('#818cf8', 'CORE FIT', d.use_cases?.core_fit)}
     ${card('#818cf8', 'GOOD FIT', d.use_cases?.good_fit)}
     ${card('#4ade80', 'WORKS WELL', d.use_cases?.works_well)}
     ${card('#4ade80', 'LONG TERM', d.use_cases?.long_term)}
-  </div>`);
+  </div>`
+  );
 
-  setTabContent(3, `<div class="use-grid">
+  setTabContent(
+    3,
+    `<div class="use-grid">
     ${card('#f87171', 'OVERKILL', d.skip_if?.overkill)}
     ${card('#f87171', 'WRONG TOOL', d.skip_if?.wrong_tool)}
     ${card('#fbbf24', 'NEEDS CARE', d.skip_if?.needs_care)}
     ${card('#fbbf24', 'CONSIDER', d.skip_if?.consider)}
-  </div>`);
+  </div>`
+  );
 
   setTabContent(4, paras(d.enables, 'body-text'));
 
-  setTabContent(5, `<div class="pro-con">
+  setTabContent(
+    5,
+    `<div class="pro-con">
     <div class="pro-col"><div class="pro-con-title" style="color:#16a34a">PROS</div><ul>
-      ${(d.pros ?? []).map(p => `<li>${esc(p)}</li>`).join('')}
+      ${(d.pros ?? []).map((p) => `<li>${esc(p)}</li>`).join('')}
     </ul></div>
     <div class="con-col"><div class="pro-con-title" style="color:#dc2626">CONS</div><ul>
-      ${(d.cons ?? []).map(c => `<li>${esc(c)}</li>`).join('')}
+      ${(d.cons ?? []).map((c) => `<li>${esc(c)}</li>`).join('')}
     </ul></div>
-  </div>`);
+  </div>`
+  );
 
   // Alternatives: enrich with "in library" badge and quick-scan button.
   getLibraryIndex().then((libIdx) => {
     const alts = d.alternatives ?? [];
     const host = document.getElementById('t6');
-    host.innerHTML = alts.map((a, idx) => {
-      const inLib = libIdx.has(a.name);
-      const detected = detectPlatform(repoSourceUrl('github', a.name));
-      const badge = inLib
-        ? `<span class="alt-in-lib">In library</span>`
-        : (detected ? `<button class="alt-scan-btn" data-idx="${idx}">Scan →</button>` : `<a class="alt-scan-link" href="${esc(repoSourceUrl('github', a.name))}" target="_blank" rel="noopener">↗ View</a>`);
-      return `<div class="alt-row">
+    host.innerHTML = alts
+      .map((a, idx) => {
+        const inLib = libIdx.has(a.name);
+        const detected = detectPlatform(repoSourceUrl('github', a.name));
+        const badge = inLib
+          ? `<span class="alt-in-lib">In library</span>`
+          : detected
+            ? `<button class="alt-scan-btn" data-idx="${idx}">Scan →</button>`
+            : `<a class="alt-scan-link" href="${esc(repoSourceUrl('github', a.name))}" target="_blank" rel="noopener">↗ View</a>`;
+        return `<div class="alt-row">
         <div class="alt-name">${esc(a.name)}${badge}</div>
         <div class="alt-when">${esc(a.when)}</div>
       </div>`;
-    }).join('');
+      })
+      .join('');
 
     host.querySelectorAll('.alt-scan-btn').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -2101,10 +2724,14 @@ function renderTabs(d) {
         if (!a) return;
         const det = detectPlatform(repoSourceUrl('github', a.name));
         if (!det) return;
-        btn.disabled = true; btn.textContent = 'Opening…';
+        btn.disabled = true;
+        btn.textContent = 'Opening…';
         const key = 'repolens_' + crypto.randomUUID();
-        try { await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey: key, ...det }); }
-        catch { /* bg may be asleep — tab will show loading state */ }
+        try {
+          await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey: key, ...det });
+        } catch {
+          /* bg may be asleep — tab will show loading state */
+        }
         chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${key}`) });
       });
     });
@@ -2112,32 +2739,47 @@ function renderTabs(d) {
 
   const bars = ['commit_activity', 'issue_response', 'pr_merge_rate', 'maintainer_count'];
   const labels = ['Commit activity', 'Issue response', 'PR merge rate', 'Maintainers'];
-  setTabContent(7, `
+  setTabContent(
+    7,
+    `
     <div style="margin-bottom:20px">
       <div class="curve-row">
         <div class="curve-label" style="color:#94a3b8">Overall score</div>
         <div class="curve-track"><div class="curve-fill" style="width:${d.health?.score ?? 0}%;background:linear-gradient(90deg,#6d28d9,#2563eb)"></div></div>
         <span style="font-size:11px;color:#818cf8;min-width:30px">${d.health?.score ?? 0}%</span>
       </div>
-      ${bars.map((k, i) => `<div class="curve-row">
+      ${bars
+        .map(
+          (k, i) => `<div class="curve-row">
         <div class="curve-label">${labels[i]}</div>
         <div class="curve-track"><div class="curve-fill" style="width:${d.health?.[k] ?? 0}%;background:#16a34a"></div></div>
         <span style="font-size:11px;color:#4ade80;min-width:30px">${d.health?.[k] ?? 0}%</span>
-      </div>`).join('')}
+      </div>`
+        )
+        .join('')}
     </div>
     <p class="body-text" style="font-size:12px">${esc(d.health?.summary ?? '')}</p>
-  `);
+  `
+  );
 
-  setTabContent(8, (d.red_flags ?? []).map(f => `
+  setTabContent(
+    8,
+    (d.red_flags ?? [])
+      .map(
+        (f) => `
     <div class="flag ${f.severity === 'ok' ? 'ok' : ''}">
       <div class="flag-icon">${f.severity === 'ok' ? '✅' : '⚠️'}</div>
       <div><div class="flag-title">${esc(f.title)}</div><div class="flag-text">${esc(f.text)}</div></div>
     </div>
-  `).join(''));
+  `
+      )
+      .join('')
+  );
 
   setTabContent(9, verdictDashboard(d));
-  document.querySelectorAll('#t9 .v-jump').forEach(b =>
-    b.addEventListener('click', () => show(Number(b.dataset.jump))));
+  document
+    .querySelectorAll('#t9 .v-jump')
+    .forEach((b) => b.addEventListener('click', () => show(Number(b.dataset.jump))));
   document.getElementById('v-copy')?.addEventListener('click', async (e) => {
     try {
       await navigator.clipboard.writeText(verdictCopyText(d));
@@ -2145,10 +2787,15 @@ function renderTabs(d) {
       const prev = btn.textContent;
       btn.textContent = '✓ Copied';
       btn.disabled = true;
-      setTimeout(() => { btn.textContent = prev; btn.disabled = false; }, 1500);
-    } catch { /* clipboard unavailable — ignore */ }
+      setTimeout(() => {
+        btn.textContent = prev;
+        btn.disabled = false;
+      }, 1500);
+    } catch {
+      /* clipboard unavailable — ignore */
+    }
   });
-  document.getElementById('v-share')?.addEventListener('click', (e) => {
+  document.getElementById('v-share')?.addEventListener('click', () => {
     const fit = deriveFit(d);
     const encoded = encodeShareCard({ ...d, fitLevel: fit.level });
     if (!encoded) return;
@@ -2172,7 +2819,7 @@ async function renderDecisionControl(d) {
   const block = document.createElement('div');
   block.className = 'dl-block';
 
-  const choiceButtons = DECISIONS.map(key => {
+  const choiceButtons = DECISIONS.map((key) => {
     const m = DECISION_META[key];
     const sel = existing?.decision === key ? ` selected-${key}` : '';
     return `<button class="dl-btn${sel}" data-dl="${key}">${esc(m.label)}</button>`;
@@ -2195,12 +2842,12 @@ async function renderDecisionControl(d) {
 
   let selected = existing?.decision || null;
 
-  block.querySelectorAll('.dl-btn').forEach(btn => {
+  block.querySelectorAll('.dl-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.dl;
       selected = selected === key ? null : key;
-      block.querySelectorAll('.dl-btn').forEach(b => {
-        DECISIONS.forEach(k => b.classList.remove(`selected-${k}`));
+      block.querySelectorAll('.dl-btn').forEach((b) => {
+        DECISIONS.forEach((k) => b.classList.remove(`selected-${k}`));
         if (b.dataset.dl === selected) b.classList.add(`selected-${selected}`);
       });
     });
@@ -2216,7 +2863,12 @@ async function renderDecisionControl(d) {
       applyDecisionBadge(dec);
       applyDecisionPreview(dec);
       const msg = document.getElementById('dl-saved-msg');
-      if (msg) { msg.textContent = '✓ Saved'; setTimeout(() => { msg.textContent = ''; }, 1800); }
+      if (msg) {
+        msg.textContent = '✓ Saved';
+        setTimeout(() => {
+          msg.textContent = '';
+        }, 1800);
+      }
       // Offer integration steps for Adopt decisions.
       if (selected === 'adopt' && !block.querySelector('.dl-integrate')) {
         const intDiv = document.createElement('div');
@@ -2234,7 +2886,8 @@ async function renderDecisionControl(d) {
               question: `Give me a concise 4–5 step integration checklist for ${d.repoId}. Include install command, minimal config, and the first meaningful usage. Be specific, not generic.`,
               analysis: d,
             });
-            if (result) result.textContent = resp?.ok ? resp.answer : (resp?.error || 'Could not generate steps.');
+            if (result)
+              result.textContent = resp?.ok ? resp.answer : resp?.error || 'Could not generate steps.';
           } catch {
             if (result) result.textContent = 'Could not reach the extension.';
           } finally {
@@ -2251,7 +2904,9 @@ async function renderDecisionControl(d) {
         document.getElementById('dl-actions')?.appendChild(clrBtn);
         clrBtn.addEventListener('click', handleClear);
       }
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   });
 
   async function handleClear() {
@@ -2259,7 +2914,9 @@ async function renderDecisionControl(d) {
     applyDecisionBadge(null);
     applyDecisionPreview(null);
     selected = null;
-    block.querySelectorAll('.dl-btn').forEach(b => DECISIONS.forEach(k => b.classList.remove(`selected-${k}`)));
+    block
+      .querySelectorAll('.dl-btn')
+      .forEach((b) => DECISIONS.forEach((k) => b.classList.remove(`selected-${k}`)));
     const note = document.getElementById('dl-note');
     if (note) note.value = '';
     block.querySelector('#dl-clear')?.remove();
@@ -2274,19 +2931,40 @@ function card(color, label, text) {
   </div>`;
 }
 
-
 function setTabContent(index, html) {
   const panel = document.getElementById(`t${index}`);
   if (panel) panel.innerHTML = html;
 }
 
 const TAB_SLUGS = {
-  9: 'verdict', 0: 'eli5', 1: 'technical', 2: 'use-cases', 3: 'skip-if',
-  4: 'enables', 5: 'pros-cons', 6: 'alternatives', 7: 'health', 8: 'red-flags',
-  15: 'tech-stack', 10: 'deep-dive', 11: 'systems', 12: 'ideate', 13: 'prioritize',
-  14: 'sktpg', 21: 'docs', 22: 'maintenance', 23: 'license', 24: 'diff',
-  25: 'stack-fit', 26: 'ask', 16: 'similar', 17: 'versus', 18: 'synergies',
-  19: 'connections', 20: 'combine', 27: 'canvas',
+  9: 'verdict',
+  0: 'eli5',
+  1: 'technical',
+  2: 'use-cases',
+  3: 'skip-if',
+  4: 'enables',
+  5: 'pros-cons',
+  6: 'alternatives',
+  7: 'health',
+  8: 'red-flags',
+  15: 'tech-stack',
+  10: 'deep-dive',
+  11: 'systems',
+  12: 'ideate',
+  13: 'prioritize',
+  14: 'sktpg',
+  21: 'docs',
+  22: 'maintenance',
+  23: 'license',
+  24: 'diff',
+  25: 'stack-fit',
+  26: 'ask',
+  16: 'similar',
+  17: 'versus',
+  18: 'synergies',
+  19: 'connections',
+  20: 'combine',
+  27: 'canvas',
 };
 const SLUG_TO_TAB = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, Number(k)]));
 
@@ -2296,9 +2974,7 @@ const SLUG_TO_TAB = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) =>
 function renderActNav() {
   const nav = document.getElementById('act-nav');
   if (!nav) return;
-  nav.innerHTML = ACTS.map(
-    (a) => `<button class="act-tab" data-act="${a.id}">${a.label}</button>`,
-  ).join('');
+  nav.innerHTML = ACTS.map((a) => `<button class="act-tab" data-act="${a.id}">${a.label}</button>`).join('');
 }
 
 function renderSubNav(actId) {
@@ -2306,14 +2982,22 @@ function renderSubNav(actId) {
   if (!sub) return;
   const tabs = tabsForAct(actId);
   // A single-tab act (Decide) needs no secondary row.
-  sub.innerHTML = tabs.length <= 1
-    ? ''
-    : tabs.map((n) => `<button class="tab-btn"${n === 14 ? ' id="tab-sktpg"' : ''} data-tab="${n}">${TAB_LABELS[n]}</button>`).join('');
+  sub.innerHTML =
+    tabs.length <= 1
+      ? ''
+      : tabs
+          .map(
+            (n) =>
+              `<button class="tab-btn"${n === 14 ? ' id="tab-sktpg"' : ''} data-tab="${n}">${TAB_LABELS[n]}</button>`
+          )
+          .join('');
 
   if (actId === 'deeper') {
-    sub.insertAdjacentHTML('afterbegin',
+    sub.insertAdjacentHTML(
+      'afterbegin',
       `<button class="tab-menu-run" id="run-all-lenses">▸ Run all lenses ` +
-      `<span id="lens-progress" style="font:500 10px/1 ui-monospace,monospace;opacity:.7;margin-left:4px"></span></button>`);
+        `<span id="lens-progress" style="font:500 10px/1 ui-monospace,monospace;opacity:.7;margin-left:4px"></span></button>`
+    );
   }
 
   // Mark scan buttons that have an explainer with a subtle ⓘ (per-render, so
@@ -2335,7 +3019,9 @@ function renderSubNav(actId) {
 
 function show(n, { updateHash = true } = {}) {
   // Active tab button (in the secondary row) + active panel (by id, not DOM order).
-  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.tab) === n));
+  document
+    .querySelectorAll('.tab-btn')
+    .forEach((b) => b.classList.toggle('active', Number(b.dataset.tab) === n));
   document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
   document.getElementById(`t${n}`)?.classList.add('active');
 
@@ -2348,7 +3034,9 @@ function show(n, { updateHash = true } = {}) {
     sub.dataset.act = actId || '';
   }
   // Re-mark the active secondary button after a possible re-render.
-  document.querySelectorAll('#act-subnav .tab-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.tab) === n));
+  document
+    .querySelectorAll('#act-subnav .tab-btn')
+    .forEach((b) => b.classList.toggle('active', Number(b.dataset.tab) === n));
 
   // Blueprint canvas mounts lazily on every activation path (idempotent + null-safe).
   if (n === 27) renderCanvas(lastData).catch((err) => console.error('[canvas] render failed', err));
@@ -2371,7 +3059,10 @@ document.getElementById('act-nav')?.addEventListener('click', (e) => {
 
 // Secondary row: clicking a tab switches panels (same contract as before).
 document.getElementById('act-subnav')?.addEventListener('click', (e) => {
-  if (e.target.closest('#run-all-lenses')) { runAllLenses(); return; }
+  if (e.target.closest('#run-all-lenses')) {
+    runAllLenses();
+    return;
+  }
   const btn = e.target.closest('[data-tab]');
   if (!btn) return;
   const n = Number(btn.dataset.tab);
@@ -2400,7 +3091,8 @@ function initScanTips() {
     const r = btn.getBoundingClientRect();
     tip.style.visibility = 'hidden';
     tip.classList.add('show');
-    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    const tw = tip.offsetWidth,
+      th = tip.offsetHeight;
     let left = r.left;
     if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
     let top = r.bottom + 6;
@@ -2410,11 +3102,23 @@ function initScanTips() {
     tip.style.visibility = '';
     tip.setAttribute('aria-hidden', 'false');
   };
-  const hide = () => { tip.classList.remove('show'); tip.setAttribute('aria-hidden', 'true'); };
+  const hide = () => {
+    tip.classList.remove('show');
+    tip.setAttribute('aria-hidden', 'true');
+  };
 
-  nav.addEventListener('mouseover', e => { const b = e.target.closest('.tab-btn[data-tab]'); if (b) showFor(b); });
-  nav.addEventListener('mouseout',  e => { const b = e.target.closest('.tab-btn[data-tab]'); if (b) hide(); });
-  nav.addEventListener('focusin',   e => { const b = e.target.closest('.tab-btn[data-tab]'); if (b) showFor(b); });
+  nav.addEventListener('mouseover', (e) => {
+    const b = e.target.closest('.tab-btn[data-tab]');
+    if (b) showFor(b);
+  });
+  nav.addEventListener('mouseout', (e) => {
+    const b = e.target.closest('.tab-btn[data-tab]');
+    if (b) hide();
+  });
+  nav.addEventListener('focusin', (e) => {
+    const b = e.target.closest('.tab-btn[data-tab]');
+    if (b) showFor(b);
+  });
   nav.addEventListener('focusout', hide);
 }
 initScanTips();
@@ -2433,7 +3137,10 @@ function initGuide() {
   const lensHost = document.getElementById('guide-lenses');
   if (lensHost) {
     lensHost.innerHTML = Object.values(SCAN_EXPLAINERS)
-      .map(e => `<div class="g-lens"><b>${esc(e.title)}</b><span>${esc(e.bestFor)}</span><span class="g-cost">${esc(e.cost)}</span></div>`)
+      .map(
+        (e) =>
+          `<div class="g-lens"><b>${esc(e.title)}</b><span>${esc(e.bestFor)}</span><span class="g-cost">${esc(e.cost)}</span></div>`
+      )
       .join('');
   }
 
@@ -2450,15 +3157,22 @@ function initGuide() {
 
   btn.addEventListener('click', open);
   document.getElementById('guide-close')?.addEventListener('click', close);
-  veil.addEventListener('click', (e) => { if (e.target === veil) close(); });
-  document.getElementById('guide-library')?.addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }));
-  document.getElementById('guide-settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
+  veil.addEventListener('click', (e) => {
+    if (e.target === veil) close();
+  });
+  document
+    .getElementById('guide-library')
+    ?.addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') }));
+  document
+    .getElementById('guide-settings')
+    ?.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
   document.addEventListener('keydown', (e) => {
     const t = e.target;
     if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return;
     if (e.key === '?') {
-      if (veil.classList.contains('open')) close(); else open();
+      if (veil.classList.contains('open')) close();
+      else open();
     } else if (e.key === 'Escape' && veil.classList.contains('open')) {
       close();
     }
@@ -2477,7 +3191,7 @@ function updateRunAllProgress(done) {
 }
 
 function runAllLenses() {
-  document.querySelectorAll('.tab-menu').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.tab-menu').forEach((m) => m.classList.remove('open'));
   if (!lastData) return;
   runAllDone = 0;
   runAllTotal = sktpgEnabled ? 5 : 4; // deepdive + synergies + systems + ideate + (sktpg?)
@@ -2485,9 +3199,27 @@ function runAllLenses() {
   if (el) el.textContent = `0/${runAllTotal}`;
   startDeepDive(lastData, () => updateRunAllProgress(true));
   startSynergies(lastData, () => updateRunAllProgress(true));
-  chrome.runtime.sendMessage({ type: 'SYSTEMS', sessionKey, platform: lastData.platform, repoId: lastData.repoId, frameworks: SYSTEMS_FRAMEWORKS.map(f => f.key) });
-  chrome.runtime.sendMessage({ type: 'IDEATE', sessionKey, platform: lastData.platform, repoId: lastData.repoId, frameworks: IDEATE_FRAMEWORKS.map(f => f.key) });
-  chrome.runtime.sendMessage({ type: 'PRIORITIZE', sessionKey, platform: lastData.platform, repoId: lastData.repoId, frameworks: HEURISTICS_FRAMEWORKS.map(f => f.key) });
+  chrome.runtime.sendMessage({
+    type: 'SYSTEMS',
+    sessionKey,
+    platform: lastData.platform,
+    repoId: lastData.repoId,
+    frameworks: SYSTEMS_FRAMEWORKS.map((f) => f.key),
+  });
+  chrome.runtime.sendMessage({
+    type: 'IDEATE',
+    sessionKey,
+    platform: lastData.platform,
+    repoId: lastData.repoId,
+    frameworks: IDEATE_FRAMEWORKS.map((f) => f.key),
+  });
+  chrome.runtime.sendMessage({
+    type: 'PRIORITIZE',
+    sessionKey,
+    platform: lastData.platform,
+    repoId: lastData.repoId,
+    frameworks: HEURISTICS_FRAMEWORKS.map((f) => f.key),
+  });
   if (sktpgEnabled) startSktpg(lastData, () => updateRunAllProgress(true));
 }
 
@@ -2505,8 +3237,12 @@ async function copyWithFlash(btn, text, label = 'Copied ✓') {
     await navigator.clipboard.writeText(text);
     const prev = btn.textContent;
     btn.textContent = label;
-    setTimeout(() => { btn.textContent = prev; }, 1500);
-  } catch { /* clipboard blocked */ }
+    setTimeout(() => {
+      btn.textContent = prev;
+    }, 1500);
+  } catch {
+    /* clipboard blocked */
+  }
 }
 
 document.getElementById('copy-url')?.addEventListener('click', async () => {
@@ -2552,18 +3288,27 @@ function closeBoardPop() {
   document.removeEventListener('click', _onBoardDocClick, true);
   document.removeEventListener('keydown', _onBoardKey, true);
 }
-function _onBoardDocClick(e) { if (_boardPop && !_boardPop.contains(e.target)) closeBoardPop(); }
-function _onBoardKey(e) { if (e.key === 'Escape') closeBoardPop(); }
+function _onBoardDocClick(e) {
+  if (_boardPop && !_boardPop.contains(e.target)) closeBoardPop();
+}
+function _onBoardKey(e) {
+  if (e.key === 'Escape') closeBoardPop();
+}
 
 async function openBoardPop(repoId, anchor) {
   closeBoardPop();
   const btn = document.getElementById('add-to-board');
   const cols = sortedCollections(await listCollections().catch(() => []));
   const list = cols.length
-    ? cols.map((c) => `<button class="bp-row" data-id="${esc(c.id)}">` +
-        `<span class="bp-check">${collectionContains(c, repoId) ? '✓' : ''}</span>` +
-        `<span class="coll-dot" style="background:${safeHex(c.color)}"></span>` +
-        `<span class="bp-name">${esc(c.name)}</span></button>`).join('')
+    ? cols
+        .map(
+          (c) =>
+            `<button class="bp-row" data-id="${esc(c.id)}">` +
+            `<span class="bp-check">${collectionContains(c, repoId) ? '✓' : ''}</span>` +
+            `<span class="coll-dot" style="background:${safeHex(c.color)}"></span>` +
+            `<span class="bp-name">${esc(c.name)}</span></button>`
+        )
+        .join('')
     : `<div class="bp-empty">No boards yet — create one in the Library.</div>`;
   const pop = document.createElement('div');
   pop.className = 'boards-pop';
@@ -2583,7 +3328,11 @@ async function openBoardPop(repoId, anchor) {
       if (idx < 0) return;
       const updated = toggleRepoInCollection(localCols[idx], repoId, { now: new Date().toISOString() });
       localCols = localCols.map((c, i) => (i === idx ? updated : c));
-      try { await saveCollection(updated); } catch { /* best-effort */ }
+      try {
+        await saveCollection(updated);
+      } catch {
+        /* best-effort */
+      }
       b.querySelector('.bp-check').textContent = collectionContains(updated, repoId) ? '✓' : '';
       if (btn) {
         const inAny = localCols.some((c) => collectionContains(c, repoId));
@@ -2607,7 +3356,10 @@ async function openBoardPop(repoId, anchor) {
 
 document.getElementById('add-to-board')?.addEventListener('click', async (e) => {
   if (!lastData?.repoId) return;
-  if (_boardPop) { closeBoardPop(); return; }
+  if (_boardPop) {
+    closeBoardPop();
+    return;
+  }
   await openBoardPop(lastData.repoId, e.currentTarget);
 });
 
@@ -2657,14 +3409,19 @@ const retryBtn = document.getElementById('retry-btn');
 const settingsBtn = document.getElementById('settings-btn');
 settingsBtn?.addEventListener('click', () => chrome.runtime.openOptionsPage());
 retryBtn?.addEventListener('click', async () => {
-  if (!retryContext) { location.reload(); return; }
+  if (!retryContext) {
+    location.reload();
+    return;
+  }
   retryBtn.disabled = true;
   retryBtn.textContent = 'Retrying…';
   try {
     // Ask the background to re-run the analysis into this same session, then reload
     // so the page picks up the fresh loading state and result.
     await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey, ...retryContext });
-  } catch { /* reload anyway — worst case the user sees the same error */ }
+  } catch {
+    /* reload anyway — worst case the user sees the same error */
+  }
   location.reload();
 });
 
@@ -2675,23 +3432,30 @@ document.getElementById('paste-url-form')?.addEventListener('submit', async (e) 
   const detected = detectPlatform(rawUrl);
   if (!detected) {
     input.style.borderColor = 'var(--bad-edge)';
-    setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    setTimeout(() => {
+      input.style.borderColor = '';
+    }, 1500);
     return;
   }
   const submitBtn = e.target.querySelector('button[type="submit"]');
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Scanning…'; }
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Scanning…';
+  }
   try {
     await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey, ...detected });
-  } catch { /* reload anyway */ }
+  } catch {
+    /* reload anyway */
+  }
   location.reload();
 });
 
 // Keyboard nav: ← → cycle tabs; 1–9 jump to the first nine; r rescan. Ignored while typing.
-document.addEventListener('keydown', async e => {
+document.addEventListener('keydown', async (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const t = e.target;
   if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return;
-  const tabs = [...document.querySelectorAll('.tab-btn')].filter(b => b.style.display !== 'none');
+  const tabs = [...document.querySelectorAll('.tab-btn')].filter((b) => b.style.display !== 'none');
   if (e.key === 'r' && retryBtn && !retryBtn.disabled && retryContext) {
     e.preventDefault();
     retryBtn.click();
@@ -2700,9 +3464,20 @@ document.addEventListener('keydown', async e => {
   if (e.key === 'f' && lastData) {
     e.preventDefault();
     const freshBtn = document.getElementById('rerun-fresh');
-    if (freshBtn) { freshBtn.click(); return; }
-    try { await chrome.runtime.sendMessage({ type: 'RERUN', sessionKey, platform: lastData.platform, repoId: lastData.repoId }); }
-    catch { /* reload anyway */ }
+    if (freshBtn) {
+      freshBtn.click();
+      return;
+    }
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'RERUN',
+        sessionKey,
+        platform: lastData.platform,
+        repoId: lastData.repoId,
+      });
+    } catch {
+      /* reload anyway */
+    }
     location.reload();
     return;
   }
@@ -2732,10 +3507,26 @@ document.addEventListener('keydown', async e => {
     document.getElementById('add-to-board')?.click();
     return;
   }
-  if (e.key === 'v' && lastData) { e.preventDefault(); show(9); return; }
-  if (e.key === 'e' && lastData) { e.preventDefault(); show(0); return; }
-  if (e.key === 'h' && lastData) { e.preventDefault(); show(7); return; }
-  if (e.key === 'l') { e.preventDefault(); document.getElementById('open-library')?.click(); return; }
+  if (e.key === 'v' && lastData) {
+    e.preventDefault();
+    show(9);
+    return;
+  }
+  if (e.key === 'e' && lastData) {
+    e.preventDefault();
+    show(0);
+    return;
+  }
+  if (e.key === 'h' && lastData) {
+    e.preventDefault();
+    show(7);
+    return;
+  }
+  if (e.key === 'l') {
+    e.preventDefault();
+    document.getElementById('open-library')?.click();
+    return;
+  }
   if (e.key === 'o' && lastData) {
     e.preventDefault();
     const url = repoSourceUrl(lastData.platform, lastData.repoId);
@@ -2744,7 +3535,7 @@ document.addEventListener('keydown', async e => {
   }
   if (!tabs.length) return;
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-    const cur = tabs.findIndex(b => b.classList.contains('active'));
+    const cur = tabs.findIndex((b) => b.classList.contains('active'));
     if (cur === -1) return;
     const next = tabs[(cur + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
     show(Number(next.dataset.tab));
@@ -2835,12 +3626,16 @@ async function loadLibraryComparison(data) {
     block.innerHTML = `
     <div class="veles-box">
       <div class="veles-header"><div class="veles-dot"></div><div class="veles-title">From your library</div></div>
-      ${similar.map(s => `
+      ${similar
+        .map(
+          (s) => `
         <div class="veles-row">
           <div class="veles-name">${esc(s.repoId)}</div>
           <div class="veles-diff">${esc(s.compare_hooks || s.eli5?.slice(0, 100) || '')}</div>
         </div>
-      `).join('')}
+      `
+        )
+        .join('')}
     </div>`;
   } catch {}
 }

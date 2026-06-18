@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PARTS, CATALOG } from '../models.js';
+import { PARTS, CATALOG, canonicalModel } from '../models.js';
 import { CHAIN } from '../routing.js';
 
 describe('PARTS', () => {
@@ -33,5 +33,11 @@ describe('CATALOG', () => {
         expect(m.label).toBeTruthy();
       }
     }
+  });
+
+  it('canonicalizes legacy/provider-prefixed model ids', () => {
+    expect(canonicalModel('google', 'models/gemini-3.1-pro-preview')).toBe('gemini-3.1-pro-preview');
+    expect(canonicalModel('nous', 'Hermes-4-405B')).toBe('nousresearch/hermes-4-405b');
+    expect(canonicalModel('openrouter', 'anthropic/claude-opus-4-8')).toBe('anthropic/claude-opus-4.8');
   });
 });

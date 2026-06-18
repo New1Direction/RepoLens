@@ -14,7 +14,10 @@ describe('repairGraph', () => {
 
   it('coerces kind and relation aliases to the known set', () => {
     const raw = {
-      nodes: [{ id: 'a', name: 'A', kind: 'FUNCTION' }, { id: 'b', name: 'B', kind: 'service' }],
+      nodes: [
+        { id: 'a', name: 'A', kind: 'FUNCTION' },
+        { id: 'b', name: 'B', kind: 'service' },
+      ],
       edges: [{ from: 'a', to: 'b', relation: 'imports' }],
     };
     const { nodes, edges } = repairGraph(raw);
@@ -47,7 +50,10 @@ describe('repairGraph', () => {
   // L-1: pinned nodes whose coords arrive as numeric strings (e.g. from JSON) must
   // keep their position — Number.isFinite('100') is false, so coords would collapse to 0.
   it('preserves a pinned node whose coordinates are numeric strings', () => {
-    const { nodes } = repairGraph({ nodes: [{ id: 'a', name: 'A', pinned: true, x: '100', y: '250' }], edges: [] });
+    const { nodes } = repairGraph({
+      nodes: [{ id: 'a', name: 'A', pinned: true, x: '100', y: '250' }],
+      edges: [],
+    });
     expect(nodes[0].x).toBe(100);
     expect(nodes[0].y).toBe(250);
   });

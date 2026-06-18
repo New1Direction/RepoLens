@@ -6,7 +6,7 @@ import globals from 'globals';
 // intentionally light — advisory warnings, not a wall of errors — so the gate
 // is useful without demanding a rewrite of working code.
 export default [
-  { ignores: ['node_modules/**', 'coverage/**', 'website/**', '.vitest/**', 'vendor/**'] },
+  { ignores: ['node_modules/**', 'coverage/**', 'website/**', '.vitest/**', 'vendor/**', '.verify/**'] },
   js.configs.recommended,
   {
     files: ['**/*.js', '**/*.mjs'],
@@ -16,7 +16,7 @@ export default [
       globals: { ...globals.browser, ...globals.webextensions, ...globals.node },
     },
     rules: {
-      'no-console': 'warn',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-empty': ['warn', { allowEmptyCatch: true }],
       'prefer-const': 'warn',

@@ -95,7 +95,9 @@ export async function listSnapshots(repoId) {
 export async function deleteSnapshots(repoId) {
   try {
     await idbDelete('snapshots', hashRepoId(repoId));
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
 }
 
 /** All snapshot histories as a Map(repoId → snaps[]) for batch rendering. */
@@ -117,7 +119,9 @@ export async function saveAnalysis(analysis) {
 export async function deleteRepo(repoId) {
   try {
     await idbDelete('repos', hashRepoId(repoId));
-  } catch { /* store unavailable — caller still drops the local cache copy */ }
+  } catch {
+    /* store unavailable — caller still drops the local cache copy */
+  }
 }
 
 async function allPayloads() {
@@ -129,7 +133,12 @@ async function allPayloads() {
 export async function getLibraryIndex() {
   try {
     const payloads = await allPayloads();
-    return new Map(payloads.map((p) => [p.repoId, { stars: p.stars, language: p.language, license: p.license, capabilities: p.capabilities }]));
+    return new Map(
+      payloads.map((p) => [
+        p.repoId,
+        { stars: p.stars, language: p.language, license: p.license, capabilities: p.capabilities },
+      ])
+    );
   } catch {
     return new Map();
   }
@@ -153,8 +162,14 @@ export async function scrollLibrary({ limit = 500 } = {}) {
   try {
     const payloads = await allPayloads();
     return payloads.slice(0, limit).map((p) => {
-      const caps = Array.isArray(p.capabilities) && p.capabilities.length ? p.capabilities : deriveCapabilities(p);
-      return { repoId: p.repoId, name: p.repoId.split('/').pop() || p.repoId, capabilities: caps, eli5: p.eli5 || '' };
+      const caps =
+        Array.isArray(p.capabilities) && p.capabilities.length ? p.capabilities : deriveCapabilities(p);
+      return {
+        repoId: p.repoId,
+        name: p.repoId.split('/').pop() || p.repoId,
+        capabilities: caps,
+        eli5: p.eli5 || '',
+      };
     });
   } catch {
     return [];
@@ -165,7 +180,7 @@ export async function scrollLibrary({ limit = 500 } = {}) {
 export async function allLicenses() {
   try {
     const payloads = await allPayloads();
-    return payloads.map(p => ({ repoId: p.repoId, license: p.license || 'Unknown' }));
+    return payloads.map((p) => ({ repoId: p.repoId, license: p.license || 'Unknown' }));
   } catch {
     return [];
   }
@@ -185,7 +200,12 @@ export async function findSimilar({ language, category, repoId }) {
 export async function searchLibrary({ query, topK = 12, excludeRepoId }) {
   try {
     const ranked = rankRepos(await allPayloads(), query, { excludeId: excludeRepoId, topK });
-    return ranked.map((p) => ({ repoId: p.repoId, category: p.category || '', language: p.language || '', eli5: p.eli5 || '' }));
+    return ranked.map((p) => ({
+      repoId: p.repoId,
+      category: p.category || '',
+      language: p.language || '',
+      eli5: p.eli5 || '',
+    }));
   } catch {
     return [];
   }
@@ -213,7 +233,9 @@ export async function saveCollection(collection) {
 export async function deleteCollection(id) {
   try {
     await idbDelete('collections', id);
-  } catch { /* store unavailable */ }
+  } catch {
+    /* store unavailable */
+  }
 }
 
 // ─── decisions: per-repo adoption decisions (Decision Log) ───────────────────
@@ -238,7 +260,9 @@ export async function getDecision(repoId) {
 export async function clearDecision(repoId) {
   try {
     await idbDelete('decisions', repoId);
-  } catch { /* store unavailable */ }
+  } catch {
+    /* store unavailable */
+  }
 }
 
 /** All decisions. Best-effort — [] on failure. */
@@ -342,7 +366,9 @@ export async function listScenes(repoId) {
 export async function deleteScene(id) {
   try {
     await idbDelete('scenes', String(id));
-  } catch { /* store unavailable */ }
+  } catch {
+    /* store unavailable */
+  }
 }
 
 // ─── graph: nodes + edges for the Connections tab ─────────────────────────────
@@ -354,7 +380,13 @@ export async function upsertNode(nodeId, payload) {
 
 /** Add/replace an edge (idempotent by id). Throws on failure (callers wrap best-effort). */
 export async function addEdge({ id, source, target, label, properties = {} }) {
-  await idbPut('edges', { id: String(id), source: String(source), target: String(target), label, properties });
+  await idbPut('edges', {
+    id: String(id),
+    source: String(source),
+    target: String(target),
+    label,
+    properties,
+  });
 }
 
 /** The whole library graph: every node payload + every edge. Best-effort — empty on failure. */
@@ -362,8 +394,10 @@ export async function getLibraryGraph() {
   try {
     const [nodeRows, edges] = await Promise.all([idbGetAll('nodes'), idbGetAll('edges')]);
     return {
-      nodes: (nodeRows || []).filter((r) => r && r.payload).map((r) => ({ nodeId: String(r.id), ...r.payload })),
-      edges: (edges || []),
+      nodes: (nodeRows || [])
+        .filter((r) => r && r.payload)
+        .map((r) => ({ nodeId: String(r.id), ...r.payload })),
+      edges: edges || [],
     };
   } catch {
     return { nodes: [], edges: [] };
@@ -378,7 +412,9 @@ export async function getEgoGraph(repoId) {
     const allEdges = (await idbGetAll('edges')) || [];
     const touching = allEdges.filter((e) => String(e.source) === centerKey || String(e.target) === centerKey);
     const neighborIds = [
-      ...new Set(touching.flatMap((e) => [String(e.source), String(e.target)]).filter((id) => id !== centerKey)),
+      ...new Set(
+        touching.flatMap((e) => [String(e.source), String(e.target)]).filter((id) => id !== centerKey)
+      ),
     ];
     const nodePayloads = {};
     for (const id of neighborIds) {
@@ -431,11 +467,28 @@ export async function exportStores() {
  * @param {{ repos?: object[], nodes?: object[], edges?: object[] }} rows
  * @param {{ mode?: 'merge'|'replace' }} [opts]
  */
-export async function importStores({ repos = [], nodes = [], edges = [], collections = [], decisions = [], snapshots = [], scenes = [] } = {}, { mode = 'merge' } = {}) {
+export async function importStores(
+  { repos = [], nodes = [], edges = [], collections = [], decisions = [], snapshots = [], scenes = [] } = {},
+  { mode = 'merge' } = {}
+) {
   if (mode === 'replace') {
-    await Promise.all([idbClear('repos'), idbClear('nodes'), idbClear('edges'), idbClear('collections'), idbClear('decisions'), idbClear('snapshots'), idbClear('scenes')]);
+    await Promise.all([
+      idbClear('repos'),
+      idbClear('nodes'),
+      idbClear('edges'),
+      idbClear('collections'),
+      idbClear('decisions'),
+      idbClear('snapshots'),
+      idbClear('scenes'),
+    ]);
   }
-  const vr = validRows(repos), vn = validRows(nodes), ve = validRows(edges), vc = validRows(collections), vd = validRows(decisions), vs = validRows(snapshots), vsc = validRows(scenes);
+  const vr = validRows(repos),
+    vn = validRows(nodes),
+    ve = validRows(edges),
+    vc = validRows(collections),
+    vd = validRows(decisions),
+    vs = validRows(snapshots),
+    vsc = validRows(scenes);
   for (const row of vr) await idbPut('repos', row);
   for (const row of vn) await idbPut('nodes', row);
   for (const row of ve) await idbPut('edges', row);
@@ -443,7 +496,15 @@ export async function importStores({ repos = [], nodes = [], edges = [], collect
   for (const row of vd) await idbPut('decisions', row);
   for (const row of vs) await idbPut('snapshots', mode === 'merge' ? await mergeSnapshotRow(row) : row);
   for (const row of vsc) await idbPut('scenes', row);
-  return { repos: vr.length, nodes: vn.length, edges: ve.length, collections: vc.length, decisions: vd.length, snapshots: vs.length, scenes: vsc.length };
+  return {
+    repos: vr.length,
+    nodes: vn.length,
+    edges: ve.length,
+    collections: vc.length,
+    decisions: vd.length,
+    snapshots: vs.length,
+    scenes: vsc.length,
+  };
 }
 
 /**
@@ -467,9 +528,18 @@ async function mergeSnapshotRow(row) {
 }
 
 /** Keep only the most recent SNAPSHOT_CAP snaps (the list is already sorted ascending). */
-const clampSnaps = (snaps) => (snaps.length > SNAPSHOT_CAP ? snaps.slice(snaps.length - SNAPSHOT_CAP) : snaps);
+const clampSnaps = (snaps) =>
+  snaps.length > SNAPSHOT_CAP ? snaps.slice(snaps.length - SNAPSHOT_CAP) : snaps;
 
 /** Wipe the whole library (all stores). Backs the "Clear library" action. */
 export async function clearLibrary() {
-  await Promise.all([idbClear('repos'), idbClear('nodes'), idbClear('edges'), idbClear('collections'), idbClear('decisions'), idbClear('snapshots'), idbClear('scenes')]);
+  await Promise.all([
+    idbClear('repos'),
+    idbClear('nodes'),
+    idbClear('edges'),
+    idbClear('collections'),
+    idbClear('decisions'),
+    idbClear('snapshots'),
+    idbClear('scenes'),
+  ]);
 }

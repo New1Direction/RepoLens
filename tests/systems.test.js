@@ -6,7 +6,7 @@ const source = { tree: ['src/index.js'], files: [{ path: 'src/index.js', content
 
 describe('SYSTEMS_FRAMEWORKS / isFramework', () => {
   it('exposes the four frameworks', () => {
-    expect(SYSTEMS_FRAMEWORKS.map(f => f.key)).toEqual(['toc', 'loops', 'pdca', 'dmaic']);
+    expect(SYSTEMS_FRAMEWORKS.map((f) => f.key)).toEqual(['toc', 'loops', 'pdca', 'dmaic']);
   });
   it('validates framework keys', () => {
     expect(isFramework('toc')).toBe(true);
@@ -34,14 +34,20 @@ describe('buildSystemsPrompt', () => {
 
 describe('parseSystems', () => {
   it('toc — parses bottleneck/exploit/next with defaults', () => {
-    const r = parseSystems('toc', '```json\n{"bottleneck":{"name":"Single-threaded reconcile"},"exploit":["batch updates"]}\n```');
+    const r = parseSystems(
+      'toc',
+      '```json\n{"bottleneck":{"name":"Single-threaded reconcile"},"exploit":["batch updates"]}\n```'
+    );
     expect(r.bottleneck.name).toBe('Single-threaded reconcile');
     expect(r.bottleneck.why).toBe('');
     expect(r.exploit).toEqual(['batch updates']);
     expect(r.next_bottleneck).toEqual({ name: '', why: '' });
   });
   it('loops — normalizes type and keeps cycle', () => {
-    const r = parseSystems('loops', '{"loops":[{"type":"balancing","name":"L","cycle":["A","B"],"effect":"e"},{"name":"R"}]}');
+    const r = parseSystems(
+      'loops',
+      '{"loops":[{"type":"balancing","name":"L","cycle":["A","B"],"effect":"e"},{"name":"R"}]}'
+    );
     expect(r.loops[0].type).toBe('balancing');
     expect(r.loops[0].cycle).toEqual(['A', 'B']);
     expect(r.loops[1].type).toBe('reinforcing'); // defaulted
@@ -53,7 +59,10 @@ describe('parseSystems', () => {
     expect(typeof r.check).toBe('string');
   });
   it('dmaic — arrays for measure/improve/control', () => {
-    const r = parseSystems('dmaic', '{"define":"d","measure":["m1","m2"],"analyze":"a","improve":["i"],"control":["c"]}');
+    const r = parseSystems(
+      'dmaic',
+      '{"define":"d","measure":["m1","m2"],"analyze":"a","improve":["i"],"control":["c"]}'
+    );
     expect(r.define).toBe('d');
     expect(r.measure).toEqual(['m1', 'm2']);
     expect(r.improve).toEqual(['i']);

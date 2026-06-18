@@ -14,9 +14,19 @@ Return ONLY a JSON object, no prose: { "capabilities": ["tag", "tag"] }`;
 }
 
 export function parseTags(rawText) {
-  const text = String(rawText).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  const text = String(rawText)
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '');
+  const start = text.indexOf('{'),
+    end = text.lastIndexOf('}');
   let data = {};
-  if (start !== -1 && end !== -1) { try { data = JSON.parse(text.slice(start, end + 1)); } catch { data = {}; } }
+  if (start !== -1 && end !== -1) {
+    try {
+      data = JSON.parse(text.slice(start, end + 1));
+    } catch {
+      data = {};
+    }
+  }
   return normalizeCapabilities(data.capabilities);
 }

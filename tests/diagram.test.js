@@ -1,8 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { lineageSvg, loopSvg } from '../diagram.js';
 
-const atoms = [{ id: 'a', name: 'Alpha' }, { id: 'b', name: 'Beta' }, { id: 'c', name: 'Gamma' }];
-const links = [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }];
+const atoms = [
+  { id: 'a', name: 'Alpha' },
+  { id: 'b', name: 'Beta' },
+  { id: 'c', name: 'Gamma' },
+];
+const links = [
+  { from: 'a', to: 'b' },
+  { from: 'b', to: 'c' },
+];
 
 describe('lineageSvg', () => {
   it('returns empty string for empty/missing input', () => {
@@ -17,16 +24,31 @@ describe('lineageSvg', () => {
     expect((svg.match(/class="dg-edge"/g) || []).length).toBe(2);
   });
   it('drops links referencing unknown ids', () => {
-    const svg = lineageSvg(atoms, [{ from: 'a', to: 'zzz' }, { from: 'a', to: 'b' }]);
+    const svg = lineageSvg(atoms, [
+      { from: 'a', to: 'zzz' },
+      { from: 'a', to: 'b' },
+    ]);
     expect((svg.match(/class="dg-edge"/g) || []).length).toBe(1);
   });
   it('escapes node names', () => {
-    const svg = lineageSvg([{ id: 'x', name: '<script>' }, { id: 'y', name: 'Y' }], [{ from: 'x', to: 'y' }]);
+    const svg = lineageSvg(
+      [
+        { id: 'x', name: '<script>' },
+        { id: 'y', name: 'Y' },
+      ],
+      [{ from: 'x', to: 'y' }]
+    );
     expect(svg).toContain('&lt;script&gt;');
     expect(svg).not.toContain('<script>');
   });
   it('escapes quotes in node names (canonical escaper, no attribute drift)', () => {
-    const svg = lineageSvg([{ id: 'x', name: '"q"' }, { id: 'y', name: 'Y' }], [{ from: 'x', to: 'y' }]);
+    const svg = lineageSvg(
+      [
+        { id: 'x', name: '"q"' },
+        { id: 'y', name: 'Y' },
+      ],
+      [{ from: 'x', to: 'y' }]
+    );
     expect(svg).toContain('&quot;q&quot;');
   });
 });

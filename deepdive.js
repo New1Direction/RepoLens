@@ -3,23 +3,46 @@
 // Validation (explain-it-simply + gaps + self-test + confidence). Each stage is
 // its own AI call, chained, fed the previous stage's output.
 
-const MAX_TREE_PATHS = 200;       // file paths shown to the model
-const MAX_KEY_FILES = 8;          // source files fetched + included
-const MAX_FILE_CHARS = 2500;      // per-file content cap
+const MAX_TREE_PATHS = 200; // file paths shown to the model
+const MAX_KEY_FILES = 8; // source files fetched + included
+const MAX_FILE_CHARS = 2500; // per-file content cap
 
 // Filenames that most reveal a project's shape, in priority order.
 const PRIORITY_FILES = [
-  'package.json', 'pyproject.toml', 'Cargo.toml', 'go.mod', 'requirements.txt',
-  'setup.py', 'pom.xml', 'build.gradle', 'composer.json', 'Gemfile',
-  'src/index.ts', 'src/index.js', 'src/index.tsx', 'index.ts', 'index.js',
-  'src/main.ts', 'src/main.js', 'src/main.py', 'main.py', 'app.py',
-  'src/lib.rs', 'src/main.rs', 'main.go', 'src/app.ts', 'src/App.tsx',
+  'package.json',
+  'pyproject.toml',
+  'Cargo.toml',
+  'go.mod',
+  'requirements.txt',
+  'setup.py',
+  'pom.xml',
+  'build.gradle',
+  'composer.json',
+  'Gemfile',
+  'src/index.ts',
+  'src/index.js',
+  'src/index.tsx',
+  'index.ts',
+  'index.js',
+  'src/main.ts',
+  'src/main.js',
+  'src/main.py',
+  'main.py',
+  'app.py',
+  'src/lib.rs',
+  'src/main.rs',
+  'main.go',
+  'src/app.ts',
+  'src/App.tsx',
 ];
 const CODE_EXT = /\.(ts|tsx|js|jsx|py|rs|go|java|rb|php|c|cc|cpp|h|hpp|kt|swift)$/i;
 
 /** Extract the first JSON object from a model response (tolerates code fences). */
 export function extractJsonObject(rawText) {
-  let text = (rawText || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const text = (rawText || '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '');
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('No JSON object found in response');
@@ -48,7 +71,7 @@ export function selectKeyFiles(paths) {
   }
   // Fill remaining slots with shallow (depth <= 2) source files.
   const shallow = paths
-    .filter(p => CODE_EXT.test(p) && p.split('/').length <= 2 && !picked.includes(p))
+    .filter((p) => CODE_EXT.test(p) && p.split('/').length <= 2 && !picked.includes(p))
     .sort((a, b) => a.split('/').length - b.split('/').length || a.length - b.length);
   for (const p of shallow) {
     picked.push(p);
@@ -68,16 +91,20 @@ export async function fetchSource(platform, repoId, opts = {}) {
   const meta = await ghJson(`https://api.github.com/repos/${repoId}`, opts);
   const branch = meta.default_branch || 'main';
   const treeRes = await ghJson(
-    `https://api.github.com/repos/${repoId}/git/trees/${branch}?recursive=1`, opts
+    `https://api.github.com/repos/${repoId}/git/trees/${branch}?recursive=1`,
+    opts
   );
-  const allPaths = (treeRes.tree || []).filter(e => e.type === 'blob').map(e => e.path);
+  const allPaths = (treeRes.tree || []).filter((e) => e.type === 'blob').map((e) => e.path);
   const tree = allPaths.slice(0, MAX_TREE_PATHS);
 
   const keyPaths = selectKeyFiles(allPaths);
   const files = [];
   for (const path of keyPaths) {
     try {
-      const data = await ghJson(`https://api.github.com/repos/${repoId}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, opts);
+      const data = await ghJson(
+        `https://api.github.com/repos/${repoId}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`,
+        opts
+      );
       if (data.encoding === 'base64' && data.content) {
         const content = atob(data.content.replace(/\n/g, '')).slice(0, MAX_FILE_CHARS);
         files.push({ path, content });
@@ -91,14 +118,28 @@ export async function fetchSource(platform, repoId, opts = {}) {
 
 // ─── Stage 1: Atomic Deconstruction (semantic chunking) ───────────────────────
 
+function graphItemLabel(item) {
+  if (!item) return '';
+  if (typeof item === 'string') return item;
+  const name = item.name || item.qualifiedName || item.qualified_name || item.route || item.path || '';
+  const file = item.file || item.path;
+  const degree = [item.inbound ? `in:${item.inbound}` : '', item.outbound ? `out:${item.outbound}` : '']
+    .filter(Boolean)
+    .join(' ');
+  return [name, file && file !== name ? `(${file})` : '', degree].filter(Boolean).join(' ');
+}
+
 /** A compact "measured facts" block for the atoms prompt; '' when no runner facts. */
 export function factsBlock(facts) {
   if (!facts) return '';
-  const langs = (facts.languages || []).slice(0, 6).map(l => `${l.name} ${l.code}`).join(', ');
+  const langs = (facts.languages || [])
+    .slice(0, 6)
+    .map((l) => `${l.name} ${l.code}`)
+    .join(', ');
   const dep = (k) => (facts.dependencies && facts.dependencies[k]) || [];
   const depLine = ['npm', 'cargo', 'pip', 'go']
-    .filter(k => dep(k).length)
-    .map(k => `${k}: ${dep(k).slice(0, 12).join(', ')}`)
+    .filter((k) => dep(k).length)
+    .map((k) => `${k}: ${dep(k).slice(0, 12).join(', ')}`)
     .join('; ');
   const lines = [
     `- ${facts.fileCount} files. LOC by language: ${langs || '—'}.`,
@@ -107,20 +148,47 @@ export function factsBlock(facts) {
   ];
   const dg = facts.depGraph || {};
   const scale = ['npm', 'cargo', 'pip', 'go']
-    .filter(k => (dg[k] || {}).total)
-    .map(k => `${k} ${dg[k].direct} direct / ${dg[k].total} total`)
+    .filter((k) => (dg[k] || {}).total)
+    .map((k) => `${k} ${dg[k].direct} direct / ${dg[k].total} total`)
     .join('; ');
   if (scale) lines.push(`- Dependency scale (from lockfile): ${scale}.`);
   if (facts.license) lines.push(`- License: ${facts.license.spdx} (${facts.license.file}).`);
   const a = facts.architecture;
   if (a) {
     const bits = [];
-    if (a.monorepo) bits.push(`monorepo${(a.workspaces || []).length ? ` (${a.workspaces.slice(0, 4).join(', ')})` : ''}`);
+    if (a.monorepo)
+      bits.push(`monorepo${(a.workspaces || []).length ? ` (${a.workspaces.slice(0, 4).join(', ')})` : ''}`);
     if ((a.entryPoints || []).length) bits.push(`entry points: ${a.entryPoints.slice(0, 4).join(', ')}`);
     if (a.containerized) bits.push('containerized (Dockerfile)');
     if (bits.length) lines.push(`- Architecture: ${bits.join('; ')}.`);
   }
-  if ((facts.secrets || []).length) lines.push(`- Static secret-scan flags: ${facts.secrets.length} (review).`);
+  if ((facts.secrets || []).length)
+    lines.push(`- Static secret-scan flags: ${facts.secrets.length} (review).`);
+  const cg = facts.codeGraph || facts.graph;
+  if (cg) {
+    const counts = [];
+    const nodes = cg.nodes || cg.nodeCount;
+    const edges = cg.edges || cg.edgeCount;
+    if (nodes) counts.push(`${nodes} nodes`);
+    if (edges) counts.push(`${edges} edges`);
+    const symbols = cg.symbols || {};
+    const symbolBits = ['functions', 'classes', 'methods', 'routes']
+      .filter((k) => symbols[k])
+      .map((k) => `${symbols[k]} ${k}`);
+    const routes = (cg.routes || []).slice(0, 6).map(graphItemLabel).filter(Boolean);
+    const bits = [...counts, ...symbolBits];
+    if (routes.length) bits.push(`routes: ${routes.join(', ')}`);
+    if (bits.length) lines.push(`- Code graph: ${bits.join('; ')}.`);
+    const hotspots = (cg.hotspots || cg.hotSpots || []).slice(0, 5).map(graphItemLabel).filter(Boolean);
+    if (hotspots.length) lines.push(`- Graph hotspots: ${hotspots.join('; ')}.`);
+    const dead = cg.deadCode || cg.dead_code || [];
+    if (dead.length) {
+      const examples = dead.slice(0, 4).map(graphItemLabel).filter(Boolean);
+      lines.push(
+        `- Potential dead code: ${dead.length} symbols flagged${examples.length ? ` — ${examples.join(', ')}` : ''}.`
+      );
+    }
+  }
   return `\nMEASURED FACTS (from a real checkout via the runner — ground truth; prefer these over inference):\n${lines.join('\n')}\n`;
 }
 
@@ -129,7 +197,7 @@ export function buildAtomsPrompt(repoData, source, facts) {
     ? `File tree (truncated):\n${source.tree.join('\n')}`
     : '(no file tree available — work from the README + description)';
   const filesBlock = source.files.length
-    ? source.files.map(f => `=== ${f.path} ===\n${f.content}`).join('\n\n')
+    ? source.files.map((f) => `=== ${f.path} ===\n${f.content}`).join('\n\n')
     : '(no source files available)';
 
   return `You are reverse-engineering a software repository into its ATOMIC SEMANTIC UNITS — the smallest set of self-contained concepts/subsystems that, taken together, explain how the project works.
@@ -170,7 +238,7 @@ export function parseAtoms(rawText) {
 // ─── Stage 2: Mapping Causal Lineage ──────────────────────────────────────────
 
 export function buildLineagePrompt(atoms) {
-  const list = atoms.map(a => `- ${a.id}: ${a.name} — ${a.purpose}`).join('\n');
+  const list = atoms.map((a) => `- ${a.id}: ${a.name} — ${a.purpose}`).join('\n');
   return `Given these atomic units of a software project, map the CAUSAL LINEAGE between them — the directed cause→effect / dependency relationships.
 
 Atomic units:
@@ -191,8 +259,8 @@ export function parseLineage(rawText) {
   const links = Array.isArray(data.links) ? data.links : [];
   return {
     links: links
-      .filter(l => l && l.from && l.to)
-      .map(l => ({ from: l.from, to: l.to, relation: l.relation || 'depends-on', why: l.why || '' })),
+      .filter((l) => l && l.from && l.to)
+      .map((l) => ({ from: l.from, to: l.to, relation: l.relation || 'depends-on', why: l.why || '' })),
     roots: Array.isArray(data.roots) ? data.roots : [],
     leaves: Array.isArray(data.leaves) ? data.leaves : [],
   };
@@ -201,8 +269,8 @@ export function parseLineage(rawText) {
 // ─── Stage 3: Execution & Validation (the Feynman Protocol) ───────────────────
 
 export function buildFeynmanPrompt(repoData, atoms, lineage) {
-  const atomList = atoms.map(a => `- ${a.name}: ${a.purpose}`).join('\n');
-  const linkList = lineage.links.map(l => `- ${l.from} ${l.relation} ${l.to} (${l.why})`).join('\n');
+  const atomList = atoms.map((a) => `- ${a.name}: ${a.purpose}`).join('\n');
+  const linkList = lineage.links.map((l) => `- ${l.from} ${l.relation} ${l.to} (${l.why})`).join('\n');
   return `Apply the FEYNMAN PROTOCOL to validate an understanding of ${repoData.repoId}.
 
 Atomic units:
@@ -235,7 +303,11 @@ export function parseFeynman(rawText) {
     explanation: data.explanation || '',
     gaps: arr(data.gaps),
     assumptions: arr(data.assumptions),
-    questions: arr(data.questions).map(q => ({ q: q.q || '', a: q.a || '' })),
-    confidence: arr(data.confidence).map(c => ({ claim: c.claim || '', level: c.level || 'medium', note: c.note || '' })),
+    questions: arr(data.questions).map((q) => ({ q: q.q || '', a: q.a || '' })),
+    confidence: arr(data.confidence).map((c) => ({
+      claim: c.claim || '',
+      level: c.level || 'medium',
+      note: c.note || '',
+    })),
   };
 }

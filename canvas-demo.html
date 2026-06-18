@@ -1,70 +1,135 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Canvas demo — RepoLens Blueprint</title>
-  <link rel="stylesheet" href="./themes.css" />
-  <style>
-    /* Case File fallbacks so the demo renders standalone (themes.css canvas rules use these tokens). */
-    :root { --bg:#fbf6ea; --surface:#fffdf6; --text:#211c14; --text-sub:#5a4f3e; --accent:#c2691c; --border:#b9a273; --dur:.2s; --ease-out:cubic-bezier(.16,1,.3,1); }
-    body { margin:0; font-family:ui-monospace,monospace; background:#efe4c9; color:#211c14; padding:24px; }
-    h1 { font-size:18px; margin:0 0 4px; }
-    .sub { font-size:12px; color:#6b5a36; margin:0 0 16px; }
-    .frame { max-width:900px; border:1px solid #b9a273; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 10px 30px rgba(33,28,20,.14); }
-    .bar { display:flex; gap:8px; align-items:center; padding:9px 12px; background:#f6eed7; border-bottom:1px solid #b9a273; font-size:12px; }
-    .bar button { padding:5px 11px; border-radius:7px; font-size:12px; cursor:pointer; border:1px solid #211c14; background:#fffdf6; }
-    .host { position:relative; height:520px; }
-  </style>
-</head>
-<body>
-  <h1>🔭 RepoLens — Blueprint canvas (live demo)</h1>
-  <p class="sub">Real pipeline: <code>buildBlueprintScene</code> → <code>layoutBlueprint</code> → <code>mountCanvas</code> → <code>buildTour</code>/<code>startTour</code>. No extension, no API.</p>
-  <div class="frame">
-    <div class="bar">
-      <strong>output-tab · evanw/esbuild</strong>
-      <span style="flex:1"></span>
-      <button id="tour">▶ Guided Tour</button>
+  <head>
+    <meta charset="utf-8" />
+    <title>Canvas demo — RepoLens Blueprint</title>
+    <link rel="stylesheet" href="./themes.css" />
+    <style>
+      /* Case File fallbacks so the demo renders standalone (themes.css canvas rules use these tokens). */
+      :root {
+        --bg: #fbf6ea;
+        --surface: #fffdf6;
+        --text: #211c14;
+        --text-sub: #5a4f3e;
+        --accent: #c2691c;
+        --border: #b9a273;
+        --dur: 0.2s;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      body {
+        margin: 0;
+        font-family: ui-monospace, monospace;
+        background: #efe4c9;
+        color: #211c14;
+        padding: 24px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+      }
+      .sub {
+        font-size: 12px;
+        color: #6b5a36;
+        margin: 0 0 16px;
+      }
+      .frame {
+        max-width: 900px;
+        border: 1px solid #b9a273;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 10px 30px rgba(33, 28, 20, 0.14);
+      }
+      .bar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 9px 12px;
+        background: #f6eed7;
+        border-bottom: 1px solid #b9a273;
+        font-size: 12px;
+      }
+      .bar button {
+        padding: 5px 11px;
+        border-radius: 7px;
+        font-size: 12px;
+        cursor: pointer;
+        border: 1px solid #211c14;
+        background: #fffdf6;
+      }
+      .host {
+        position: relative;
+        height: 520px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔭 RepoLens — Blueprint canvas (live demo)</h1>
+    <p class="sub">
+      Real pipeline: <code>buildBlueprintScene</code> → <code>layoutBlueprint</code> →
+      <code>mountCanvas</code> → <code>buildTour</code>/<code>startTour</code>. No extension, no API.
+    </p>
+    <div class="frame">
+      <div class="bar">
+        <strong>output-tab · evanw/esbuild</strong>
+        <span style="flex: 1"></span>
+        <button id="tour">▶ Guided Tour</button>
+      </div>
+      <div class="host" id="host"></div>
     </div>
-    <div class="host" id="host"></div>
-  </div>
 
-  <script type="module">
-    import { buildBlueprintScene } from './blueprint-adapter.js';
-    import { mountCanvas } from './canvas-engine.js';
-    import { buildTour } from './tour.js';
-    import { startTour } from './tour-runner.js';
+    <script type="module">
+      import { buildBlueprintScene } from './blueprint-adapter.js';
+      import { mountCanvas } from './canvas-engine.js';
+      import { buildTour } from './tour.js';
+      import { startTour } from './tour-runner.js';
 
-    const deepDive = {
-      atoms: [
-        { id: 'cli', name: 'CLI', kind: 'entrypoint', purpose: 'Parses argv and dispatches a build.' },
-        { id: 'config', name: 'config', kind: 'data', purpose: 'Resolved build options.' },
-        { id: 'core', name: 'core', kind: 'subsystem', purpose: 'The build engine — everything routes through here.' },
-        { id: 'bundler', name: 'bundler', kind: 'module', purpose: 'Walks imports and concatenates modules.' },
-        { id: 'plugins', name: 'plugins', kind: 'module', purpose: 'User hooks into resolve/load.' },
-        { id: 'output', name: 'output', kind: 'module', purpose: 'Writes the final files to disk.' },
-      ],
-      lineage: {
-        links: [
-          { from: 'cli', to: 'core', relation: 'depends-on' },
-          { from: 'config', to: 'core', relation: 'depends-on' },
-          { from: 'core', to: 'bundler', relation: 'triggers' },
-          { from: 'bundler', to: 'plugins', relation: 'enables' },
-          { from: 'bundler', to: 'output', relation: 'triggers' },
+      const deepDive = {
+        atoms: [
+          { id: 'cli', name: 'CLI', kind: 'entrypoint', purpose: 'Parses argv and dispatches a build.' },
+          { id: 'config', name: 'config', kind: 'data', purpose: 'Resolved build options.' },
+          {
+            id: 'core',
+            name: 'core',
+            kind: 'subsystem',
+            purpose: 'The build engine — everything routes through here.',
+          },
+          {
+            id: 'bundler',
+            name: 'bundler',
+            kind: 'module',
+            purpose: 'Walks imports and concatenates modules.',
+          },
+          { id: 'plugins', name: 'plugins', kind: 'module', purpose: 'User hooks into resolve/load.' },
+          { id: 'output', name: 'output', kind: 'module', purpose: 'Writes the final files to disk.' },
         ],
-        roots: ['cli', 'core'],
-        leaves: ['output'],
-      },
-    };
+        lineage: {
+          links: [
+            { from: 'cli', to: 'core', relation: 'depends-on' },
+            { from: 'config', to: 'core', relation: 'depends-on' },
+            { from: 'core', to: 'bundler', relation: 'triggers' },
+            { from: 'bundler', to: 'plugins', relation: 'enables' },
+            { from: 'bundler', to: 'output', relation: 'triggers' },
+          ],
+          roots: ['cli', 'core'],
+          leaves: ['output'],
+        },
+      };
 
-    const host = document.getElementById('host');
-    const scene = buildBlueprintScene({ deepDive, repoId: 'evanw/esbuild', title: 'esbuild' });
-    const api = mountCanvas(host, scene, {});
-    let tour = null;
-    document.getElementById('tour').onclick = () => {
-      if (tour) tour.exit();
-      tour = startTour({ host, engine: api, steps: buildTour(scene, { roots: deepDive.lineage.roots }), autoplay: false });
-    };
-    window.__startTour = () => document.getElementById('tour').click();  // for the screenshot harness
-  </script>
-</body>
+      const host = document.getElementById('host');
+      const scene = buildBlueprintScene({ deepDive, repoId: 'evanw/esbuild', title: 'esbuild' });
+      const api = mountCanvas(host, scene, {});
+      let tour = null;
+      document.getElementById('tour').onclick = () => {
+        if (tour) tour.exit();
+        tour = startTour({
+          host,
+          engine: api,
+          steps: buildTour(scene, { roots: deepDive.lineage.roots }),
+          autoplay: false,
+        });
+      };
+      window.__startTour = () => document.getElementById('tour').click(); // for the screenshot harness
+    </script>
+  </body>
 </html>

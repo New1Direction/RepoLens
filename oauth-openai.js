@@ -47,7 +47,7 @@ let _openaiRefreshPromise = null;
 export function isOpenAITokenExpired(creds, skewSeconds = OPENAI_REFRESH_SKEW_SECONDS) {
   if (!creds?.access_token || !creds?.expires_at) return true;
   const skewMs = Math.max(0, skewSeconds) * 1000;
-  return (Date.now() + skewMs) >= creds.expires_at;
+  return Date.now() + skewMs >= creds.expires_at;
 }
 
 export async function getOpenAICredentials() {
@@ -127,7 +127,7 @@ export async function exchangeOpenAICode({ code, state, verifier, storedState })
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
     id_token: tokens.id_token,
-    expires_at: Date.now() + ((tokens.expires_in || 3600) * 1000),
+    expires_at: Date.now() + (tokens.expires_in || 3600) * 1000,
   };
   await saveOpenAICredentials(creds);
   return creds;
@@ -173,7 +173,7 @@ export async function refreshOpenAIToken({ force = false } = {}) {
         // Some refresh responses omit a rotated refresh/id token — keep the prior one.
         refresh_token: tokens.refresh_token || creds.refresh_token,
         id_token: tokens.id_token || creds.id_token,
-        expires_at: Date.now() + ((tokens.expires_in || 3600) * 1000),
+        expires_at: Date.now() + (tokens.expires_in || 3600) * 1000,
       };
       await saveOpenAICredentials(newCreds);
       return newCreds;

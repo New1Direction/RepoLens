@@ -11,20 +11,16 @@ function repoSection(label, a) {
   const lines = [
     `## ${label}: ${a.repoId}`,
     a.description ? `Description: ${trunc(a.description, MAX)}` : '',
-    a.language    ? `Language: ${a.language}`                    : '',
-    a.license     ? `License: ${a.license}`                      : '',
-    a.stars       ? `Stars: ${Number(a.stars).toLocaleString()}` : '',
-    a.category    ? `Category: ${a.category}`                    : '',
+    a.language ? `Language: ${a.language}` : '',
+    a.license ? `License: ${a.license}` : '',
+    a.stars ? `Stars: ${Number(a.stars).toLocaleString()}` : '',
+    a.category ? `Category: ${a.category}` : '',
     (a.health?.score ?? a.health) ? `Health: ${a.health?.score ?? a.health}/100` : '',
     Array.isArray(a.capabilities) && a.capabilities.length
       ? `Capabilities: ${a.capabilities.join(', ')}`
       : '',
-    Array.isArray(a.pros) && a.pros.length
-      ? `Pros: ${a.pros.slice(0, 4).join('; ')}`
-      : '',
-    Array.isArray(a.cons) && a.cons.length
-      ? `Cons: ${a.cons.slice(0, 3).join('; ')}`
-      : '',
+    Array.isArray(a.pros) && a.pros.length ? `Pros: ${a.pros.slice(0, 4).join('; ')}` : '',
+    Array.isArray(a.cons) && a.cons.length ? `Cons: ${a.cons.slice(0, 3).join('; ')}` : '',
     a.eli5 ? `Summary: ${trunc(a.eli5, MAX)}` : '',
   ];
   return lines.filter(Boolean).join('\n');
@@ -62,17 +58,22 @@ export function buildComparePrompt(a, b) {
  * Returns null if parsing fails.
  */
 export function parseCompareResult(text) {
-  const s = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const s = String(text || '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '');
   try {
     const obj = JSON.parse(s);
     if (!obj || typeof obj !== 'object') return null;
     return {
-      winner:    ['a', 'b', 'tie'].includes(obj.winner) ? obj.winner : 'tie',
-      reason:    String(obj.reason   || '').trim(),
-      verdict:   String(obj.verdict  || '').trim(),
-      pickA:     String(obj.pickA    || '').trim(),
-      pickB:     String(obj.pickB    || '').trim(),
-      tradeoffs: Array.isArray(obj.tradeoffs) ? obj.tradeoffs.map((t) => String(t).trim()).filter(Boolean) : [],
+      winner: ['a', 'b', 'tie'].includes(obj.winner) ? obj.winner : 'tie',
+      reason: String(obj.reason || '').trim(),
+      verdict: String(obj.verdict || '').trim(),
+      pickA: String(obj.pickA || '').trim(),
+      pickB: String(obj.pickB || '').trim(),
+      tradeoffs: Array.isArray(obj.tradeoffs)
+        ? obj.tradeoffs.map((t) => String(t).trim()).filter(Boolean)
+        : [],
     };
   } catch {
     return null;

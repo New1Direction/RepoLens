@@ -2,7 +2,20 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect } from 'vitest';
 import { saveScene, getScene, listScenes, deleteScene } from '../store.js';
 
-const mk = (id, repoId) => ({ id, scope: 'blueprint', repoId, title: id, nodes: [], edges: [], annotations: [], camera: { x: 0, y: 0, zoom: 1 }, tour: null, source: {}, createdAt: 'x', updatedAt: 'x' });
+const mk = (id, repoId) => ({
+  id,
+  scope: 'blueprint',
+  repoId,
+  title: id,
+  nodes: [],
+  edges: [],
+  annotations: [],
+  camera: { x: 0, y: 0, zoom: 1 },
+  tour: null,
+  source: {},
+  createdAt: 'x',
+  updatedAt: 'x',
+});
 
 describe('scene persistence', () => {
   it('saves and reads a scene by id', async () => {

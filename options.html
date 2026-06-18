@@ -1,462 +1,999 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>RepoLens Settings</title>
-<link rel="stylesheet" href="themes.css">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--body-bg); color: var(--text-body); font-family: var(--font); padding: 40px; max-width: 520px; }
+  <head>
+    <meta charset="UTF-8" />
+    <title>RepoLens Settings</title>
+    <link rel="stylesheet" href="themes.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--body-bg);
+        color: var(--text-body);
+        font-family: var(--font);
+        padding: 40px;
+        max-width: 520px;
+      }
 
-  h1 { font-size: 18px; font-weight: 800; color: var(--text-strong); margin-bottom: 6px; }
-  .sub { font-size: 12px; color: var(--text-fainter); margin-bottom: 36px; }
-  .sub a { color: var(--accent); text-decoration: none; cursor: pointer; }
-  .sub a:hover { text-decoration: underline; }
+      h1 {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--text-strong);
+        margin-bottom: 6px;
+      }
+      .sub {
+        font-size: 12px;
+        color: var(--text-fainter);
+        margin-bottom: 36px;
+      }
+      .sub a {
+        color: var(--accent);
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .sub a:hover {
+        text-decoration: underline;
+      }
 
-  /* Getting started (first run only — options.js hides it once a provider is connected) */
-  .gs-steps { margin: 0 0 0 18px; padding: 0; }
-  .gs-steps li { font-size: 13px; color: var(--text-sub); line-height: 1.7; margin-bottom: 6px; }
-  .gs-steps b { color: var(--text); }
+      /* Getting started (first run only — options.js hides it once a provider is connected) */
+      .gs-steps {
+        margin: 0 0 0 18px;
+        padding: 0;
+      }
+      .gs-steps li {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.7;
+        margin-bottom: 6px;
+      }
+      .gs-steps b {
+        color: var(--text);
+      }
 
-  .section { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--border); }
-  .section:last-of-type { border-bottom: none; }
-  .section-title { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+      .section {
+        margin-bottom: 36px;
+        padding-bottom: 36px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section:last-of-type {
+        border-bottom: none;
+      }
+      .section-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 20px;
+      }
 
-  /* Core fields */
-  label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
-  input[type="password"], input[type="text"] {
-    width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
-    padding: 10px 12px; font-size: 13px; color: var(--text); outline: none;
-    margin-bottom: 6px; font-family: monospace;
-  }
-  input:focus { border-color: var(--accent); }
-  .field-hint { font-size: 10px; color: var(--text-fainter); margin-bottom: 18px; }
-  .checkbox-row { display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0; }
-  .checkbox-row input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--accent); }
-  .checkbox-row span { font-size: 13px; color: var(--text-sub); }
+      /* Core fields */
+      label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin-bottom: 6px;
+      }
+      input[type='password'],
+      input[type='text'] {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 13px;
+        color: var(--text);
+        outline: none;
+        margin-bottom: 6px;
+        font-family: monospace;
+      }
+      input:focus {
+        border-color: var(--accent);
+      }
+      .field-hint {
+        font-size: 10px;
+        color: var(--text-fainter);
+        margin-bottom: 18px;
+      }
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        margin-bottom: 0;
+      }
+      .checkbox-row input[type='checkbox'] {
+        width: auto;
+        margin: 0;
+        accent-color: var(--accent);
+      }
+      .checkbox-row span {
+        font-size: 13px;
+        color: var(--text-sub);
+      }
 
-  /* Service cards */
-  .svc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 10px; }
-  .svc-card.connected { border-color: var(--ok-edge); }
-  .svc-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .svc-left { display: flex; align-items: center; gap: 12px; }
-  .svc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; transition: background .2s; }
-  .svc-dot.on { background: var(--ok); box-shadow: 0 0 6px color-mix(in srgb, var(--ok) 40%, transparent); }
-  .svc-name { font-size: 13px; font-weight: 600; color: var(--text); }
-  .svc-status { font-size: 11px; color: var(--text-fainter); margin-top: 2px; transition: color .2s; }
-  .svc-status.on { color: var(--ok-ink); }
+      /* Service cards */
+      .svc-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-bottom: 10px;
+      }
+      .svc-card.connected {
+        border-color: var(--ok-edge);
+      }
+      .svc-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .svc-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .svc-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--border);
+        flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .svc-dot.on {
+        background: var(--ok);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--ok) 40%, transparent);
+      }
+      .svc-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .svc-status {
+        font-size: 11px;
+        color: var(--text-fainter);
+        margin-top: 2px;
+        transition: color 0.2s;
+      }
+      .svc-status.on {
+        color: var(--ok-ink);
+      }
 
-  .svc-btn {
-    background: var(--border); color: var(--text-sub); border: 1px solid var(--border-2);
-    border-radius: 6px; padding: 7px 14px; font-size: 12px; font-weight: 600;
-    cursor: pointer; white-space: nowrap;
-    transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
-  }
-  .svc-btn:hover { background: var(--accent-deep); color: var(--text-strong); border-color: var(--accent-deep); }
-  .svc-btn.disconnect { background: transparent; color: var(--text-faint); border-color: var(--border); }
-  .svc-btn:disabled { opacity: 0.6; cursor: wait; }
+      .svc-btn {
+        background: var(--border);
+        color: var(--text-sub);
+        border: 1px solid var(--border-2);
+        border-radius: 6px;
+        padding: 7px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition:
+          color var(--dur-fast) var(--ease-out),
+          background-color var(--dur-fast) var(--ease-out),
+          border-color var(--dur-fast) var(--ease-out),
+          transform var(--dur-fast) var(--ease-out);
+      }
+      .svc-btn:hover {
+        background: var(--accent-deep);
+        color: var(--text-strong);
+        border-color: var(--accent-deep);
+      }
+      .svc-btn.disconnect {
+        background: transparent;
+        color: var(--text-faint);
+        border-color: var(--border);
+      }
+      .svc-btn:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
 
-  /* Token entry panel (slides in under card) */
-  .token-panel {
-    display: none; margin-top: 14px; padding-top: 14px;
-    border-top: 1px solid var(--border);
-  }
-  .token-panel.open { display: block; }
-  .key-toggle { display: inline-block; margin-top: 10px; font-size: 11px; color: var(--text-faint); cursor: pointer; }
-  .key-toggle:hover { color: var(--accent); }
-  .token-instruction { font-size: 11px; color: var(--text-faint); line-height: 1.6; margin-bottom: 10px; }
-  .token-instruction a { color: var(--accent); text-decoration: none; cursor: pointer; }
-  .token-instruction a:hover { text-decoration: underline; }
-  .token-row { display: flex; gap: 8px; }
-  .token-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: var(--text); outline: none; font-family: monospace; margin: 0; }
-  .token-row input:focus { border-color: var(--accent); }
-  .token-row button { background: var(--accent-deep); color: var(--text-strong); border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .token-row button:hover { background: var(--accent-deep-hover); }
+      /* Token entry panel (slides in under card) */
+      .token-panel {
+        display: none;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+      }
+      .token-panel.open {
+        display: block;
+      }
+      .key-toggle {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 11px;
+        color: var(--text-faint);
+        cursor: pointer;
+      }
+      .key-toggle:hover {
+        color: var(--accent);
+      }
+      .token-instruction {
+        font-size: 11px;
+        color: var(--text-faint);
+        line-height: 1.6;
+        margin-bottom: 10px;
+      }
+      .token-instruction a {
+        color: var(--accent);
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .token-instruction a:hover {
+        text-decoration: underline;
+      }
+      .token-row {
+        display: flex;
+        gap: 8px;
+      }
+      .token-row input {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 12px;
+        color: var(--text);
+        outline: none;
+        font-family: monospace;
+        margin: 0;
+      }
+      .token-row input:focus {
+        border-color: var(--accent);
+      }
+      .token-row button {
+        background: var(--accent-deep);
+        color: var(--text-strong);
+        border: none;
+        border-radius: 6px;
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .token-row button:hover {
+        background: var(--accent-deep-hover);
+      }
 
-  /* Model selector */
-  .model-row { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); align-items: center; gap: 10px; }
-  .model-row.visible { display: flex; }
-  .model-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-faint); white-space: nowrap; }
-  .model-select {
-    flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-    padding: 6px 10px; font-size: 12px; color: var(--text); outline: none; cursor: pointer;
-    appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23475569'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 10px center;
-  }
-  .model-select:focus { border-color: var(--accent); }
-  .model-select option { background: var(--surface); }
+      /* Model selector */
+      .model-row {
+        display: none;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        align-items: center;
+        gap: 10px;
+      }
+      .model-row.visible {
+        display: flex;
+      }
+      .model-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        white-space: nowrap;
+      }
+      .model-select {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 12px;
+        color: var(--text);
+        outline: none;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23475569'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+      }
+      .model-select:focus {
+        border-color: var(--accent);
+      }
+      .model-select option {
+        background: var(--surface);
+      }
 
-  /* Registry (compatible) provider cards */
-  .svc-hint { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; }
-  .svc-tag { font-size: 9px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
-    color: var(--accent); border: 1px solid var(--border-2); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
-  .cc-adv { margin-top: 10px; }
-  .cc-adv > summary { list-style: none; cursor: pointer; font-size: 10px; font-weight: 700; letter-spacing: 1px;
-    text-transform: uppercase; color: var(--text-faint); }
-  .cc-adv > summary::-webkit-details-marker { display: none; }
-  .cc-adv > summary::before { content: '▸ '; color: var(--accent); }
-  .cc-adv[open] > summary::before { content: '▾ '; }
-  .cc-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
-  .cc-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-    padding: 7px 10px; font-size: 12px; color: var(--text); outline: none; }
-  .cc-row input:focus { border-color: var(--accent); }
-  .cc-tests { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
-  .cc-test-btn { background: var(--surface); border: 1px solid var(--border-2); color: var(--text-sub);
-    border-radius: 6px; padding: 5px 11px; font-size: 11px; font-weight: 600; cursor: pointer; }
-  .cc-test-btn:hover { color: var(--text); border-color: var(--accent); }
-  .cc-test-btn:disabled { opacity: .5; cursor: progress; }
-  .cc-test-result { font-size: 11px; color: var(--text-sub); }
-  .cc-test-result.ok { color: var(--ok-ink); }
-  .cc-test-result.err { color: var(--bad-ink); }
+      /* Registry (compatible) provider cards */
+      .svc-hint {
+        font-size: 10.5px;
+        color: var(--text-muted);
+        margin-top: 3px;
+      }
+      .svc-tag {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: var(--accent);
+        border: 1px solid var(--border-2);
+        border-radius: 4px;
+        padding: 1px 5px;
+        margin-left: 6px;
+      }
+      .cc-adv {
+        margin-top: 10px;
+      }
+      .cc-adv > summary {
+        list-style: none;
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+      .cc-adv > summary::-webkit-details-marker {
+        display: none;
+      }
+      .cc-adv > summary::before {
+        content: '▸ ';
+        color: var(--accent);
+      }
+      .cc-adv[open] > summary::before {
+        content: '▾ ';
+      }
+      .cc-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        align-items: center;
+      }
+      .cc-row input {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 7px 10px;
+        font-size: 12px;
+        color: var(--text);
+        outline: none;
+      }
+      .cc-row input:focus {
+        border-color: var(--accent);
+      }
+      .cc-tests {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .cc-test-btn {
+        background: var(--surface);
+        border: 1px solid var(--border-2);
+        color: var(--text-sub);
+        border-radius: 6px;
+        padding: 5px 11px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .cc-test-btn:hover {
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      .cc-test-btn:disabled {
+        opacity: 0.5;
+        cursor: progress;
+      }
+      .cc-test-result {
+        font-size: 11px;
+        color: var(--text-sub);
+      }
+      .cc-test-result.ok {
+        color: var(--ok-ink);
+      }
+      .cc-test-result.err {
+        color: var(--bad-ink);
+      }
 
-  /* Save + status */
-  .save-btn { background: var(--accent-deep); color: var(--text-strong); border: none; border-radius: 6px; padding: 10px 22px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; }
-  .save-btn:hover { background: var(--accent-deep-hover); }
-  #status { font-size: 12px; margin-top: 12px; display: none; }
+      /* Save + status */
+      .save-btn {
+        background: var(--accent-deep);
+        color: var(--text-strong);
+        border: none;
+        border-radius: 6px;
+        padding: 10px 22px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 8px;
+      }
+      .save-btn:hover {
+        background: var(--accent-deep-hover);
+      }
+      #status {
+        font-size: 12px;
+        margin-top: 12px;
+        display: none;
+      }
 
-  .theme-picker { display: flex; gap: 10px; flex-wrap: wrap; }
-  .theme-chip { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; cursor: pointer; color: var(--text-sub); font-size: 12px; font-weight: 600; }
-  .theme-chip .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border-2); }
-  .theme-chip.active { border-color: var(--accent); color: var(--text); box-shadow: 0 0 6px var(--accent); }
+      .theme-picker {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .theme-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        color: var(--text-sub);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .theme-chip .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1px solid var(--border-2);
+      }
+      .theme-chip.active {
+        border-color: var(--accent);
+        color: var(--text);
+        box-shadow: 0 0 6px var(--accent);
+      }
 
-  .tone-picker { display: flex; gap: 8px; flex-wrap: wrap; }
-  .tone-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; cursor: pointer; color: var(--text-sub); font-size: 12px; font-weight: 600; text-align: left; }
-  .tone-chip .tone-blurb { display: block; font-weight: 400; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .tone-chip.active { border-color: var(--accent); color: var(--text); box-shadow: 0 0 6px var(--accent); }
+      .tone-picker {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .tone-chip {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        color: var(--text-sub);
+        font-size: 12px;
+        font-weight: 600;
+        text-align: left;
+      }
+      .tone-chip .tone-blurb {
+        display: block;
+        font-weight: 400;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+      .tone-chip.active {
+        border-color: var(--accent);
+        color: var(--text);
+        box-shadow: 0 0 6px var(--accent);
+      }
 
-  .hist-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .hist-row:last-child { border-bottom: none; }
-  .hist-open { flex: 1; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; font-family: ui-monospace, monospace; }
-  .hist-open:hover { color: var(--accent); }
-  .hist-meta { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
-  .hist-del { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 4px; }
-  .hist-del:hover { color: var(--bad-ink); }
-  .hist-empty { color: var(--text-muted); font-size: 12px; }
-  /* Accessibility: visible keyboard focus + honour reduced-motion globally. */
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: .001ms !important; animation-iteration-count: 1 !important;
-      transition-duration: .001ms !important; scroll-behavior: auto !important;
-    }
-  }
+      .hist-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .hist-row:last-child {
+        border-bottom: none;
+      }
+      .hist-open {
+        flex: 1;
+        text-align: left;
+        background: none;
+        border: none;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        font-family: ui-monospace, monospace;
+      }
+      .hist-open:hover {
+        color: var(--accent);
+      }
+      .hist-meta {
+        color: var(--text-faint);
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      .hist-del {
+        background: none;
+        border: none;
+        color: var(--text-faint);
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+        padding: 0 4px;
+      }
+      .hist-del:hover {
+        color: var(--bad-ink);
+      }
+      .hist-empty {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      /* Accessibility: visible keyboard focus + honour reduced-motion globally. */
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
 
-  /* ── Subtle motion pass ───────────────────────────────────────────────
+      /* ── Subtle motion pass ───────────────────────────────────────────────
      Press feedback is instant for everyone; transitions + the panel reveal
      are gated to (prefers-reduced-motion: no-preference). Reduce reset wins. */
-  .svc-btn:active, .save-btn:active, .token-row button:active, .cc-test-btn:active,
-  .theme-chip:active, .tone-chip:active { transform: scale(0.97); }
+      .svc-btn:active,
+      .save-btn:active,
+      .token-row button:active,
+      .cc-test-btn:active,
+      .theme-chip:active,
+      .tone-chip:active {
+        transform: scale(0.97);
+      }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .save-btn, .token-row button, .cc-test-btn, .theme-chip, .tone-chip, .key-toggle {
-      transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out), box-shadow var(--dur) var(--ease-out);
-    }
-    /* Provider config + model rows actually reveal now (the comment promised a
+      @media (prefers-reduced-motion: no-preference) {
+        .save-btn,
+        .token-row button,
+        .cc-test-btn,
+        .theme-chip,
+        .tone-chip,
+        .key-toggle {
+          transition:
+            color var(--dur-fast) var(--ease-out),
+            background-color var(--dur-fast) var(--ease-out),
+            border-color var(--dur-fast) var(--ease-out),
+            transform var(--dur-fast) var(--ease-out),
+            box-shadow var(--dur) var(--ease-out);
+        }
+        /* Provider config + model rows actually reveal now (the comment promised a
        slide-in; it was an instant display swap). display still drives layout;
        the animation plays when .open / .visible is added. */
-    .token-panel.open { animation: panel-in var(--dur-slow) var(--ease-out) both; }
-    .model-row.visible { animation: panel-in var(--dur-slow) var(--ease-out) both; }
-    @keyframes panel-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-  }
-</style>
-</head>
-<body>
-  <h1>RepoLens</h1>
-  <p class="sub">Everything stored locally. Nothing leaves your machine except calls to each service's own API. <a id="open-library-link">Open Library →</a></p>
+        .token-panel.open {
+          animation: panel-in var(--dur-slow) var(--ease-out) both;
+        }
+        .model-row.visible {
+          animation: panel-in var(--dur-slow) var(--ease-out) both;
+        }
+        @keyframes panel-in {
+          from {
+            opacity: 0;
+            transform: translateY(-4px);
+          }
+          to {
+            opacity: 1;
+            transform: none;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>RepoLens</h1>
+    <p class="sub">
+      Everything stored locally. Nothing leaves your machine except calls to each service's own API.
+      <a id="open-library-link">Open Library →</a>
+    </p>
 
-  <!-- Getting started (shown until a provider is connected) -->
-  <div class="section" id="getting-started" style="display:none">
-    <div class="section-title">Getting Started</div>
-    <ol class="gs-steps">
-      <li><b>Connect one AI provider</b> below — Google AI's free key is the fastest start.</li>
-      <li>Open any <b>GitHub / GitLab / npm / PyPI</b> page and click the RepoLens toolbar icon.</li>
-      <li>Read the <b>Verdict</b>, then explore — press <b>?</b> on any analysis for the full guide.</li>
-    </ol>
-  </div>
-
-  <!-- Appearance -->
-  <div class="section">
-    <div class="section-title">Appearance</div>
-    <label>Theme</label>
-    <div class="theme-picker" id="theme-picker"></div>
-  </div>
-
-  <!-- Voice -->
-  <div class="section">
-    <div class="section-title">Voice</div>
-    <label>Analysis tone</label>
-    <div class="tone-picker" id="tone-picker"></div>
-    <p class="field-hint" style="margin-top:8px">The voice the AI writes every analysis in — the scan and all lenses.</p>
-  </div>
-
-  <!-- Skills -->
-  <div class="section">
-    <div class="section-title">Skills</div>
-    <label class="checkbox-row"><input type="checkbox" id="sktpgEnabled"><span>SKTPG — Directional intelligence (one-tap, on the repo)</span></label>
-    <p class="field-hint" style="margin-top:8px">Adds a one-tap SKTPG tab to every scan — where the repo is heading, not just what it is. On by default.</p>
-  </div>
-
-  <!-- Interface -->
-  <div class="section">
-    <div class="section-title">Interface</div>
-    <label class="checkbox-row"><input type="checkbox" id="mascotEnabled"><span>Show “Vee”, the lens mascot</span></label>
-    <label class="checkbox-row"><input type="checkbox" id="animateIcon"><span>Animate the toolbar icon while a scan runs</span></label>
-    <p class="field-hint" style="margin-top:8px">A small lens character that reacts to your scans — scanning as it reads, wide open on a strong fit, eyes narrowed on a risky one. Decorative only; reduced-motion shows a static glyph. On by default.</p>
-  </div>
-
-  <!-- History -->
-  <div class="section">
-    <div class="section-title">History</div>
-    <input type="text" id="historySearch" placeholder="Search analyzed repos…">
-    <div id="history-list"></div>
-    <p class="field-hint" style="margin-top:10px">Every repo you've analyzed is cached locally — click to reopen instantly (no AI call). Re-scanning a cached repo loads it instantly too.</p>
-  </div>
-
-  <!-- Core -->
-  <div class="section">
-    <div class="section-title">Core</div>
-
-    <label class="checkbox-row" style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;color:var(--text-sub)">
-      <input type="checkbox" id="autoSave">
-      <span>Auto-save analyses to your library</span>
-    </label>
-    <p class="field-hint" style="margin-top:8px">Your library is stored in the browser — no server, nothing to set up.</p>
-
-    <label style="margin-top:22px">Delay between AI calls — <span id="aiGapLabel" style="color:var(--accent)">1.2s</span></label>
-    <input type="range" id="aiGap" min="0" max="5000" step="100" value="1200" style="width:100%;accent-color:var(--accent)">
-    <p class="field-hint">Paces bursts (Run-all lenses, Deep Dive's 3 stages) so slow / rate-limited models like Step 3.7 aren't hit all at once. 0 = no delay.</p>
-  </div>
-
-  <!-- One-time migration from VelesDB -->
-  <div class="section">
-    <div class="section-title">Import from VelesDB</div>
-    <p class="field-hint" style="margin-bottom:12px">One-time migration. If you ran a VelesDB server before, pull your saved repos into the extension's built-in storage while that server is still running. Safe to run more than once.</p>
-    <label>VelesDB URL</label>
-    <input type="text" id="importUrl" value="http://localhost:9090" placeholder="http://localhost:9090">
-    <button class="svc-btn" id="importBtn" style="margin-top:12px">Import library</button>
-    <p class="field-hint" id="importStatus" style="margin-top:10px" aria-live="polite"></p>
-  </div>
-
-  <!-- Settings backup (never includes API keys) -->
-  <div class="section">
-    <div class="section-title">Back up your settings</div>
-    <p class="field-hint" style="margin-bottom:12px">Export your theme, voice, model picks and per-part routing to a JSON file you can carry to another machine. <b>API keys and tokens are never included.</b></p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="svc-btn" id="settingsExportBtn">Export settings</button>
-      <button class="svc-btn" id="settingsImportBtn">Import settings</button>
+    <!-- Getting started (shown until a provider is connected) -->
+    <div class="section" id="getting-started" style="display: none">
+      <div class="section-title">Getting Started</div>
+      <ol class="gs-steps">
+        <li><b>Connect one AI provider</b> below — Google AI's free key is the fastest start.</li>
+        <li>Open any <b>GitHub / GitLab / npm / PyPI</b> page and click the RepoLens toolbar icon.</li>
+        <li>Read the <b>Verdict</b>, then explore — press <b>?</b> on any analysis for the full guide.</li>
+      </ol>
     </div>
-    <input type="file" id="settingsFile" accept="application/json,.json" hidden>
-    <p class="field-hint" id="settingsBackupStatus" style="margin-top:10px" aria-live="polite"></p>
-    <p class="field-hint" style="margin:14px 0 8px">Want the first-run walkthrough again? Replay the onboarding tour from the Library.</p>
-    <button class="svc-btn" id="replayOnboardingBtn">Replay onboarding</button>
-  </div>
 
-  <!-- Connected Services -->
-  <div class="section">
-    <div class="section-title">Connected Services</div>
+    <!-- Appearance -->
+    <div class="section">
+      <div class="section-title">Appearance</div>
+      <label>Theme</label>
+      <div class="theme-picker" id="theme-picker"></div>
+    </div>
 
-    <!-- Anthropic (Console API key) -->
-    <div class="svc-card" id="card-anthropic">
-      <div class="svc-row">
-        <div class="svc-left">
-          <div class="svc-dot" id="dot-anthropic"></div>
-          <div>
-            <div class="svc-name">Anthropic <span style="font-size:10px;color:var(--accent);font-weight:400;margin-left:4px">Claude</span></div>
-            <div class="svc-status" id="status-anthropic">Not connected</div>
+    <!-- Voice -->
+    <div class="section">
+      <div class="section-title">Voice</div>
+      <label>Analysis tone</label>
+      <div class="tone-picker" id="tone-picker"></div>
+      <p class="field-hint" style="margin-top: 8px">
+        The voice the AI writes every analysis in — the scan and all lenses.
+      </p>
+    </div>
+
+    <!-- Skills -->
+    <div class="section">
+      <div class="section-title">Skills</div>
+      <label class="checkbox-row"
+        ><input type="checkbox" id="sktpgEnabled" /><span
+          >SKTPG — Directional intelligence (one-tap, on the repo)</span
+        ></label
+      >
+      <p class="field-hint" style="margin-top: 8px">
+        Adds a one-tap SKTPG tab to every scan — where the repo is heading, not just what it is. On by
+        default.
+      </p>
+    </div>
+
+    <!-- Interface -->
+    <div class="section">
+      <div class="section-title">Interface</div>
+      <label class="checkbox-row"
+        ><input type="checkbox" id="mascotEnabled" /><span>Show “Vee”, the lens mascot</span></label
+      >
+      <label class="checkbox-row"
+        ><input type="checkbox" id="animateIcon" /><span
+          >Animate the toolbar icon while a scan runs</span
+        ></label
+      >
+      <p class="field-hint" style="margin-top: 8px">
+        A small lens character that reacts to your scans — scanning as it reads, wide open on a strong fit,
+        eyes narrowed on a risky one. Decorative only; reduced-motion shows a static glyph. On by default.
+      </p>
+    </div>
+
+    <!-- History -->
+    <div class="section">
+      <div class="section-title">History</div>
+      <input type="text" id="historySearch" placeholder="Search analyzed repos…" />
+      <div id="history-list"></div>
+      <p class="field-hint" style="margin-top: 10px">
+        Every repo you've analyzed is cached locally — click to reopen instantly (no AI call). Re-scanning a
+        cached repo loads it instantly too.
+      </p>
+    </div>
+
+    <!-- Core -->
+    <div class="section">
+      <div class="section-title">Core</div>
+
+      <label
+        class="checkbox-row"
+        style="
+          text-transform: none;
+          letter-spacing: 0;
+          font-size: 13px;
+          font-weight: 400;
+          color: var(--text-sub);
+        "
+      >
+        <input type="checkbox" id="autoSave" />
+        <span>Auto-save analyses to your library</span>
+      </label>
+      <p class="field-hint" style="margin-top: 8px">
+        Your library is stored in the browser — no server, nothing to set up.
+      </p>
+
+      <label style="margin-top: 22px"
+        >Delay between AI calls — <span id="aiGapLabel" style="color: var(--accent)">1.2s</span></label
+      >
+      <input
+        type="range"
+        id="aiGap"
+        min="0"
+        max="5000"
+        step="100"
+        value="1200"
+        style="width: 100%; accent-color: var(--accent)"
+      />
+      <p class="field-hint">
+        Paces bursts (Run-all lenses, Deep Dive's 3 stages) so slow / rate-limited models like Step 3.7 aren't
+        hit all at once. 0 = no delay.
+      </p>
+    </div>
+
+    <!-- One-time migration from VelesDB -->
+    <div class="section">
+      <div class="section-title">Import from VelesDB</div>
+      <p class="field-hint" style="margin-bottom: 12px">
+        One-time migration. If you ran a VelesDB server before, pull your saved repos into the extension's
+        built-in storage while that server is still running. Safe to run more than once.
+      </p>
+      <label>VelesDB URL</label>
+      <input type="text" id="importUrl" value="http://localhost:9090" placeholder="http://localhost:9090" />
+      <button class="svc-btn" id="importBtn" style="margin-top: 12px">Import library</button>
+      <p class="field-hint" id="importStatus" style="margin-top: 10px" aria-live="polite"></p>
+    </div>
+
+    <!-- Settings backup (never includes API keys) -->
+    <div class="section">
+      <div class="section-title">Back up your settings</div>
+      <p class="field-hint" style="margin-bottom: 12px">
+        Export your theme, voice, model picks and per-part routing to a JSON file you can carry to another
+        machine. <b>API keys and tokens are never included.</b>
+      </p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <button class="svc-btn" id="settingsExportBtn">Export settings</button>
+        <button class="svc-btn" id="settingsImportBtn">Import settings</button>
+      </div>
+      <input type="file" id="settingsFile" accept="application/json,.json" hidden />
+      <p class="field-hint" id="settingsBackupStatus" style="margin-top: 10px" aria-live="polite"></p>
+      <p class="field-hint" style="margin: 14px 0 8px">
+        Want the first-run walkthrough again? Replay the onboarding tour from the Library.
+      </p>
+      <button class="svc-btn" id="replayOnboardingBtn">Replay onboarding</button>
+    </div>
+
+    <!-- Connected Services -->
+    <div class="section">
+      <div class="section-title">Connected Services</div>
+
+      <!-- Anthropic (Claude OAuth or Console API key) -->
+      <div class="svc-card" id="card-anthropic">
+        <div class="svc-row">
+          <div class="svc-left">
+            <div class="svc-dot" id="dot-anthropic"></div>
+            <div>
+              <div class="svc-name">
+                Anthropic
+                <span style="font-size: 10px; color: var(--accent); font-weight: 400; margin-left: 4px"
+                  >Claude</span
+                >
+              </div>
+              <div class="svc-status" id="status-anthropic">Not connected</div>
+            </div>
+          </div>
+          <button class="svc-btn" id="btn-anthropic">Connect</button>
+        </div>
+        <div class="token-panel" id="panel-anthropic">
+          <p class="token-instruction">
+            Sign in with Claude Pro/Max using the same Claude Code OAuth flow Pi uses, or paste a Console API
+            key from <a id="link-anthropic">console.anthropic.com/settings/keys</a>.
+          </p>
+          <div class="cc-row" style="margin-bottom: 10px">
+            <button class="svc-btn" id="anthropic-oauth-start">Sign in with Claude</button>
+          </div>
+          <div class="token-row" style="margin-bottom: 10px">
+            <input type="text" id="anthropicOAuthCode" placeholder="Paste Claude code or callback URL" />
+            <button id="save-anthropic-oauth">Finish</button>
+          </div>
+          <p class="token-instruction">Or use a Console API key:</p>
+          <div class="token-row">
+            <input type="password" id="anthropicApiKey" placeholder="sk-ant-api..." />
+            <button id="save-anthropic">Save</button>
           </div>
         </div>
-        <button class="svc-btn" id="btn-anthropic">Connect</button>
-      </div>
-      <div class="token-panel" id="panel-anthropic">
-        <p class="token-instruction">
-          Paste a Console API key from <a id="link-anthropic">console.anthropic.com/settings/keys</a>.
-          (Claude subscription sign-in isn’t supported — Anthropic restricts it to the Claude Code app.)
-        </p>
-        <div class="token-row">
-          <input type="password" id="anthropicApiKey" placeholder="sk-ant-api...">
-          <button id="save-anthropic">Save</button>
+        <div class="model-row" id="model-row-anthropic">
+          <span class="model-label">Model</span>
+          <select class="model-select" id="anthropicModel">
+            <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 — ★ Recommended</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fast</option>
+            <option value="claude-opus-4-8">Claude Opus 4.8 — max quality</option>
+          </select>
         </div>
       </div>
-      <div class="model-row" id="model-row-anthropic">
-        <span class="model-label">Model</span>
-        <select class="model-select" id="anthropicModel">
-          <option value="claude-sonnet-4-6" selected>Claude Sonnet 4.6 — ★ Recommended</option>
-          <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fast</option>
-          <option value="claude-opus-4-8">Claude Opus 4.8 — max quality</option>
-        </select>
-      </div>
-    </div>
 
-    <!-- Google AI (OAuth via chrome.identity) — uses Gemini, priority provider -->
-    <div class="svc-card" id="card-google">
-      <div class="svc-row">
-        <div class="svc-left">
-          <div class="svc-dot" id="dot-google"></div>
-          <div>
-            <div class="svc-name">Google AI <span style="font-size:10px;color:var(--accent);font-weight:400;margin-left:4px">Gemini · recommended</span></div>
-            <div class="svc-status" id="status-google">Not connected</div>
+      <!-- Google AI — Gemini API key with live model catalog -->
+      <div class="svc-card" id="card-google">
+        <div class="svc-row">
+          <div class="svc-left">
+            <div class="svc-dot" id="dot-google"></div>
+            <div>
+              <div class="svc-name">
+                Google AI
+                <span style="font-size: 10px; color: var(--accent); font-weight: 400; margin-left: 4px"
+                  >Gemini · recommended</span
+                >
+              </div>
+              <div class="svc-status" id="status-google">Not connected</div>
+            </div>
+          </div>
+          <button class="svc-btn" id="btn-google">Connect</button>
+        </div>
+        <div class="model-row" id="model-row-google">
+          <span class="model-label">Model</span>
+          <select class="model-select" id="googleModel">
+            <option value="gemini-3.1-pro-preview" selected>Gemini 3.1 Pro Preview — ★ Recommended</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+            <option value="__custom__">Custom…</option>
+          </select>
+        </div>
+        <div class="token-panel" id="custom-google">
+          <p class="token-instruction">
+            RepoLens loads the live Gemini model list from your API key. If Ultra exposes a model before it
+            appears here, enter the exact model id without the
+            <strong style="color: var(--text)">models/</strong>
+            prefix.
+          </p>
+          <div class="token-row">
+            <input type="text" id="googleModelCustom" placeholder="gemini-3.1-pro-preview" />
+            <button id="save-google-model">Set</button>
           </div>
         </div>
-        <button class="svc-btn" id="btn-google">Connect</button>
-      </div>
-      <div class="model-row" id="model-row-google">
-        <span class="model-label">Model</span>
-        <select class="model-select" id="googleModel">
-          <option value="gemini-2.5-pro">Gemini 2.5 Pro — ★ Recommended</option>
-          <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash — smart + fast</option>
-          <option value="gemini-2.0-flash">Gemini 2.0 Flash — fast</option>
-          <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite — fastest</option>
-          <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-        </select>
-      </div>
-      <div class="token-panel" id="panel-google">
-        <p class="token-instruction">
-          Go to <a id="link-aistudio">aistudio.google.com/app/apikey</a>, create a free API key,
-          and paste it here. Works with your <strong style="color:var(--text)">Google AI Ultra</strong> subscription.
-        </p>
-        <div class="token-row">
-          <input type="password" id="googleKey" placeholder="AIza...">
-          <button id="save-google">Save</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Nous Research — Nous Portal API key (membership) -->
-    <div class="svc-card" id="card-nous">
-      <div class="svc-row">
-        <div class="svc-left">
-          <div class="svc-dot" id="dot-nous"></div>
-          <div>
-            <div class="svc-name">Nous Research <span style="font-size:10px;color:var(--accent);font-weight:400;margin-left:4px">Nous Portal · membership</span></div>
-            <div class="svc-status" id="status-nous">Not connected</div>
+        <div class="token-panel" id="panel-google">
+          <p class="token-instruction">
+            Go to <a id="link-aistudio">aistudio.google.com/app/apikey</a>, create a free API key, and paste
+            it here. Works with your <strong style="color: var(--text)">Google AI Ultra</strong> subscription.
+          </p>
+          <div class="token-row">
+            <input type="password" id="googleKey" placeholder="AIza..." />
+            <button id="save-google">Save</button>
           </div>
         </div>
-        <button class="svc-btn" id="btn-nous">Connect</button>
       </div>
-      <div class="model-row" id="model-row-nous">
-        <span class="model-label">Model</span>
-        <select class="model-select" id="nousModel">
-          <option value="stepfun/step-3.7-flash" selected>Step 3.7 Flash — free 30 days (members)</option>
-          <option value="Hermes-4-405B">Hermes 4 405B — ★ Recommended</option>
-          <option value="Hermes-4-70B">Hermes 4 70B — faster</option>
-          <option value="__custom__">Custom…</option>
-        </select>
-      </div>
-      <div class="token-panel" id="custom-nous">
-        <p class="token-instruction">
-          Enter the exact model slug from <a id="link-nous-models">portal.nousresearch.com</a>.
-          The API resolves OpenRouter-catalog slugs (e.g. <strong style="color:var(--text)">stepfun/step-3.7-flash</strong>) and Nous-native names (<strong style="color:var(--text)">Hermes-4-405B</strong>).
-        </p>
-        <div class="token-row">
-          <input type="text" id="nousModelCustom" placeholder="Model-Slug">
-          <button id="save-nous-model">Set</button>
-        </div>
-      </div>
-      <div class="token-panel" id="panel-nous">
-        <p class="token-instruction">
-          Create an API key at <a id="link-nous">portal.nousresearch.com</a> and paste it here.
-          Uses your Nous Portal <strong style="color:var(--text)">membership</strong> credits.
-        </p>
-        <div class="token-row">
-          <input type="password" id="nousKey" placeholder="sk-...">
-          <button id="save-nous">Save</button>
-        </div>
-      </div>
-    </div>
 
-    <!-- OpenRouter (real OAuth via chrome.identity) -->
-    <div class="svc-card" id="card-openrouter">
-      <div class="svc-row">
-        <div class="svc-left">
-          <div class="svc-dot" id="dot-openrouter"></div>
-          <div>
-            <div class="svc-name">OpenRouter</div>
-            <div class="svc-status" id="status-openrouter">Not connected</div>
+      <!-- Nous Research — Nous Portal API key (membership) -->
+      <div class="svc-card" id="card-nous">
+        <div class="svc-row">
+          <div class="svc-left">
+            <div class="svc-dot" id="dot-nous"></div>
+            <div>
+              <div class="svc-name">
+                Nous Research
+                <span style="font-size: 10px; color: var(--accent); font-weight: 400; margin-left: 4px"
+                  >Nous Portal · membership</span
+                >
+              </div>
+              <div class="svc-status" id="status-nous">Not connected</div>
+            </div>
+          </div>
+          <button class="svc-btn" id="btn-nous">Connect</button>
+        </div>
+        <div class="model-row" id="model-row-nous">
+          <span class="model-label">Model</span>
+          <select class="model-select" id="nousModel">
+            <option value="stepfun/step-3.7-flash" selected>StepFun: Step 3.7 Flash — ★ Recommended</option>
+            <option value="nousresearch/hermes-4-405b">Nous: Hermes 4 405B</option>
+            <option value="nousresearch/hermes-4-70b">Nous: Hermes 4 70B</option>
+            <option value="anthropic/claude-opus-4.8">Anthropic: Claude Opus 4.8</option>
+            <option value="__custom__">Custom…</option>
+          </select>
+        </div>
+        <div class="token-panel" id="custom-nous">
+          <p class="token-instruction">
+            Enter the exact model slug from <a id="link-nous-models">portal.nousresearch.com</a>. The API
+            loads the live /v1/models catalog when Settings opens. Enter an exact model id if you need one
+            that is not listed (for example
+            <strong style="color: var(--text)">nousresearch/hermes-4-405b</strong>).
+          </p>
+          <div class="token-row">
+            <input type="text" id="nousModelCustom" placeholder="Model-Slug" />
+            <button id="save-nous-model">Set</button>
           </div>
         </div>
-        <button class="svc-btn" id="btn-openrouter">Connect</button>
-      </div>
-      <div class="model-row" id="model-row-openrouter">
-        <span class="model-label">Model</span>
-        <select class="model-select" id="openrouterModel">
-          <option value="x-ai/grok-4.3" selected>Grok 4.3 — ★ Recommended</option>
-          <option value="x-ai/grok-4.20">Grok 4.20 — reasoning</option>
-          <option value="x-ai/grok-4.1-fast">Grok 4.1 Fast</option>
-          <option value="x-ai/grok-4-fast">Grok 4 Fast</option>
-          <option value="anthropic/claude-sonnet-4-6">Claude Sonnet 4.6</option>
-          <option value="anthropic/claude-opus-4-8">Claude Opus 4.8</option>
-          <option value="google/gemini-2.5-pro">Gemini 2.5 Pro</option>
-          <option value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
-          <option value="__custom__">Custom…</option>
-        </select>
-      </div>
-      <div class="token-panel" id="custom-openrouter">
-        <p class="token-instruction">
-          Enter any model ID from <a id="link-openrouter">openrouter.ai/models</a>
-          (e.g. <strong style="color:var(--text)">meta-llama/llama-3.3-70b-instruct</strong>).
-        </p>
-        <div class="token-row">
-          <input type="text" id="openrouterModelCustom" placeholder="vendor/model-id">
-          <button id="save-openrouter-model">Set</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- xAI Grok (Device Code OAuth — SuperGrok subscription) -->
-    <div class="svc-card" id="card-xai">
-      <div class="svc-row">
-        <div class="svc-left">
-          <div class="svc-dot" id="dot-xai"></div>
-          <div>
-            <div class="svc-name">Grok <span style="font-size:10px;color:var(--accent);font-weight:400;margin-left:4px">xAI · SuperGrok</span></div>
-            <div class="svc-status" id="status-xai">Not connected</div>
+        <div class="token-panel" id="panel-nous">
+          <p class="token-instruction">
+            Create an API key at <a id="link-nous">portal.nousresearch.com</a> and paste it here. Uses your
+            Nous Portal <strong style="color: var(--text)">membership</strong> credits.
+          </p>
+          <div class="token-row">
+            <input type="password" id="nousKey" placeholder="sk-..." />
+            <button id="save-nous">Save</button>
           </div>
         </div>
-        <button class="svc-btn" id="btn-xai">Connect</button>
       </div>
-      <a class="key-toggle" id="toggle-xai">Use an API key instead →</a>
-      <div class="token-panel" id="panel-xai-device"></div>
-      <div class="token-panel" id="panel-xai">
-        <p class="token-instruction">
-          Paste a developer API key from <a id="link-xai">console.x.ai</a> (starts with
-          <strong style="color:var(--text)">xai-</strong>). Note: this is billed per token —
-          separate from a SuperGrok subscription.
-        </p>
-        <div class="token-row">
-          <input type="password" id="xaiKey" placeholder="xai-...">
-          <button id="save-xai">Save</button>
+
+      <!-- OpenRouter (real OAuth via chrome.identity) -->
+      <div class="svc-card" id="card-openrouter">
+        <div class="svc-row">
+          <div class="svc-left">
+            <div class="svc-dot" id="dot-openrouter"></div>
+            <div>
+              <div class="svc-name">OpenRouter</div>
+              <div class="svc-status" id="status-openrouter">Not connected</div>
+            </div>
+          </div>
+          <button class="svc-btn" id="btn-openrouter">Connect</button>
+        </div>
+        <div class="model-row" id="model-row-openrouter">
+          <span class="model-label">Model</span>
+          <select class="model-select" id="openrouterModel">
+            <option value="x-ai/grok-4.3" selected>xAI: Grok 4.3 — ★ Recommended</option>
+            <option value="x-ai/grok-4.20">xAI: Grok 4.20</option>
+            <option value="anthropic/claude-sonnet-4.6">Anthropic: Claude Sonnet 4.6</option>
+            <option value="anthropic/claude-opus-4.8">Anthropic: Claude Opus 4.8</option>
+            <option value="google/gemini-2.5-pro">Google: Gemini 2.5 Pro</option>
+            <option value="google/gemini-2.5-flash">Google: Gemini 2.5 Flash</option>
+            <option value="__custom__">Custom…</option>
+          </select>
+        </div>
+        <div class="token-panel" id="custom-openrouter">
+          <p class="token-instruction">
+            Settings loads OpenRouter's live /api/v1/models catalog. Enter any model ID from
+            <a id="link-openrouter">openrouter.ai/models</a> if you need one that is not listed (e.g.
+            <strong style="color: var(--text)">meta-llama/llama-3.3-70b-instruct</strong>).
+          </p>
+          <div class="token-row">
+            <input type="text" id="openrouterModelCustom" placeholder="vendor/model-id" />
+            <button id="save-openrouter-model">Set</button>
+          </div>
         </div>
       </div>
-      <div class="model-row" id="model-row-xai">
-        <span class="model-label">Model</span>
-        <select class="model-select" id="xaiModel">
-          <option value="grok-4.3" selected>Grok 4.3 — ★ Recommended</option>
-          <option value="grok-4.20-0309-reasoning">Grok 4.20 Reasoning — max quality</option>
-          <option value="grok-4.20-0309-non-reasoning">Grok 4.20 — fast</option>
-          <option value="grok-build-0.1">Grok Build 0.1 — lightweight</option>
-        </select>
+
+      <!-- xAI Grok (Device Code OAuth — SuperGrok subscription) -->
+      <div class="svc-card" id="card-xai">
+        <div class="svc-row">
+          <div class="svc-left">
+            <div class="svc-dot" id="dot-xai"></div>
+            <div>
+              <div class="svc-name">
+                Grok
+                <span style="font-size: 10px; color: var(--accent); font-weight: 400; margin-left: 4px"
+                  >xAI · SuperGrok</span
+                >
+              </div>
+              <div class="svc-status" id="status-xai">Not connected</div>
+            </div>
+          </div>
+          <button class="svc-btn" id="btn-xai">Connect</button>
+        </div>
+        <a class="key-toggle" id="toggle-xai">Use an API key instead →</a>
+        <div class="token-panel" id="panel-xai-device"></div>
+        <div class="token-panel" id="panel-xai">
+          <p class="token-instruction">
+            Paste a developer API key from <a id="link-xai">console.x.ai</a> (starts with
+            <strong style="color: var(--text)">xai-</strong>). Note: this is billed per token — separate from
+            a SuperGrok subscription.
+          </p>
+          <div class="token-row">
+            <input type="password" id="xaiKey" placeholder="xai-..." />
+            <button id="save-xai">Save</button>
+          </div>
+        </div>
+        <div class="model-row" id="model-row-xai">
+          <span class="model-label">Model</span>
+          <select class="model-select" id="xaiModel">
+            <option value="grok-4.3" selected>Grok 4.3 — ★ Recommended</option>
+            <option value="grok-4.20-0309-reasoning">Grok 4.20 Reasoning — max quality</option>
+            <option value="grok-4.20-0309-non-reasoning">Grok 4.20 — fast</option>
+            <option value="grok-build-0.1">Grok Build 0.1 — lightweight</option>
+          </select>
+        </div>
       </div>
     </div>
 
-  </div>
+    <!-- More providers (OpenAI- / Anthropic-compatible + custom) — rendered from the registry -->
+    <div class="section">
+      <div class="section-title">More model providers</div>
+      <p class="field-hint" style="margin-bottom: 16px">
+        Any OpenAI- or Anthropic-compatible endpoint. Each keeps its own key, so switching never loses data.
+        <b>Test connection</b> checks the endpoint answers; <b>Test function</b> asks the model to follow a
+        tiny instruction. Local <b>Ollama</b> needs no key.
+      </p>
+      <div id="compat-providers"></div>
+    </div>
 
-  <!-- More providers (OpenAI- / Anthropic-compatible + custom) — rendered from the registry -->
-  <div class="section">
-    <div class="section-title">More model providers</div>
-    <p class="field-hint" style="margin-bottom:16px">Any OpenAI- or Anthropic-compatible endpoint. Each keeps its own key, so switching never loses data. <b>Test connection</b> checks the endpoint answers; <b>Test function</b> asks the model to follow a tiny instruction. Local <b>Ollama</b> needs no key.</p>
-    <div id="compat-providers"></div>
-  </div>
+    <!-- Per-part model routing -->
+    <div class="section">
+      <div class="section-title">Models per scan part</div>
+      <p class="field-hint" style="margin-bottom: 14px">
+        Choose which model handles each part of a scan. <b>Default</b> uses the smart fallback chain (Nous →
+        Gemini → OpenRouter → Grok → Anthropic). Any specific pick still falls back to the chain if that
+        provider errors or isn't connected. ★ = recommended.
+      </p>
+      <div id="part-models"></div>
+    </div>
 
-  <!-- Per-part model routing -->
-  <div class="section">
-    <div class="section-title">Models per scan part</div>
-    <p class="field-hint" style="margin-bottom:14px">Choose which model handles each part of a scan. <b>Default</b> uses the smart fallback chain (Nous → Gemini → OpenRouter → Grok → Anthropic). Any specific pick still falls back to the chain if that provider errors or isn't connected. ★ = recommended.</p>
-    <div id="part-models"></div>
-  </div>
+    <button class="save-btn" id="save">Save Core Settings</button>
+    <div id="status"></div>
 
-  <button class="save-btn" id="save">Save Core Settings</button>
-  <div id="status"></div>
-
-  <script type="module" src="options.js"></script>
-</body>
+    <script type="module" src="options.js"></script>
+  </body>
 </html>

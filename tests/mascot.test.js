@@ -7,7 +7,10 @@ function fakeEl() {
   const classes = new Set();
   return {
     classList: {
-      toggle(name, on) { if (on) classes.add(name); else classes.delete(name); },
+      toggle(name, on) {
+        if (on) classes.add(name);
+        else classes.delete(name);
+      },
       contains: (n) => classes.has(n),
     },
     classes,
@@ -46,9 +49,11 @@ describe('setMascotState', () => {
 
 describe('setMascotFromFit', () => {
   it('maps only the two extremes to a distinct face', () => {
-    const strong = fakeEl(); setMascotFromFit(strong, 'strong');
+    const strong = fakeEl();
+    setMascotFromFit(strong, 'strong');
     expect(stateClasses(strong)).toEqual(['is-strong']);
-    const risky = fakeEl(); setMascotFromFit(risky, 'risky');
+    const risky = fakeEl();
+    setMascotFromFit(risky, 'risky');
     expect(stateClasses(risky)).toEqual(['is-risky']);
   });
   it('rests at idle for solid / care / unknown / missing fit', () => {

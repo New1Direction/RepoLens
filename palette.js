@@ -12,7 +12,12 @@
 //   { name, description?, shortcut?, section?, action }
 //   section groups commands under a labelled separator.
 
-const _esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const _esc = (s) =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 function _fuzzy(needle, haystack) {
   if (!needle) return true;
@@ -74,22 +79,26 @@ export function initPalette(commandsOrFn) {
     }
 
     let lastSection = null;
-    list.innerHTML = filtered.map((c, i) => {
-      let sectionHtml = '';
-      if (c.section && c.section !== lastSection) {
-        lastSection = c.section;
-        sectionHtml = `<div class="pl-section">${_esc(c.section)}</div>`;
-      }
-      return `${sectionHtml}<div class="pl-item${i === selIdx ? ' pl-selected' : ''}" data-idx="${i}" role="option" aria-selected="${i === selIdx}">
+    list.innerHTML = filtered
+      .map((c, i) => {
+        let sectionHtml = '';
+        if (c.section && c.section !== lastSection) {
+          lastSection = c.section;
+          sectionHtml = `<div class="pl-section">${_esc(c.section)}</div>`;
+        }
+        return `${sectionHtml}<div class="pl-item${i === selIdx ? ' pl-selected' : ''}" data-idx="${i}" role="option" aria-selected="${i === selIdx}">
         <span class="pl-name">${_esc(c.name)}</span>
         ${c.description ? `<span class="pl-desc">${_esc(c.description)}</span>` : ''}
         ${c.shortcut ? `<kbd class="pl-shortcut">${_esc(c.shortcut)}</kbd>` : ''}
       </div>`;
-    }).join('');
+      })
+      .join('');
   }
 
   function _scrollSelected() {
-    document.querySelector(`#palette-list .pl-item[data-idx="${selIdx}"]`)?.scrollIntoView({ block: 'nearest' });
+    document
+      .querySelector(`#palette-list .pl-item[data-idx="${selIdx}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
   }
 
   function _moveSel(delta) {
@@ -105,7 +114,10 @@ export function initPalette(commandsOrFn) {
     isOpen = true;
     overlay.classList.add('visible');
     const input = document.getElementById('palette-input');
-    if (input) { input.value = ''; input.focus(); }
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
     selIdx = 0;
     _renderList('');
   }
@@ -117,7 +129,10 @@ export function initPalette(commandsOrFn) {
 
   function _run() {
     const cmd = filtered[selIdx];
-    if (cmd?.action) { _close(); cmd.action(); }
+    if (cmd?.action) {
+      _close();
+      cmd.action();
+    }
   }
 
   // Global shortcut: Cmd/Ctrl+K (not when focused on a form element)
@@ -130,14 +145,32 @@ export function initPalette(commandsOrFn) {
       return;
     }
     if (!isOpen) return;
-    if (e.key === 'Escape') { e.preventDefault(); _close(); return; }
-    if (e.key === 'ArrowDown') { e.preventDefault(); _moveSel(1); return; }
-    if (e.key === 'ArrowUp') { e.preventDefault(); _moveSel(-1); return; }
-    if (e.key === 'Enter') { e.preventDefault(); _run(); return; }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      _close();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _moveSel(1);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _moveSel(-1);
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      _run();
+      return;
+    }
   });
 
   // Click backdrop to close
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) _close(); });
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) _close();
+  });
 
   // Click an item to run
   document.getElementById('palette-list')?.addEventListener('click', (e) => {

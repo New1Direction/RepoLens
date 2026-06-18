@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { scoreCombo, combineCandidates, diversifyTopK } from '../combinator.js';
 
-const vec  = { repoId: 'o/vec',  name: 'vec',  capabilities: ['vector-index'] };  // storage
-const vec2 = { repoId: 'o/vec2', name: 'vec2', capabilities: ['vector-index'] };  // storage (same role)
-const tune = { repoId: 'o/tune', name: 'tune', capabilities: ['fine-tuning'] };   // ml (storage<->ml adjacent)
-const fin  = { repoId: 'o/fin',  name: 'fin',  capabilities: ['finance'] };       // domain (not adjacent to storage)
+const vec = { repoId: 'o/vec', name: 'vec', capabilities: ['vector-index'] }; // storage
+const vec2 = { repoId: 'o/vec2', name: 'vec2', capabilities: ['vector-index'] }; // storage (same role)
+const tune = { repoId: 'o/tune', name: 'tune', capabilities: ['fine-tuning'] }; // ml (storage<->ml adjacent)
+const fin = { repoId: 'o/fin', name: 'fin', capabilities: ['finance'] }; // domain (not adjacent to storage)
 const rows = [vec, vec2, tune, fin];
 
 describe('scoreCombo', () => {
@@ -28,7 +28,7 @@ describe('combineCandidates', () => {
   it('only returns combos containing the seed', () => {
     const out = combineCandidates(rows, { seed: 'o/vec', topK: 10 });
     expect(out.length).toBeGreaterThan(0);
-    expect(out.every(c => c.repoIds.includes('o/vec'))).toBe(true);
+    expect(out.every((c) => c.repoIds.includes('o/vec'))).toBe(true);
   });
   it('ranks the adjacent+disjoint combo first', () => {
     const out = combineCandidates(rows, { seed: 'o/vec', topK: 10 });
@@ -48,15 +48,15 @@ describe('combineCandidates', () => {
 });
 
 describe('scoreCombo resolution (Fix A — layer spread)', () => {
-  const uiA = { repoId: 'x/ui',  capabilities: ['ui-rendering'] };  // ui
+  const uiA = { repoId: 'x/ui', capabilities: ['ui-rendering'] }; // ui
   const uiB = { repoId: 'x/ui2', capabilities: ['visualization'] }; // ui (same layer, different tag)
-  const dev = { repoId: 'x/dev', capabilities: ['cli'] };           // devtools (adjacent to ui)
+  const dev = { repoId: 'x/dev', capabilities: ['cli'] }; // devtools (adjacent to ui)
   it('rewards combos spanning more capability layers, so scores are not all 1.0', () => {
     // both pairs are disjoint(1) + adjacent(1); only the layer spread differs
     expect(scoreCombo([uiA, dev]).score).toBeGreaterThan(scoreCombo([uiA, uiB]).score);
   });
   it('reports the spread factor (distinct layers per repo)', () => {
-    expect(scoreCombo([uiA, dev]).spread).toBeCloseTo(1);   // 2 layers / 2 repos
+    expect(scoreCombo([uiA, dev]).spread).toBeCloseTo(1); // 2 layers / 2 repos
     expect(scoreCombo([uiA, uiB]).spread).toBeCloseTo(0.5); // 1 layer / 2 repos
   });
 });
@@ -64,13 +64,13 @@ describe('scoreCombo resolution (Fix A — layer spread)', () => {
 describe('diversifyTopK (Fix B — no repo dominates every pick)', () => {
   it('discounts reused repos so the top-K is diverse', () => {
     const ranked = [
-      { repoIds: ['s', 'hub'],      score: 1.00 },
+      { repoIds: ['s', 'hub'], score: 1.0 },
       { repoIds: ['s', 'hub', 'x'], score: 0.95 },
       { repoIds: ['s', 'hub', 'y'], score: 0.94 },
-      { repoIds: ['s', 'other'],    score: 0.85 },
+      { repoIds: ['s', 'other'], score: 0.85 },
     ];
     const out = diversifyTopK(ranked, { seed: 's', topK: 2 });
-    expect(out[0].repoIds).toEqual(['s', 'hub']);   // best raw score first
+    expect(out[0].repoIds).toEqual(['s', 'hub']); // best raw score first
     expect(out[1].repoIds).toEqual(['s', 'other']); // 'hub' penalized → diverse pick beats its own triples
   });
   it('keeps raw order when there is no overlap to avoid', () => {
@@ -78,7 +78,7 @@ describe('diversifyTopK (Fix B — no repo dominates every pick)', () => {
       { repoIds: ['s', 'a'], score: 1.0 },
       { repoIds: ['s', 'b'], score: 0.9 },
     ];
-    expect(diversifyTopK(ranked, { seed: 's', topK: 2 }).map(c => c.repoIds[1])).toEqual(['a', 'b']);
+    expect(diversifyTopK(ranked, { seed: 's', topK: 2 }).map((c) => c.repoIds[1])).toEqual(['a', 'b']);
   });
 });
 

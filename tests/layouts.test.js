@@ -12,7 +12,7 @@ describe('layouts: spine', () => {
       { marker: 'C', label: 'Combine', body: 'merge' },
     ]);
     expect((html.match(/lk-spine-row/g) || []).length).toBe(2);
-    expect(html).toContain('&lt;x&gt;');         // body escaped
+    expect(html).toContain('&lt;x&gt;'); // body escaped
     expect(html).toContain('lk-spine-marker');
   });
   it('kind adds a modifier class', () => {
@@ -25,7 +25,11 @@ describe('layouts: flow', () => {
     expect(flow([])).toBe('');
   });
   it('N nodes → N node blocks and N-1 arrows', () => {
-    const html = flow([{ label: 'A', body: '1' }, { label: 'B', body: '2' }, { label: 'C', body: '3' }]);
+    const html = flow([
+      { label: 'A', body: '1' },
+      { label: 'B', body: '2' },
+      { label: 'C', body: '3' },
+    ]);
     expect((html.match(/lk-flow-node/g) || []).length).toBe(3);
     expect((html.match(/lk-flow-arrow/g) || []).length).toBe(2);
   });
@@ -41,7 +45,10 @@ describe('layouts: ranked', () => {
     expect(ranked([])).toBe('');
   });
   it('clamps weight to 0..100 and renders a bar per row', () => {
-    const html = ranked([{ label: 'a', weight: 250, body: 'x' }, { label: 'b', weight: -5, body: 'y' }]);
+    const html = ranked([
+      { label: 'a', weight: 250, body: 'x' },
+      { label: 'b', weight: -5, body: 'y' },
+    ]);
     expect((html.match(/lk-ranked-row/g) || []).length).toBe(2);
     expect(html).toContain('width:100%');
     expect(html).toContain('width:0%');
@@ -76,8 +83,11 @@ describe('layouts: optionMatrix', () => {
   });
   it('renders an axis row per axis and a card per combo', () => {
     const html = optionMatrix(
-      [{ axis: 'Store', options: ['vector', 'flat'] }, { axis: 'Trigger', options: ['poll', 'push'] }],
-      [{ picks: ['vector', 'push'], concept: 'reactive <core>' }],
+      [
+        { axis: 'Store', options: ['vector', 'flat'] },
+        { axis: 'Trigger', options: ['poll', 'push'] },
+      ],
+      [{ picks: ['vector', 'push'], concept: 'reactive <core>' }]
     );
     expect((html.match(/lk-om-row/g) || []).length).toBe(2);
     expect((html.match(/lk-om-combo/g) || []).length).toBe(1);

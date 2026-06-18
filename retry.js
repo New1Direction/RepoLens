@@ -17,14 +17,17 @@ const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * }} [opts]
  * @returns {Promise<T>}
  */
-export async function withRetry(fn, {
-  retries = 2,
-  baseDelayMs = 500,
-  factor = 2,
-  maxDelayMs = 8000,
-  isRetryable = () => true,
-  sleep = defaultSleep,
-} = {}) {
+export async function withRetry(
+  fn,
+  {
+    retries = 2,
+    baseDelayMs = 500,
+    factor = 2,
+    maxDelayMs = 8000,
+    isRetryable = () => true,
+    sleep = defaultSleep,
+  } = {}
+) {
   let attempt = 0;
   for (;;) {
     try {

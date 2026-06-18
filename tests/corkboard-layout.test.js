@@ -5,7 +5,10 @@ const N = (id) => ({ id, label: id, kind: 'repo', layer: null, x: 0, y: 0, pinne
 describe('layoutCorkboard', () => {
   it('assigns every node a finite position', () => {
     const placed = layoutCorkboard([N('a'), N('b'), N('c')], []);
-    for (const n of placed) { expect(Number.isFinite(n.x)).toBe(true); expect(Number.isFinite(n.y)).toBe(true); }
+    for (const n of placed) {
+      expect(Number.isFinite(n.x)).toBe(true);
+      expect(Number.isFinite(n.y)).toBe(true);
+    }
   });
   it('seeds connected repos at least as close as unrelated ones', () => {
     const nodes = [N('a'), N('b'), N('x'), N('y')];

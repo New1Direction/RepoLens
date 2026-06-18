@@ -1,10 +1,19 @@
 {
   "manifest_version": 3,
   "name": "RepoLens",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Click any repo. Get a straight answer on whether to use it.",
   "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'" },
-  "permissions": ["storage", "activeTab", "tabs", "identity", "webNavigation", "notifications", "contextMenus", "alarms"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "identity",
+    "webNavigation",
+    "notifications",
+    "contextMenus",
+    "alarms"
+  ],
   "host_permissions": [
     "https://github.com/*",
     "https://gitlab.com/*",
@@ -14,6 +23,8 @@
     "https://registry.npmjs.org/*",
     "https://pypi.org/pypi/*",
     "https://api.anthropic.com/*",
+    "https://claude.ai/*",
+    "https://console.anthropic.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://openrouter.ai/*",
     "https://api.x.ai/*",
@@ -39,10 +50,7 @@
     "http://localhost/*",
     "http://127.0.0.1/*"
   ],
-  "optional_host_permissions": [
-    "https://*/*",
-    "http://*/*"
-  ],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -68,9 +76,7 @@
       "128": "icons/icon128.png"
     }
   },
-  "web_accessible_resources": [
-    { "resources": ["whats-new.html"], "matches": ["<all_urls>"] }
-  ],
+  "web_accessible_resources": [{ "resources": ["whats-new.html"], "matches": ["<all_urls>"] }],
   "options_page": "options.html",
   "icons": {
     "16": "icons/icon16.png",

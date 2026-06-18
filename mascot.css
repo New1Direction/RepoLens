@@ -3,47 +3,164 @@
    a class swap. Static shapes live outside the motion guard so reduced-motion
    users still get a correct, distinct pose for each state — it just snaps. */
 
-.vee { display: inline-flex; color: var(--text); line-height: 0; }
-.vee svg { display: block; overflow: visible; }
-.vee .vee-aperture, .vee .vee-pupil, .vee .vee-ticks, .vee svg {
-  transform-box: fill-box; transform-origin: center;
+.vee {
+  display: inline-flex;
+  color: var(--text);
+  line-height: 0;
+}
+.vee svg {
+  display: block;
+  overflow: visible;
+}
+.vee .vee-aperture,
+.vee .vee-pupil,
+.vee .vee-ticks,
+.vee svg {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 /* idle = the markup defaults (r=9, --accent). Nothing to add. */
-.vee.is-strong .vee-aperture { r: 12; stroke: var(--ok); }
-.vee.is-strong .vee-pupil    { fill: var(--ok); }
-.vee.is-risky  .vee-aperture { r: 4.5; stroke-width: 3.4; stroke: var(--bad); }
-.vee.is-risky  .vee-pupil    { fill: var(--bad); }
-.vee.is-risky  svg           { transform: rotate(-8deg); }
-.vee.is-scanning .vee-aperture { r: 8.5; }
-.vee.is-thinking .vee-aperture { r: 9; }
-.vee.is-empty .vee-aperture  { r: 5; opacity: 0.7; }
-.vee.is-empty .vee-pupil     { opacity: 0.7; }
-.vee.is-empty svg            { transform: translateY(1px); }
-.vee.is-error svg            { transform: rotate(5deg); }
-.vee.is-error .vee-aperture  { r: 7; }
-
-@media (prefers-reduced-motion: no-preference) {
-  .vee .vee-aperture, .vee .vee-pupil {
-    transition: r var(--dur) var(--ease-out), stroke var(--dur) var(--ease-out),
-                fill var(--dur) var(--ease-out), stroke-width var(--dur) var(--ease-out),
-                opacity var(--dur) var(--ease-out);
-  }
-  .vee svg { transition: transform var(--dur) var(--ease-out); }
-
-  .vee.is-strong .vee-aperture   { animation: vee-pop var(--dur-slow) var(--ease-spring); }
-  .vee.is-risky  svg             { animation: vee-squint var(--dur) var(--ease-out); }
-  .vee.is-scanning .vee-aperture { animation: vee-breathe 2.4s var(--ease-out) infinite; }
-  .vee.is-scanning .vee-ticks    { animation: vee-rotate 9s linear infinite; }
-  .vee.is-thinking .vee-pupil    { animation: vee-drift 2.2s var(--ease-out) infinite; }
-  .vee.is-empty .vee-aperture    { animation: vee-rest 4.5s var(--ease-out) infinite; }
-  .vee.is-error svg              { animation: vee-shake 360ms var(--ease-out); }
+.vee.is-strong .vee-aperture {
+  r: 12;
+  stroke: var(--ok);
+}
+.vee.is-strong .vee-pupil {
+  fill: var(--ok);
+}
+.vee.is-risky .vee-aperture {
+  r: 4.5;
+  stroke-width: 3.4;
+  stroke: var(--bad);
+}
+.vee.is-risky .vee-pupil {
+  fill: var(--bad);
+}
+.vee.is-risky svg {
+  transform: rotate(-8deg);
+}
+.vee.is-scanning .vee-aperture {
+  r: 8.5;
+}
+.vee.is-thinking .vee-aperture {
+  r: 9;
+}
+.vee.is-empty .vee-aperture {
+  r: 5;
+  opacity: 0.7;
+}
+.vee.is-empty .vee-pupil {
+  opacity: 0.7;
+}
+.vee.is-empty svg {
+  transform: translateY(1px);
+}
+.vee.is-error svg {
+  transform: rotate(5deg);
+}
+.vee.is-error .vee-aperture {
+  r: 7;
 }
 
-@keyframes vee-pop    { 0% { r: 9; } 60% { r: 13; } 100% { r: 12; } }
-@keyframes vee-squint { 0% { transform: rotate(0); } 100% { transform: rotate(-8deg); } }
-@keyframes vee-breathe{ 0%, 100% { r: 6; } 50% { r: 11; } }
-@keyframes vee-rotate { to { transform: rotate(360deg); } }
-@keyframes vee-drift  { 0%, 100% { transform: translateX(-1.6px); } 50% { transform: translateX(1.6px); } }
-@keyframes vee-rest   { 0%, 100% { r: 5; } 50% { r: 5.8; } }
-@keyframes vee-shake  { 0% { transform: rotate(5deg) translateX(0); } 25% { transform: rotate(5deg) translateX(-1.5px); } 75% { transform: rotate(5deg) translateX(1.5px); } 100% { transform: rotate(5deg) translateX(0); } }
+@media (prefers-reduced-motion: no-preference) {
+  .vee .vee-aperture,
+  .vee .vee-pupil {
+    transition:
+      r var(--dur) var(--ease-out),
+      stroke var(--dur) var(--ease-out),
+      fill var(--dur) var(--ease-out),
+      stroke-width var(--dur) var(--ease-out),
+      opacity var(--dur) var(--ease-out);
+  }
+  .vee svg {
+    transition: transform var(--dur) var(--ease-out);
+  }
+
+  .vee.is-strong .vee-aperture {
+    animation: vee-pop var(--dur-slow) var(--ease-spring);
+  }
+  .vee.is-risky svg {
+    animation: vee-squint var(--dur) var(--ease-out);
+  }
+  .vee.is-scanning .vee-aperture {
+    animation: vee-breathe 2.4s var(--ease-out) infinite;
+  }
+  .vee.is-scanning .vee-ticks {
+    animation: vee-rotate 9s linear infinite;
+  }
+  .vee.is-thinking .vee-pupil {
+    animation: vee-drift 2.2s var(--ease-out) infinite;
+  }
+  .vee.is-empty .vee-aperture {
+    animation: vee-rest 4.5s var(--ease-out) infinite;
+  }
+  .vee.is-error svg {
+    animation: vee-shake 360ms var(--ease-out);
+  }
+}
+
+@keyframes vee-pop {
+  0% {
+    r: 9;
+  }
+  60% {
+    r: 13;
+  }
+  100% {
+    r: 12;
+  }
+}
+@keyframes vee-squint {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(-8deg);
+  }
+}
+@keyframes vee-breathe {
+  0%,
+  100% {
+    r: 6;
+  }
+  50% {
+    r: 11;
+  }
+}
+@keyframes vee-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes vee-drift {
+  0%,
+  100% {
+    transform: translateX(-1.6px);
+  }
+  50% {
+    transform: translateX(1.6px);
+  }
+}
+@keyframes vee-rest {
+  0%,
+  100% {
+    r: 5;
+  }
+  50% {
+    r: 5.8;
+  }
+}
+@keyframes vee-shake {
+  0% {
+    transform: rotate(5deg) translateX(0);
+  }
+  25% {
+    transform: rotate(5deg) translateX(-1.5px);
+  }
+  75% {
+    transform: rotate(5deg) translateX(1.5px);
+  }
+  100% {
+    transform: rotate(5deg) translateX(0);
+  }
+}

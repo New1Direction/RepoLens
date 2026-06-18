@@ -20,11 +20,15 @@ describe('edgeBezier', () => {
 
 describe('nodeClass', () => {
   it('includes kind, root, and fit when present', () => {
-    expect(nodeClass({ kind: 'repo', ref: { root: false, fit: 'strong' } })).toBe('rl-node rl-kind-repo rl-fit-strong');
+    expect(nodeClass({ kind: 'repo', ref: { root: false, fit: 'strong' } })).toBe(
+      'rl-node rl-kind-repo rl-fit-strong'
+    );
     expect(nodeClass({ kind: 'module', ref: { root: true } })).toBe('rl-node rl-kind-module is-root');
     expect(nodeClass({ kind: 'data', ref: {} })).toBe('rl-node rl-kind-data');
   });
   it('includes a layer class when node.layer is set', () => {
-    expect(nodeClass({ kind: 'repo', layer: 'backend', ref: {} })).toBe('rl-node rl-kind-repo rl-layer-backend');
+    expect(nodeClass({ kind: 'repo', layer: 'backend', ref: {} })).toBe(
+      'rl-node rl-kind-repo rl-layer-backend'
+    );
   });
 });

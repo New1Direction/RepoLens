@@ -13,7 +13,6 @@ import {
   provVerName,
   compatStorageKeys,
   isCompatConnected,
-  compatModelFor,
 } from './providers.js';
 import { createPkcePair } from './oauth-pkce.js';
 import {
@@ -37,7 +36,8 @@ function el(tag, props = {}, kids = []) {
     else if (k.startsWith('on') && typeof v === 'function') n.addEventListener(k.slice(2).toLowerCase(), v);
     else n.setAttribute(k, v);
   }
-  for (const kid of [].concat(kids)) if (kid != null) n.appendChild(typeof kid === 'string' ? document.createTextNode(kid) : kid);
+  for (const kid of [].concat(kids))
+    if (kid != null) n.appendChild(typeof kid === 'string' ? document.createTextNode(kid) : kid);
   return n;
 }
 
@@ -52,7 +52,9 @@ async function requestOrigin(url) {
   try {
     const origin = new URL(url).origin + '/*';
     await chrome.permissions.request({ origins: [origin] });
-  } catch { /* invalid URL or already granted — the self-test will surface real failures */ }
+  } catch {
+    /* invalid URL or already granted — the self-test will surface real failures */
+  }
 }
 
 /** Provider-routing groups for the per-part picker (only providers with a model catalog). */
@@ -82,7 +84,10 @@ function buildCard(p, snapshot) {
 
   const dot = el('div', { class: 'svc-dot', id: `cc-dot-${p.id}` });
   const status = el('div', { class: 'svc-status', id: `cc-status-${p.id}` });
-  const tag = el('span', { class: 'svc-tag', text: p.protocol === 'anthropic' ? 'Anthropic API' : 'OpenAI API' });
+  const tag = el('span', {
+    class: 'svc-tag',
+    text: p.protocol === 'anthropic' ? 'Anthropic API' : 'OpenAI API',
+  });
   const name = el('div', { class: 'svc-name' }, [p.label, tag]);
   const hint = el('div', { class: 'svc-hint', text: p.hint || '' });
   const btn = el('button', { class: 'svc-btn', id: `cc-btn-${p.id}` });
@@ -102,10 +107,13 @@ function buildCard(p, snapshot) {
     verInput.value = snapshot[provVerName(p.id)] || p.defaultApiVersion || '';
     keyInput = el('input', { type: 'password', placeholder: 'Azure API key' });
     panel.append(
-      el('p', { class: 'token-instruction', text: 'Resource endpoint, API version, and key. Set your deployment name as the Model below.' }),
+      el('p', {
+        class: 'token-instruction',
+        text: 'Resource endpoint, API version, and key. Set your deployment name as the Model below.',
+      }),
       el('div', { class: 'cc-row' }, [baseInput]),
       el('div', { class: 'cc-row' }, [verInput]),
-      el('div', { class: 'token-row' }, [keyInput, el('button', { text: 'Save', onclick: saveAzure })]),
+      el('div', { class: 'token-row' }, [keyInput, el('button', { text: 'Save', onclick: saveAzure })])
     );
   } else if (p.custom) {
     protoSel = el('select', { class: 'model-select' }, [
@@ -120,15 +128,24 @@ function buildCard(p, snapshot) {
       el('p', { class: 'token-instruction', text: 'Point at any OpenAI- or Anthropic-compatible server.' }),
       el('div', { class: 'cc-row' }, [protoSel]),
       el('div', { class: 'cc-row' }, [baseInput]),
-      el('div', { class: 'token-row' }, [keyInput, el('button', { text: 'Save', onclick: saveCustom })]),
+      el('div', { class: 'token-row' }, [keyInput, el('button', { text: 'Save', onclick: saveCustom })])
     );
   } else if (!p.keyless) {
     keyInput = el('input', { type: 'password', placeholder: p.keyHint || 'API key' });
-    const docs = p.docsUrl ? el('a', { class: 'key-toggle', text: 'Get a key ↗', onclick: () => chrome.tabs.create({ url: p.docsUrl }) }) : null;
+    const docs = p.docsUrl
+      ? el('a', {
+          class: 'key-toggle',
+          text: 'Get a key ↗',
+          onclick: () => chrome.tabs.create({ url: p.docsUrl }),
+        })
+      : null;
     panel.append(
-      el('p', { class: 'token-instruction', text: `Paste your ${p.label} API key. Stored only in this browser.` }),
+      el('p', {
+        class: 'token-instruction',
+        text: `Paste your ${p.label} API key. Stored only in this browser.`,
+      }),
       el('div', { class: 'token-row' }, [keyInput, el('button', { text: 'Save', onclick: saveKey })]),
-      docs,
+      docs
     );
   }
   // ── OpenAI only: "Sign in with ChatGPT" (Codex CLI OAuth), above the key field ──
@@ -163,7 +180,11 @@ function buildCard(p, snapshot) {
     modelSel.value = storedModel;
   }
   modelSel.addEventListener('change', () => {
-    if (modelSel.value === CUSTOM) { modelCustom.style.display = ''; modelCustom.focus(); return; }
+    if (modelSel.value === CUSTOM) {
+      modelCustom.style.display = '';
+      modelCustom.focus();
+      return;
+    }
     modelCustom.style.display = 'none';
     set({ [provModelName(p.id)]: modelSel.value });
   });
@@ -178,33 +199,52 @@ function buildCard(p, snapshot) {
   if (!p.custom && p.protocol !== 'azure') {
     const ovInput = el('input', { type: 'text', placeholder: p.endpoint || 'endpoint URL' });
     ovInput.value = snapshot[provBaseName(p.id)] || '';
-    const ovSave = el('button', { class: 'cc-test-btn', text: 'Save endpoint', onclick: async () => {
-      const v = ovInput.value.trim();
-      if (v) { await requestOrigin(v); await set({ [provBaseName(p.id)]: v }); }
-      else await remove(provBaseName(p.id));
-    } });
-    card.appendChild(el('details', { class: 'cc-adv' }, [
-      el('summary', { text: 'Advanced — override endpoint' }),
-      el('div', { class: 'cc-row' }, [ovInput, ovSave]),
-    ]));
+    const ovSave = el('button', {
+      class: 'cc-test-btn',
+      text: 'Save endpoint',
+      onclick: async () => {
+        const v = ovInput.value.trim();
+        if (v) {
+          await requestOrigin(v);
+          await set({ [provBaseName(p.id)]: v });
+        } else await remove(provBaseName(p.id));
+      },
+    });
+    card.appendChild(
+      el('details', { class: 'cc-adv' }, [
+        el('summary', { text: 'Advanced — override endpoint' }),
+        el('div', { class: 'cc-row' }, [ovInput, ovSave]),
+      ])
+    );
   }
 
   // ── self-tests ───────────────────────────────────────────────────────────
   const result = el('span', { class: 'cc-test-result' });
-  const testConn = el('button', { class: 'cc-test-btn', text: 'Test connection', onclick: () => runTest('connection') });
-  const testFn = el('button', { class: 'cc-test-btn', text: 'Test function', onclick: () => runTest('function') });
+  const testConn = el('button', {
+    class: 'cc-test-btn',
+    text: 'Test connection',
+    onclick: () => runTest('connection'),
+  });
+  const testFn = el('button', {
+    class: 'cc-test-btn',
+    text: 'Test function',
+    onclick: () => runTest('function'),
+  });
   card.appendChild(el('div', { class: 'cc-tests' }, [testConn, testFn, result]));
 
   // ── behaviour ──────────────────────────────────────────────────────────────
   function setState(connected, via) {
     dot.classList.toggle('on', connected);
     status.classList.toggle('on', connected);
-    status.textContent = !connected ? 'Not connected'
-      : via === 'chatgpt' ? 'Connected (ChatGPT)'
-      : p.keyless ? 'Enabled (local)'
-      : 'Connected (API key)';
+    status.textContent = !connected
+      ? 'Not connected'
+      : via === 'chatgpt'
+        ? 'Connected (ChatGPT)'
+        : p.keyless
+          ? 'Enabled (local)'
+          : 'Connected (API key)';
     card.classList.toggle('connected', connected);
-    btn.textContent = connected ? (p.keyless ? 'Disable' : 'Disconnect') : (p.keyless ? 'Enable' : 'Connect');
+    btn.textContent = connected ? (p.keyless ? 'Disable' : 'Disconnect') : p.keyless ? 'Enable' : 'Connect';
     btn.classList.toggle('disconnect', connected);
     modelRow.classList.toggle('visible', connected);
     if (connected) panel.classList.remove('open');
@@ -213,7 +253,10 @@ function buildCard(p, snapshot) {
   // "Sign in with ChatGPT" — PKCE authorize in a new tab; background.js intercepts the
   // loopback redirect, exchanges the code, and mints an OpenAI API key into openaiKey.
   async function connectOpenAiOAuth() {
-    const restore = () => { openAiOAuthBtn.disabled = false; openAiOAuthBtn.textContent = 'Sign in with ChatGPT'; };
+    const restore = () => {
+      openAiOAuthBtn.disabled = false;
+      openAiOAuthBtn.textContent = 'Sign in with ChatGPT';
+    };
     try {
       openAiOAuthBtn.disabled = true;
       openAiOAuthBtn.textContent = 'Signing in…';
@@ -248,13 +291,19 @@ function buildCard(p, snapshot) {
   btn.addEventListener('click', async () => {
     if (await isOn()) {
       if (p.keyless) await remove(provEnabledName(p.id));
-      else if (p.custom || p.protocol === 'azure') await remove([provBaseName(p.id), provKeyName(p.id)]); // endpoint marks these connected
-      else if (p.id === 'openai') await remove([provKeyName(p.id), OPENAI_CREDENTIALS_KEY]); // minted key + ChatGPT session, together
+      else if (p.custom || p.protocol === 'azure')
+        await remove([provBaseName(p.id), provKeyName(p.id)]); // endpoint marks these connected
+      else if (p.id === 'openai')
+        await remove([provKeyName(p.id), OPENAI_CREDENTIALS_KEY]); // minted key + ChatGPT session, together
       else await remove(provKeyName(p.id));
       setState(false);
       return;
     }
-    if (p.keyless) { await set({ [provEnabledName(p.id)]: true }); setState(true); return; }
+    if (p.keyless) {
+      await set({ [provEnabledName(p.id)]: true });
+      setState(true);
+      return;
+    }
     panel.classList.toggle('open');
   });
 
@@ -269,7 +318,10 @@ function buildCard(p, snapshot) {
 
   async function saveCustom() {
     const base = baseInput.value.trim();
-    if (!base) { baseInput.focus(); return; }
+    if (!base) {
+      baseInput.focus();
+      return;
+    }
     await requestOrigin(base); // custom hosts aren't pre-declared — ask for the origin
     const patch = { [provBaseName(p.id)]: base, [provProtoName(p.id)]: protoSel.value };
     const key = keyInput.value.trim();
@@ -281,9 +333,15 @@ function buildCard(p, snapshot) {
 
   async function saveAzure() {
     const base = baseInput.value.trim();
-    if (!base) { baseInput.focus(); return; }
+    if (!base) {
+      baseInput.focus();
+      return;
+    }
     await requestOrigin(base); // the resource host isn't pre-declared
-    const patch = { [provBaseName(p.id)]: base, [provVerName(p.id)]: verInput.value.trim() || p.defaultApiVersion };
+    const patch = {
+      [provBaseName(p.id)]: base,
+      [provVerName(p.id)]: verInput.value.trim() || p.defaultApiVersion,
+    };
     const key = keyInput.value.trim();
     if (key) patch[provKeyName(p.id)] = key;
     await set(patch);
@@ -299,7 +357,8 @@ function buildCard(p, snapshot) {
       const r = await chrome.runtime.sendMessage({ type: 'TEST_PROVIDER', provider: p.id });
       const pass = kind === 'connection' ? r?.connection : r?.function;
       result.classList.add(pass ? 'ok' : 'err');
-      if (kind === 'connection') result.textContent = pass ? '✓ Endpoint reachable' : `✗ ${r?.detail || 'unreachable'}`;
+      if (kind === 'connection')
+        result.textContent = pass ? '✓ Endpoint reachable' : `✗ ${r?.detail || 'unreachable'}`;
       else result.textContent = pass ? '✓ Model followed the instruction' : `✗ ${r?.detail || 'no response'}`;
     } catch (e) {
       result.classList.add('err');
@@ -309,7 +368,8 @@ function buildCard(p, snapshot) {
     }
   }
 
-  const initVia = (p.id === 'openai' && snapshot[OPENAI_CREDENTIALS_KEY]?.refresh_token) ? 'chatgpt' : undefined;
+  const initVia =
+    p.id === 'openai' && snapshot[OPENAI_CREDENTIALS_KEY]?.refresh_token ? 'chatgpt' : undefined;
   setState(isCompatConnected(p.id, snapshot), initVia);
   return card;
 }

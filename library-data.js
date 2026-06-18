@@ -16,10 +16,16 @@ export function libraryRow(payload) {
     (p.pros && p.pros.length) ||
     (p.cons && p.cons.length)
   );
-  const fit = hasTriage ? deriveFit(p) : { level: 'unrated', label: 'Unrated', why: 'Re-scan for a fit verdict' };
+  const fit = hasTriage
+    ? deriveFit(p)
+    : { level: 'unrated', label: 'Unrated', why: 'Re-scan for a fit verdict' };
   const prevFitLevel = p.prevFitLevel ?? null;
   const fitDelta =
-    fit.level && prevFitLevel && fit.level !== prevFitLevel && fit.level !== 'unrated' && prevFitLevel !== 'unrated'
+    fit.level &&
+    prevFitLevel &&
+    fit.level !== prevFitLevel &&
+    fit.level !== 'unrated' &&
+    prevFitLevel !== 'unrated'
       ? { from: prevFitLevel, to: fit.level }
       : null;
   return {
@@ -41,7 +47,11 @@ export function libraryRow(payload) {
   };
 }
 
-const MIN = 60_000, HOUR = 60 * MIN, DAY = 24 * HOUR, MONTH = 30 * DAY, YEAR = 365 * DAY;
+const MIN = 60_000,
+  HOUR = 60 * MIN,
+  DAY = 24 * HOUR,
+  MONTH = 30 * DAY,
+  YEAR = 365 * DAY;
 
 /**
  * Compact "scanned N ago" label from an ISO timestamp. `now` is injectable for
@@ -72,7 +82,9 @@ export function sortRows(rows, by) {
     return r.sort((a, b) => a.repoId.localeCompare(b.repoId));
   }
   if (by === 'recent') {
-    return r.sort((a, b) => (Date.parse(b.savedAt) || 0) - (Date.parse(a.savedAt) || 0) || a.name.localeCompare(b.name));
+    return r.sort(
+      (a, b) => (Date.parse(b.savedAt) || 0) - (Date.parse(a.savedAt) || 0) || a.name.localeCompare(b.name)
+    );
   }
   if (by === 'stars') {
     return r.sort((a, b) => (b.stars || 0) - (a.stars || 0) || a.name.localeCompare(b.name));
@@ -139,12 +151,16 @@ const FIT_LEVELS = ['strong', 'solid', 'care', 'risky', 'unrated'];
 export function libraryStats(rows) {
   const list = rows || [];
   const byFit = { strong: 0, solid: 0, care: 0, risky: 0, unrated: 0 };
-  let healthSum = 0, healthCount = 0;
+  let healthSum = 0,
+    healthCount = 0;
   for (const r of list) {
     const level = r.fit?.level;
     const key = FIT_LEVELS.includes(level) ? level : 'unrated';
     byFit[key] += 1;
-    if (r.health > 0) { healthSum += r.health; healthCount += 1; }
+    if (r.health > 0) {
+      healthSum += r.health;
+      healthCount += 1;
+    }
   }
   return {
     total: list.length,

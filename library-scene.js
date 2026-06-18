@@ -18,7 +18,10 @@ export function buildLibraryScene({ graph, repos = [], only = null }) {
   const rawNodes = (graph?.nodes || []).filter((n) => {
     const id = idOf(n);
     if (!id) return false;
-    if (keep && n.kind === 'idea') { const src = n.sources || []; return src.length > 0 && src.every((s) => keep.has(s)); }
+    if (keep && n.kind === 'idea') {
+      const src = n.sources || [];
+      return src.length > 0 && src.every((s) => keep.has(s));
+    }
     if (keep) return keep.has(id);
     return true;
   });
@@ -31,12 +34,14 @@ export function buildLibraryScene({ graph, repos = [], only = null }) {
       label: n.kind === 'idea' ? String(n.title || 'idea') : String(n.name || id.split('/').pop() || id),
       kind: n.kind === 'idea' ? 'idea' : 'repo',
       layer: null,
-      x: 0, y: 0, pinned: false,
+      x: 0,
+      y: 0,
+      pinned: false,
       ref: {
         repoId: n.repoId || null,
         analyzed: !!n.analyzed,
         fit: m.fit || null,
-        health: (m.health && Number.isFinite(m.health.score)) ? m.health.score : null,
+        health: m.health && Number.isFinite(m.health.score) ? m.health.score : null,
         decision: m.decision || null,
         pitch: n.pitch || null,
         sources: n.sources || null,
@@ -53,7 +58,14 @@ export function buildLibraryScene({ graph, repos = [], only = null }) {
     byNodeId.set(sid, sid);
   }
   const edges = (graph?.edges || [])
-    .map((e) => ({ id: String(e.id), from: byNodeId.get(String(e.source)), to: byNodeId.get(String(e.target)), rel: String(e.label || 'ALTERNATIVE_TO'), note: null, userDrawn: false }))
+    .map((e) => ({
+      id: String(e.id),
+      from: byNodeId.get(String(e.source)),
+      to: byNodeId.get(String(e.target)),
+      rel: String(e.label || 'ALTERNATIVE_TO'),
+      note: null,
+      userDrawn: false,
+    }))
     .filter((e) => e.from && e.to);
 
   const scene = createScene({ scope: 'corkboard', repoId: null, title: 'Library' });

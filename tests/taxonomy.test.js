@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { TAXONOMY, ALL_TAGS, layerOf, isValidTag, layersAdjacent, normalizeCapabilities, deriveCapabilities } from '../taxonomy.js';
+import {
+  TAXONOMY,
+  ALL_TAGS,
+  layerOf,
+  isValidTag,
+  layersAdjacent,
+  normalizeCapabilities,
+  deriveCapabilities,
+} from '../taxonomy.js';
 
 describe('taxonomy vocabulary', () => {
   it('exposes layers of tags and a flat ALL_TAGS set incl. "other"', () => {
@@ -32,7 +40,10 @@ describe('layersAdjacent', () => {
 
 describe('normalizeCapabilities', () => {
   it('keeps only valid tags, lowercases, dedupes, caps at 5', () => {
-    expect(normalizeCapabilities(['vector-index', 'BOGUS', 'ui-rendering'])).toEqual(['vector-index', 'ui-rendering']);
+    expect(normalizeCapabilities(['vector-index', 'BOGUS', 'ui-rendering'])).toEqual([
+      'vector-index',
+      'ui-rendering',
+    ]);
     expect(normalizeCapabilities(['Vector-Index', 'vector-index'])).toEqual(['vector-index']);
     expect(normalizeCapabilities(['cli', 'database', 'cache', 'auth', 'memory', 'rag'])).toHaveLength(5);
   });
@@ -44,7 +55,9 @@ describe('normalizeCapabilities', () => {
 
 describe('deriveCapabilities (deterministic keyword fallback)', () => {
   it('derives tags from category + eli5 keywords', () => {
-    expect(deriveCapabilities({ category: 'Vector Index', eli5: 'an approximate nearest neighbor index' })).toContain('vector-index');
+    expect(
+      deriveCapabilities({ category: 'Vector Index', eli5: 'an approximate nearest neighbor index' })
+    ).toContain('vector-index');
     expect(deriveCapabilities({ category: 'Autonomous Agent Runtime' })).toContain('agent-runtime');
     expect(deriveCapabilities({ category: 'CLI Tool' })).toContain('cli');
   });
@@ -53,7 +66,9 @@ describe('deriveCapabilities (deterministic keyword fallback)', () => {
     expect(deriveCapabilities({ eli5: 'nondescript thing with no signal words' })).toEqual([]);
   });
   it('only ever returns valid tags', () => {
-    deriveCapabilities({ category: 'Multimodal Inference Server', eli5: 'serving with fine-tuning and rag pipeline and a dashboard' })
-      .forEach(t => expect(isValidTag(t)).toBe(true));
+    deriveCapabilities({
+      category: 'Multimodal Inference Server',
+      eli5: 'serving with fine-tuning and rag pipeline and a dashboard',
+    }).forEach((t) => expect(isValidTag(t)).toBe(true));
   });
 });

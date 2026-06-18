@@ -12,10 +12,19 @@ import { buildBackup, validateBackup } from '../backup.js';
 import { importStores } from '../store.js';
 import { idbClear } from '../store/idb.js';
 
-const payload = (repoId, extra = {}) => ({ repoId, health: 80, stars: 0, red_flags: [], saved_at: '2026-06-01T00:00:00.000Z', ...extra });
+const payload = (repoId, extra = {}) => ({
+  repoId,
+  health: 80,
+  stars: 0,
+  red_flags: [],
+  saved_at: '2026-06-01T00:00:00.000Z',
+  ...extra,
+});
 
 describe('appendScanSnapshot — demo payloads (HIGH-1a)', () => {
-  beforeEach(async () => { await idbClear('snapshots'); });
+  beforeEach(async () => {
+    await idbClear('snapshots');
+  });
 
   it('writes NO snapshot row when the payload is the demo', async () => {
     await appendScanSnapshot({ ...payload('honojs/hono'), __demo__: true }, null);
@@ -29,7 +38,9 @@ describe('appendScanSnapshot — demo payloads (HIGH-1a)', () => {
 });
 
 describe('deleteSnapshots (HIGH-1b)', () => {
-  beforeEach(async () => { await idbClear('snapshots'); });
+  beforeEach(async () => {
+    await idbClear('snapshots');
+  });
 
   it('removes an existing snapshot history', async () => {
     await appendScanSnapshot(payload('x/y'), null);
@@ -50,10 +61,32 @@ describe('scenes survive a UI-shaped backup round-trip (HIGH-3)', () => {
   });
 
   it('saveScene → exportStores → buildBackup → validateBackup → importStores → getScene', async () => {
-    const scene = { id: 'repo:rt', scope: 'blueprint', repoId: 'a/b', title: 'rt', nodes: [], edges: [], annotations: [], camera: { x: 0, y: 0, zoom: 1 }, tour: null, source: {}, createdAt: 'x', updatedAt: 'x' };
+    const scene = {
+      id: 'repo:rt',
+      scope: 'blueprint',
+      repoId: 'a/b',
+      title: 'rt',
+      nodes: [],
+      edges: [],
+      annotations: [],
+      camera: { x: 0, y: 0, zoom: 1 },
+      tour: null,
+      source: {},
+      createdAt: 'x',
+      updatedAt: 'x',
+    };
     await saveScene(scene);
     const stores = await exportStores();
-    const backup = buildBackup({ repos: stores.repos, nodes: stores.nodes, edges: stores.edges, cache: [], collections: stores.collections, decisions: stores.decisions, snapshots: stores.snapshots, scenes: stores.scenes });
+    const backup = buildBackup({
+      repos: stores.repos,
+      nodes: stores.nodes,
+      edges: stores.edges,
+      cache: [],
+      collections: stores.collections,
+      decisions: stores.decisions,
+      snapshots: stores.snapshots,
+      scenes: stores.scenes,
+    });
     const { value } = validateBackup(backup);
     await idbClear('scenes');
     expect(await getScene('repo:rt')).toBeNull();

@@ -2,14 +2,25 @@ import { describe, it, expect } from 'vitest';
 import { toMarkdown, toHtml, toScaffold, slugify } from '../exporter.js';
 
 const data = {
-  repoId: 'facebook/react', description: 'The library for web UIs.', language: 'JavaScript', license: 'MIT', stars: 228000, platform: 'github',
+  repoId: 'facebook/react',
+  description: 'The library for web UIs.',
+  language: 'JavaScript',
+  license: 'MIT',
+  stars: 228000,
+  platform: 'github',
   health: { score: 94, summary: 'Healthy.' },
-  eli5: 'Build UIs from components.', technical: 'Virtual DOM + fiber.',
+  eli5: 'Build UIs from components.',
+  technical: 'Virtual DOM + fiber.',
   use_cases: { core_fit: 'SPAs', good_fit: '', works_well: '', long_term: '' },
-  skip_if: {}, enables: 'A big ecosystem.',
-  pros: ['Ecosystem'], cons: ['Boilerplate'],
+  skip_if: {},
+  enables: 'A big ecosystem.',
+  pros: ['Ecosystem'],
+  cons: ['Boilerplate'],
   alternatives: [{ name: 'Vue', when: 'Gentler curve' }],
-  tech_stack: { built_with: ['JavaScript', 'TypeScript'], key_dependencies: [{ name: 'scheduler', purpose: 'scheduling' }] },
+  tech_stack: {
+    built_with: ['JavaScript', 'TypeScript'],
+    key_dependencies: [{ name: 'scheduler', purpose: 'scheduling' }],
+  },
   red_flags: [{ severity: 'ok', title: 'Healthy', text: 'Frequent releases.' }],
   start_here: [{ icon: '📦', title: 'packages/react', desc: 'Core', tag: 'START' }],
 };
@@ -48,8 +59,10 @@ describe('toHtml', () => {
 
 describe('toScaffold', () => {
   const scaffoldData = {
-    repoId: 'facebook/react', description: 'The library for web UIs.',
-    health: { score: 94 }, capabilities: ['frontend', 'ui', 'ssr'],
+    repoId: 'facebook/react',
+    description: 'The library for web UIs.',
+    health: { score: 94 },
+    capabilities: ['frontend', 'ui', 'ssr'],
     start_here: [{ title: 'Install', desc: 'npm install react', tag: 'START' }],
     red_flags: [{ severity: 'warn', title: 'Size', text: 'Bundle can grow large.' }],
     alternatives: [{ name: 'Vue', when: 'Gentler curve' }],

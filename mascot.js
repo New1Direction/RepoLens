@@ -7,7 +7,13 @@
 // it works identically in the extension and in mascot-preview.html.
 
 export const VEE_STATES = Object.freeze([
-  'idle', 'scanning', 'strong', 'risky', 'thinking', 'empty', 'error',
+  'idle',
+  'scanning',
+  'strong',
+  'risky',
+  'thinking',
+  'empty',
+  'error',
 ]);
 
 // Verdict fit value → Vee state. Only the two extremes earn a distinct face;

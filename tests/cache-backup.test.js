@@ -13,8 +13,12 @@ beforeEach(() => {
           if (Array.isArray(k)) return Object.fromEntries(k.map((key) => [key, store[key]]));
           return {};
         }),
-        set: vi.fn(async (obj) => { Object.assign(store, obj); }),
-        remove: vi.fn(async (k) => { for (const key of Array.isArray(k) ? k : [k]) delete store[key]; }),
+        set: vi.fn(async (obj) => {
+          Object.assign(store, obj);
+        }),
+        remove: vi.fn(async (k) => {
+          for (const key of Array.isArray(k) ? k : [k]) delete store[key];
+        }),
       },
     },
   };
@@ -37,7 +41,10 @@ describe('cache backup — importCache', () => {
   });
 
   it('drops entries for unknown platforms (no cache-key injection)', async () => {
-    const n = await importCache([{ platform: 'github:evil', repoId: 'x' }, { platform: 'github', repoId: 'ok/one' }]);
+    const n = await importCache([
+      { platform: 'github:evil', repoId: 'x' },
+      { platform: 'github', repoId: 'ok/one' },
+    ]);
     expect(n).toBe(1);
     expect(await getCached('github', 'ok/one')).not.toBeNull();
   });

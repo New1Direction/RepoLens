@@ -131,7 +131,13 @@ describe('scan ledger', () => {
 
   it('caps history at 30 (ring buffer)', async () => {
     for (let i = 0; i < 35; i++) {
-      await appendScanSnapshot({ repoId: 'led/cap', health: i, stars: 0, red_flags: [], saved_at: `2026-06-01T00:00:${String(i).padStart(2, '0')}.000Z` });
+      await appendScanSnapshot({
+        repoId: 'led/cap',
+        health: i,
+        stars: 0,
+        red_flags: [],
+        saved_at: `2026-06-01T00:00:${String(i).padStart(2, '0')}.000Z`,
+      });
     }
     const snaps = await listSnapshots('led/cap');
     expect(snaps.length).toBe(30);
@@ -141,8 +147,20 @@ describe('scan ledger', () => {
   it('seeds the prior scan into the ledger on first re-scan of an existing repo', async () => {
     // A repo scanned before the ledger existed has a repos payload but no snapshots.
     // appendScanSnapshot must record that prior state (prevPayload) before the new one.
-    const prev = { repoId: 'led/seed', health: 40, stars: 1, red_flags: [], saved_at: '2026-05-01T00:00:00.000Z' };
-    const next = { repoId: 'led/seed', health: 80, stars: 2, red_flags: [], saved_at: '2026-06-01T00:00:00.000Z' };
+    const prev = {
+      repoId: 'led/seed',
+      health: 40,
+      stars: 1,
+      red_flags: [],
+      saved_at: '2026-05-01T00:00:00.000Z',
+    };
+    const next = {
+      repoId: 'led/seed',
+      health: 80,
+      stars: 2,
+      red_flags: [],
+      saved_at: '2026-06-01T00:00:00.000Z',
+    };
     await appendScanSnapshot(next, prev);
     const snaps = await listSnapshots('led/seed');
     expect(snaps.map((s) => s.health)).toEqual([40, 80]);

@@ -1,68 +1,120 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Corkboard demo — RepoLens</title>
-  <link rel="stylesheet" href="./themes.css" />
-  <style>
-    :root { --bg:#fbf6ea; --surface:#fffdf6; --text:#211c14; --text-sub:#5a4f3e; --accent:#c2691c; --border:#b9a273; --dur:.2s; --ease-out:cubic-bezier(.16,1,.3,1); }
-    body { margin:0; font-family:ui-monospace,monospace; background:#efe4c9; color:#211c14; padding:24px; }
-    h1 { font-size:18px; margin:0 0 4px; }
-    .sub { font-size:12px; color:#6b5a36; margin:0 0 16px; }
-    .legend { display:flex; gap:16px; font-size:11px; color:#5a4f3e; margin:10px 2px 0; flex-wrap:wrap; }
-    .legend b { color:#211c14; }
-    .wire { display:inline-block; width:22px; height:0; border-top:2px solid; vertical-align:middle; margin-right:4px; }
-  </style>
-</head>
-<body>
-  <h1>🧭 RepoLens — Corkboard (live demo)</h1>
-  <p class="sub">Real pipeline: <code>getLibraryGraph</code>-shape → <code>buildLibraryScene</code> → <code>layoutCorkboard</code> → <code>mountCanvas</code>. Edges reference hashed node-ids and are joined back to repos.</p>
-  <div id="board" class="corkboard-panel" style="height:560px"></div>
-  <div class="legend">
-    <span><span class="wire" style="border-color:#3b6ea5"></span>alternative</span>
-    <span><span class="wire" style="border-color:#2f7d34"></span>synergy</span>
-    <span><span class="wire" style="border-color:#b3372f"></span>head-to-head</span>
-    <span><span class="wire" style="border-color:#c2691c;border-top-style:dashed"></span>combined idea</span>
-    <span>· card border = fit (<b style="color:#2f7d34">strong</b> / <b style="color:#3b6ea5">solid</b> / <b style="color:#c2691c">care</b> / <b style="color:#b3372f">risky</b>)</span>
-  </div>
+  <head>
+    <meta charset="utf-8" />
+    <title>Corkboard demo — RepoLens</title>
+    <link rel="stylesheet" href="./themes.css" />
+    <style>
+      :root {
+        --bg: #fbf6ea;
+        --surface: #fffdf6;
+        --text: #211c14;
+        --text-sub: #5a4f3e;
+        --accent: #c2691c;
+        --border: #b9a273;
+        --dur: 0.2s;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      body {
+        margin: 0;
+        font-family: ui-monospace, monospace;
+        background: #efe4c9;
+        color: #211c14;
+        padding: 24px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+      }
+      .sub {
+        font-size: 12px;
+        color: #6b5a36;
+        margin: 0 0 16px;
+      }
+      .legend {
+        display: flex;
+        gap: 16px;
+        font-size: 11px;
+        color: #5a4f3e;
+        margin: 10px 2px 0;
+        flex-wrap: wrap;
+      }
+      .legend b {
+        color: #211c14;
+      }
+      .wire {
+        display: inline-block;
+        width: 22px;
+        height: 0;
+        border-top: 2px solid;
+        vertical-align: middle;
+        margin-right: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧭 RepoLens — Corkboard (live demo)</h1>
+    <p class="sub">
+      Real pipeline: <code>getLibraryGraph</code>-shape → <code>buildLibraryScene</code> →
+      <code>layoutCorkboard</code> → <code>mountCanvas</code>. Edges reference hashed node-ids and are joined
+      back to repos.
+    </p>
+    <div id="board" class="corkboard-panel" style="height: 560px"></div>
+    <div class="legend">
+      <span><span class="wire" style="border-color: #3b6ea5"></span>alternative</span>
+      <span><span class="wire" style="border-color: #2f7d34"></span>synergy</span>
+      <span><span class="wire" style="border-color: #b3372f"></span>head-to-head</span>
+      <span
+        ><span class="wire" style="border-color: #c2691c; border-top-style: dashed"></span>combined idea</span
+      >
+      <span
+        >· card border = fit (<b style="color: #2f7d34">strong</b> / <b style="color: #3b6ea5">solid</b> /
+        <b style="color: #c2691c">care</b> / <b style="color: #b3372f">risky</b>)</span
+      >
+    </div>
 
-  <script type="module">
-    import { buildLibraryScene } from './library-scene.js';
-    import { layoutCorkboard } from './canvas-layout.js';
-    import { mountCanvas } from './canvas-engine.js';
+    <script type="module">
+      import { buildLibraryScene } from './library-scene.js';
+      import { layoutCorkboard } from './canvas-layout.js';
+      import { mountCanvas } from './canvas-engine.js';
 
-    // shape mirrors store.getLibraryGraph(): nodes carry the hashed nodeId + payload; edges use nodeIds.
-    const graph = {
-      nodes: [
-        { nodeId: '100', repoId: 'evanw/esbuild', name: 'esbuild', analyzed: true, kind: 'repo' },
-        { nodeId: '200', repoId: 'rollup/rollup', name: 'rollup', analyzed: true, kind: 'repo' },
-        { nodeId: '300', repoId: 'webpack/webpack', name: 'webpack', analyzed: true, kind: 'repo' },
-        { nodeId: '400', repoId: 'vitejs/vite', name: 'vite', analyzed: true, kind: 'repo' },
-        { nodeId: '500', repoId: 'parcel/parcel', name: 'parcel', analyzed: true, kind: 'repo' },
-        { nodeId: '900', title: 'ComfyUI + muapi-comfyui custom nodes', kind: 'idea', sources: ['evanw/esbuild', 'vitejs/vite'] },
-      ],
-      edges: [
-        { id: 'e1', source: '100', target: '200', label: 'ALTERNATIVE_TO' },
-        { id: 'e2', source: '100', target: '300', label: 'ALTERNATIVE_TO' },
-        { id: 'e3', source: '400', target: '100', label: 'SYNERGIZES_WITH' },
-        { id: 'e4', source: '200', target: '300', label: 'COMPARED_TO' },
-        { id: 'e5', source: '100', target: '900', label: 'COMBINES' },
-        { id: 'e6', source: '400', target: '900', label: 'COMBINES' },
-      ],
-    };
-    const repos = [
-      { repoId: 'evanw/esbuild', fit: 'strong', health: { score: 92 } },
-      { repoId: 'rollup/rollup', fit: 'solid', health: { score: 80 } },
-      { repoId: 'webpack/webpack', fit: 'care', health: { score: 70 } },
-      { repoId: 'vitejs/vite', fit: 'strong', health: { score: 95 } },
-      { repoId: 'parcel/parcel', fit: 'risky', health: { score: 55 } },
-    ];
+      // shape mirrors store.getLibraryGraph(): nodes carry the hashed nodeId + payload; edges use nodeIds.
+      const graph = {
+        nodes: [
+          { nodeId: '100', repoId: 'evanw/esbuild', name: 'esbuild', analyzed: true, kind: 'repo' },
+          { nodeId: '200', repoId: 'rollup/rollup', name: 'rollup', analyzed: true, kind: 'repo' },
+          { nodeId: '300', repoId: 'webpack/webpack', name: 'webpack', analyzed: true, kind: 'repo' },
+          { nodeId: '400', repoId: 'vitejs/vite', name: 'vite', analyzed: true, kind: 'repo' },
+          { nodeId: '500', repoId: 'parcel/parcel', name: 'parcel', analyzed: true, kind: 'repo' },
+          {
+            nodeId: '900',
+            title: 'ComfyUI + muapi-comfyui custom nodes',
+            kind: 'idea',
+            sources: ['evanw/esbuild', 'vitejs/vite'],
+          },
+        ],
+        edges: [
+          { id: 'e1', source: '100', target: '200', label: 'ALTERNATIVE_TO' },
+          { id: 'e2', source: '100', target: '300', label: 'ALTERNATIVE_TO' },
+          { id: 'e3', source: '400', target: '100', label: 'SYNERGIZES_WITH' },
+          { id: 'e4', source: '200', target: '300', label: 'COMPARED_TO' },
+          { id: 'e5', source: '100', target: '900', label: 'COMBINES' },
+          { id: 'e6', source: '400', target: '900', label: 'COMBINES' },
+        ],
+      };
+      const repos = [
+        { repoId: 'evanw/esbuild', fit: 'strong', health: { score: 92 } },
+        { repoId: 'rollup/rollup', fit: 'solid', health: { score: 80 } },
+        { repoId: 'webpack/webpack', fit: 'care', health: { score: 70 } },
+        { repoId: 'vitejs/vite', fit: 'strong', health: { score: 95 } },
+        { repoId: 'parcel/parcel', fit: 'risky', health: { score: 55 } },
+      ];
 
-    const board = document.getElementById('board');
-    const scene = buildLibraryScene({ graph, repos });
-    scene.nodes = layoutCorkboard(scene.nodes, scene.edges);
-    mountCanvas(board, scene, {});
-    window.__edgeCount = scene.edges.length;  // for the harness to assert the join worked
-  </script>
-</body>
+      const board = document.getElementById('board');
+      const scene = buildLibraryScene({ graph, repos });
+      scene.nodes = layoutCorkboard(scene.nodes, scene.edges);
+      mountCanvas(board, scene, {});
+      window.__edgeCount = scene.edges.length; // for the harness to assert the join worked
+    </script>
+  </body>
 </html>

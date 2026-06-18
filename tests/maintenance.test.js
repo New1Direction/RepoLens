@@ -1,13 +1,26 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
-import { bandFromSignals, daysSincePush, ciSignals, buildMaintenancePrompt, parseMaintenance, MAINT_BANDS, BUS_FACTORS } from '../maintenance.js';
+import {
+  bandFromSignals,
+  daysSincePush,
+  ciSignals,
+  buildMaintenancePrompt,
+  parseMaintenance,
+  MAINT_BANDS,
+  BUS_FACTORS,
+} from '../maintenance.js';
 
 const NOW = new Date('2026-06-13T00:00:00Z').getTime();
 const daysAgo = (n) => new Date(NOW - n * 86400000).toISOString();
 
 // bandFromSignals/daysSincePush read the real Date.now(); pin it to NOW so the
 // day-based assertions stay deterministic regardless of when the suite runs.
-beforeAll(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-06-13T00:00:00Z')); });
-afterAll(() => { vi.useRealTimers(); });
+beforeAll(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-06-13T00:00:00Z'));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 const signals = {
   pushedAt: daysAgo(45),
@@ -78,7 +91,13 @@ describe('ciSignals', () => {
 });
 
 describe('buildMaintenancePrompt', () => {
-  const repoData = { repoId: 'owner/repo', description: 'A test repo.', stars: 1000, language: 'TypeScript', license: 'MIT' };
+  const repoData = {
+    repoId: 'owner/repo',
+    description: 'A test repo.',
+    stars: 1000,
+    language: 'TypeScript',
+    license: 'MIT',
+  };
   const tree = ['.github/workflows/ci.yml', 'tests/foo.test.ts'];
 
   it('includes the repo id', () => {
@@ -109,7 +128,13 @@ describe('buildMaintenancePrompt', () => {
 
 describe('parseMaintenance', () => {
   it('parses a valid response', () => {
-    const json = JSON.stringify({ band: 'active', bus_factor: 'concentrated', days_since_push: 45, summary: 'Healthy.', watch_list: ['Solo maintainer'] });
+    const json = JSON.stringify({
+      band: 'active',
+      bus_factor: 'concentrated',
+      days_since_push: 45,
+      summary: 'Healthy.',
+      watch_list: ['Solo maintainer'],
+    });
     const result = parseMaintenance(json, signals);
     expect(result.band).toBe('active');
     expect(result.bus_factor).toBe('concentrated');
@@ -125,19 +150,37 @@ describe('parseMaintenance', () => {
   });
 
   it('falls back band when AI band is invalid', () => {
-    const json = JSON.stringify({ band: 'bogus', bus_factor: 'safe', days_since_push: 5, summary: 'x', watch_list: [] });
+    const json = JSON.stringify({
+      band: 'bogus',
+      bus_factor: 'safe',
+      days_since_push: 5,
+      summary: 'x',
+      watch_list: [],
+    });
     const result = parseMaintenance(json, { ...signals, pushedAt: daysAgo(5), archived: false });
     expect(MAINT_BANDS).toContain(result.band);
   });
 
   it('falls back bus_factor when AI value is invalid', () => {
-    const json = JSON.stringify({ band: 'active', bus_factor: 'bogus', days_since_push: 5, summary: 'x', watch_list: [] });
+    const json = JSON.stringify({
+      band: 'active',
+      bus_factor: 'bogus',
+      days_since_push: 5,
+      summary: 'x',
+      watch_list: [],
+    });
     const result = parseMaintenance(json, signals);
     expect(result.bus_factor).toBe('unknown');
   });
 
   it('clamps negative days_since_push to null', () => {
-    const json = JSON.stringify({ band: 'active', bus_factor: 'safe', days_since_push: -5, summary: 'x', watch_list: [] });
+    const json = JSON.stringify({
+      band: 'active',
+      bus_factor: 'safe',
+      days_since_push: -5,
+      summary: 'x',
+      watch_list: [],
+    });
     const result = parseMaintenance(json, signals);
     expect(result.days_since_push).not.toBe(-5);
   });

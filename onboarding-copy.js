@@ -8,7 +8,7 @@ export const COPY = {
   introCorkboard: 'Same library, as a board. A line between two repos means they go together.',
   introSearch: 'Find a repo by name, or ask your library a question in plain words.',
   introOpen: 'Click a card and I open the full read on that repo.',
-  verdict: "The honest call on whether to use it, before the README starts selling.",
+  verdict: 'The honest call on whether to use it, before the README starts selling.',
   blueprint: "How it's built, as a map you can drag around. Hit the tour button to walk it.",
   farewell: 'You know your way around now. Everything stays in your browser, nothing phones home.',
   milestoneOffer: "{N} scans in. You've got plenty to compare and connect now. Want me to show you how?",

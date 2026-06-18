@@ -10,8 +10,7 @@ export const DOCS_VERDICTS = ['yes', 'partially', 'no'];
 function docsContext(repoData, source) {
   const tree = source?.tree ?? [];
 
-  const hasFile = (patterns) =>
-    patterns.some(p => tree.some(f => f.toLowerCase().includes(p)));
+  const hasFile = (patterns) => patterns.some((p) => tree.some((f) => f.toLowerCase().includes(p)));
 
   const signals = [
     `Has CHANGELOG: ${hasFile(['changelog', 'changes', 'history', 'news', 'releases'])}`,
@@ -99,7 +98,7 @@ export function parseDocsQuality(rawText) {
     : verdictFromScore(score);
 
   const sections = Array.isArray(d.sections)
-    ? d.sections.map(s => ({
+    ? d.sections.map((s) => ({
         name: String(s.name || ''),
         score: clamp(s.score),
         verdict: String(s.verdict || ''),

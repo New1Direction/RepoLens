@@ -13,10 +13,10 @@ export const BASE_GRID = 48;
 
 /** Mono Ink icon palette. Light marks on a near-black tile. */
 export const ICON_COLORS = Object.freeze({
-  tile: '#0f1115',     // --rl-ink
-  ring: '#cbd5e1',     // light barrel ring
+  tile: '#0f1115', // --rl-ink
+  ring: '#cbd5e1', // light barrel ring
   aperture: '#3b82f6', // electric-blue aperture
-  pupil: '#e5edff',    // --rl-on-dark light pupil
+  pupil: '#e5edff', // --rl-on-dark light pupil
 });
 
 /**

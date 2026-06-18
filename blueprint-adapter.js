@@ -15,7 +15,14 @@ import { layoutBlueprint } from './canvas-layout.js';
  * @param {boolean} [args.withIssues]  when true, returns { scene, issues }
  * @returns {object|{scene:object, issues:object[]}}
  */
-export function buildBlueprintScene({ deepDive, repoId, title, scanAt = null, layerOf = (a) => a.kind, withIssues = false }) {
+export function buildBlueprintScene({
+  deepDive,
+  repoId,
+  title,
+  scanAt = null,
+  layerOf = (a) => a.kind,
+  withIssues = false,
+}) {
   const atoms = (deepDive && deepDive.atoms) || [];
   const links = (deepDive && deepDive.lineage && deepDive.lineage.links) || [];
   const roots = new Set((deepDive && deepDive.lineage && deepDive.lineage.roots) || []);

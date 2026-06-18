@@ -34,14 +34,14 @@ describe('egoLayout', () => {
     const pos = egoLayout(7, [{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
     expect(pos).toHaveLength(4);
     expect(pos[0]).toMatchObject({ id: '7', ring: 0 });
-    expect(pos.filter(p => p.ring === 1)).toHaveLength(3);
+    expect(pos.filter((p) => p.ring === 1)).toHaveLength(3);
   });
   it('is deterministic (same input → same coordinates)', () => {
     expect(egoLayout(1, [{ id: 'a' }, { id: 'b' }])).toEqual(egoLayout(1, [{ id: 'a' }, { id: 'b' }]));
   });
   it('gives neighbors distinct positions', () => {
     const pos = egoLayout(1, [{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
-    const keys = new Set(pos.slice(1).map(p => `${p.x},${p.y}`));
+    const keys = new Set(pos.slice(1).map((p) => `${p.x},${p.y}`));
     expect(keys.size).toBe(3);
   });
   it('returns just the center for no neighbors', () => {

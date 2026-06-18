@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { toCanvasSvg, toExcalidraw } from '../canvas-export.js';
 
 const scene = {
-  id: 'repo:1', scope: 'blueprint', title: 'esbuild',
+  id: 'repo:1',
+  scope: 'blueprint',
+  title: 'esbuild',
   nodes: [
     { id: 'cli', label: 'CLI', kind: 'entrypoint', layer: null, x: 40, y: 40, pinned: false, ref: {} },
     { id: 'core', label: 'Core', kind: 'subsystem', layer: null, x: 300, y: 120, pinned: false, ref: {} },
@@ -23,7 +25,18 @@ describe('toCanvasSvg', () => {
 
   it('coerces non-numeric coordinates so they cannot inject into SVG attributes', () => {
     const evil = {
-      nodes: [{ id: 'x', label: 'X', kind: 'module', layer: null, x: '40" onload="alert(1)', y: 0, pinned: false, ref: {} }],
+      nodes: [
+        {
+          id: 'x',
+          label: 'X',
+          kind: 'module',
+          layer: null,
+          x: '40" onload="alert(1)',
+          y: 0,
+          pinned: false,
+          ref: {},
+        },
+      ],
       edges: [],
       annotations: [{ id: 'a', x: '0"><script>bad', y: 0, text: 'n', tone: 'note' }],
     };
@@ -37,7 +50,17 @@ describe('toCanvasSvg', () => {
   it('uses the node auto-width (_w) for the rect width and edge source endpoint', () => {
     const wide = {
       nodes: [
-        { id: 'a', label: 'A very wide label', kind: 'module', layer: null, x: 0, y: 0, _w: 210, pinned: false, ref: {} },
+        {
+          id: 'a',
+          label: 'A very wide label',
+          kind: 'module',
+          layer: null,
+          x: 0,
+          y: 0,
+          _w: 210,
+          pinned: false,
+          ref: {},
+        },
         { id: 'b', label: 'B', kind: 'module', layer: null, x: 400, y: 0, pinned: false, ref: {} },
       ],
       edges: [{ id: 'e1', from: 'a', to: 'b', rel: 'depends-on', note: null, userDrawn: false }],
@@ -54,7 +77,13 @@ describe('toCanvasSvg', () => {
   // must not throw. 1M nodes is comfortably past the spread-arg ceiling.
   it('does not throw on a scene with a very large node array', () => {
     const big = {
-      nodes: Array.from({ length: 1_000_000 }, (_, i) => ({ id: 'n' + i, label: 'N', kind: 'module', x: i, y: i })),
+      nodes: Array.from({ length: 1_000_000 }, (_, i) => ({
+        id: 'n' + i,
+        label: 'N',
+        kind: 'module',
+        x: i,
+        y: i,
+      })),
       edges: [],
       annotations: [],
     };

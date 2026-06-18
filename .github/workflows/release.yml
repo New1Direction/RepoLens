@@ -1,0 +1,54 @@
+name: Release extension zip
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Verify version matches tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="$VERSION" node - <<'NODE'
+          const fs = require('fs');
+          const version = process.env.VERSION;
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+          const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8')).version;
+          if (pkg !== version || manifest !== version) {
+            console.error(`Version mismatch: tag=${version} package=${pkg} manifest=${manifest}`);
+            process.exit(1);
+          }
+          NODE
+      - name: Verify
+        run: |
+          npm test
+          npm run lint
+          npm run check:html
+          npm audit --audit-level=high
+      - name: Package Chrome extension
+        run: |
+          VERSION=$(node -p "require('./manifest.json').version")
+          mkdir -p dist repolens-release
+          cp manifest.json README.md CHANGELOG.md repolens-release/
+          cp batch.html library.html options.html output-tab.html share.html stack-tab.html whats-new.html repolens-release/
+          cp ./*.js ./*.css repolens-release/
+          cp -R icons assets store migrate vendor repolens-release/
+          (cd repolens-release && zip -r "../dist/repolens-v${VERSION}.zip" . -x '*.DS_Store')
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repolens-extension-zip
+          path: dist/*.zip

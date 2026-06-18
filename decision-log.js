@@ -4,10 +4,10 @@
 export const DECISIONS = ['adopt', 'trial', 'hold', 'reject'];
 
 export const DECISION_META = {
-  adopt:  { label: 'Adopt',  color: 'var(--ok-ink)',   bg: 'var(--ok-bg)',   border: 'var(--ok-edge)' },
-  trial:  { label: 'Trial',  color: '#60a5fa',          bg: 'rgba(59,130,246,.1)', border: 'rgba(59,130,246,.35)' },
-  hold:   { label: 'Hold',   color: 'var(--warn-ink)',  bg: 'var(--warn-bg)', border: 'var(--warn-edge)' },
-  reject: { label: 'Reject', color: 'var(--bad-ink)',   bg: 'var(--bad-bg)',  border: 'var(--bad-edge)' },
+  adopt: { label: 'Adopt', color: 'var(--ok-ink)', bg: 'var(--ok-bg)', border: 'var(--ok-edge)' },
+  trial: { label: 'Trial', color: '#60a5fa', bg: 'rgba(59,130,246,.1)', border: 'rgba(59,130,246,.35)' },
+  hold: { label: 'Hold', color: 'var(--warn-ink)', bg: 'var(--warn-bg)', border: 'var(--warn-edge)' },
+  reject: { label: 'Reject', color: 'var(--bad-ink)', bg: 'var(--bad-bg)', border: 'var(--bad-edge)' },
 };
 
 /**
@@ -16,7 +16,8 @@ export const DECISION_META = {
  */
 export function buildDecision({ repoId, decision, note = '', timestamp }) {
   if (!repoId) throw new Error('Decision needs a repoId');
-  if (!DECISIONS.includes(decision)) throw new Error(`Invalid decision: "${decision}". Must be one of: ${DECISIONS.join(', ')}`);
+  if (!DECISIONS.includes(decision))
+    throw new Error(`Invalid decision: "${decision}". Must be one of: ${DECISIONS.join(', ')}`);
   return {
     repoId: String(repoId),
     decision,

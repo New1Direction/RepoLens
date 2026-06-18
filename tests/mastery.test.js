@@ -1,8 +1,12 @@
 // tests/mastery.test.js
 import { describe, it, expect } from 'vitest';
 import {
-  MASTERY_LEVELS, UNDERSTOOD_THRESHOLD, levelLabel, levelRank,
-  deriveCheckResult, aggregateMastery,
+  MASTERY_LEVELS,
+  UNDERSTOOD_THRESHOLD,
+  levelLabel,
+  levelRank,
+  deriveCheckResult,
+  aggregateMastery,
 } from '../mastery.js';
 
 const Q = (n) => Array.from({ length: n }, (_, i) => ({ q: `q${i}`, a: `a${i}` }));
@@ -21,27 +25,45 @@ describe('deriveCheckResult', () => {
   });
 
   it('marks understood at 4 of 6', () => {
-    expect(deriveCheckResult(Q(6), ['gotIt', 'gotIt', 'gotIt', 'gotIt', 'shaky', 'missed']).level).toBe('understood');
+    expect(deriveCheckResult(Q(6), ['gotIt', 'gotIt', 'gotIt', 'gotIt', 'shaky', 'missed']).level).toBe(
+      'understood'
+    );
   });
 
   it('partitions glows (gotIt) from grows (shaky/missed) by question text', () => {
     const r = deriveCheckResult(Q(3), ['gotIt', 'shaky', 'missed']);
     expect(r.glows).toEqual(['q0']);
     expect(r.grows).toEqual(['q1', 'q2']);
-    expect({ gotIt: r.gotIt, shaky: r.shaky, missed: r.missed, total: r.total }).toEqual({ gotIt: 1, shaky: 1, missed: 1, total: 3 });
+    expect({ gotIt: r.gotIt, shaky: r.shaky, missed: r.missed, total: r.total }).toEqual({
+      gotIt: 1,
+      shaky: 1,
+      missed: 1,
+      total: 3,
+    });
   });
 
   it('returns level new with zero counts for an empty check (no accidental promotion)', () => {
     const r = deriveCheckResult([], []);
-    expect(r).toEqual({ level: 'new', score: 0, gotIt: 0, shaky: 0, missed: 0, total: 0, glows: [], grows: [] });
+    expect(r).toEqual({
+      level: 'new',
+      score: 0,
+      gotIt: 0,
+      shaky: 0,
+      missed: 0,
+      total: 0,
+      glows: [],
+      grows: [],
+    });
   });
 });
 
 describe('aggregateMastery', () => {
   it('counts levels across a records map', () => {
     const recs = {
-      'a/b': { level: 'understood' }, 'c/d': { level: 'understood' },
-      'e/f': { level: 'explored' }, 'g/h': { level: 'new' },
+      'a/b': { level: 'understood' },
+      'c/d': { level: 'understood' },
+      'e/f': { level: 'explored' },
+      'g/h': { level: 'new' },
     };
     expect(aggregateMastery(recs)).toEqual({ total: 4, understood: 2, explored: 1, new: 1 });
   });
