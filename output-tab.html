@@ -110,9 +110,27 @@
       .health-bar {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 8px;
         align-items: flex-end;
-        min-width: 140px;
+        min-width: 220px;
+      }
+      .header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .health-summary {
+        display: grid;
+        grid-template-columns: auto 140px;
+        grid-template-areas:
+          'score label'
+          'score track'
+          'chip chip';
+        align-items: center;
+        justify-content: end;
+        gap: 3px 10px;
       }
       .health-label {
         font-size: 9px;
@@ -121,6 +139,7 @@
         letter-spacing: 1px;
       }
       .health-track {
+        grid-area: track;
         width: 140px;
         height: 4px;
         background: var(--border);
@@ -133,6 +152,7 @@
         background: var(--accent-grad);
       }
       .health-score {
+        grid-area: score;
         font-size: 22px;
         font-weight: 900;
         color: var(--text-strong);
@@ -144,8 +164,9 @@
         border-radius: 20px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
+        grid-area: chip;
         margin-top: 4px;
-        align-self: flex-end;
+        justify-self: end;
       }
       .fit-header-chip.fit-strong {
         background: var(--ok-bg);
@@ -168,9 +189,11 @@
         border: 1px solid var(--bad-edge);
       }
       .health-sub {
+        grid-area: label;
         font-size: 9px;
         color: var(--text-faint);
         letter-spacing: 1px;
+        text-align: right;
       }
 
       .tab-nav {
@@ -724,7 +747,6 @@
       .export-bar {
         display: flex;
         gap: 6px;
-        margin-bottom: 8px;
       }
       .export-btn {
         background: var(--surface);
@@ -735,20 +757,64 @@
         font-size: 11px;
         font-weight: 600;
         cursor: pointer;
+        line-height: 1.4;
         transition:
           color 0.15s,
-          border-color 0.15s;
+          border-color 0.15s,
+          background-color 0.15s;
       }
       .export-btn:hover {
         color: var(--text);
         border-color: var(--accent);
       }
+      .action-menu {
+        position: relative;
+      }
+      .action-menu > summary {
+        list-style: none;
+      }
+      .action-menu > summary::-webkit-details-marker {
+        display: none;
+      }
+      .action-menu[open] > summary {
+        color: var(--text);
+        border-color: var(--accent);
+        background: var(--surface-alt);
+      }
+      .action-menu-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        z-index: 30;
+        width: 244px;
+        padding: 10px;
+        background: var(--surface);
+        border: 1px solid var(--border-2);
+        border-radius: 12px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      }
+      .action-menu-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      .action-menu-grid .export-btn {
+        width: 100%;
+        text-align: left;
+      }
+      .action-menu-label {
+        margin: 10px 0 6px;
+        font: 700 9px/1 var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
       .theme-switcher {
         display: flex;
         gap: 6px;
         align-items: center;
-        margin-bottom: 8px;
-        justify-content: flex-end;
+        justify-content: flex-start;
+        flex-wrap: wrap;
       }
       .swatch {
         width: 14px;
@@ -768,6 +834,22 @@
       .swatch.active {
         border: 2px solid var(--accent);
         box-shadow: 0 0 6px var(--accent);
+      }
+      @media (max-width: 820px) {
+        .header {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .health-bar,
+        .header-actions,
+        .health-summary {
+          align-items: flex-start;
+          justify-content: flex-start;
+        }
+        .action-menu-panel {
+          left: 0;
+          right: auto;
+        }
       }
 
       /* Diagrams (dependency-free SVG) */
@@ -4083,46 +4165,62 @@
           </div>
         </div>
         <div class="health-bar">
-          <div class="export-bar">
+          <div class="header-actions">
             <button class="export-btn" id="open-library" title="Browse every repo you've analyzed">
               📚 Library
             </button>
             <button class="export-btn" id="add-to-board" title="Add this repo to a Board">+ Board</button>
-            <button class="export-btn" id="copy-url" title="Copy repo URL to clipboard (U)">Copy URL</button>
-            <button class="export-btn" id="copy-md" title="Copy this analysis as Markdown (M)">
-              Copy MD
-            </button>
-            <button class="export-btn" id="copy-slack" title="Copy a compact summary for Slack / Discord">
-              Copy Slack
-            </button>
-            <button
-              class="export-btn"
-              id="export-scaffold"
-              title="Download a CLAUDE.md / Notion integration scaffold"
-            >
-              Scaffold
-            </button>
-            <button class="export-btn" id="export-html" title="Download a self-contained HTML report">
-              Export
-            </button>
-            <button class="export-btn" id="open-guide" title="What can RepoLens do? (press ?)">
-              ?<span class="guide-dot" id="guide-dot" hidden></span>
-            </button>
-            <button
-              class="export-btn"
-              id="whats-new-btn"
-              title="What's new in RepoLens"
-              style="position: relative"
-            >
-              New<span class="guide-dot" id="whats-new-dot" hidden></span>
-            </button>
+            <details class="action-menu">
+              <summary class="export-btn" title="Copy, export, help, and theme options">More ▾</summary>
+              <div class="action-menu-panel">
+                <div class="action-menu-grid">
+                  <button class="export-btn" id="copy-url" title="Copy repo URL to clipboard (U)">
+                    Copy URL
+                  </button>
+                  <button class="export-btn" id="copy-md" title="Copy this analysis as Markdown (M)">
+                    Copy MD
+                  </button>
+                  <button
+                    class="export-btn"
+                    id="copy-slack"
+                    title="Copy a compact summary for Slack / Discord"
+                  >
+                    Copy Slack
+                  </button>
+                  <button class="export-btn" id="export-html" title="Download a self-contained HTML report">
+                    Export
+                  </button>
+                  <button
+                    class="export-btn"
+                    id="export-scaffold"
+                    title="Download a CLAUDE.md / Notion integration scaffold"
+                  >
+                    Scaffold
+                  </button>
+                  <button class="export-btn" id="open-guide" title="What can RepoLens do? (press ?)">
+                    Guide<span class="guide-dot" id="guide-dot" hidden></span>
+                  </button>
+                  <button
+                    class="export-btn"
+                    id="whats-new-btn"
+                    title="What's new in RepoLens"
+                    style="position: relative"
+                  >
+                    New<span class="guide-dot" id="whats-new-dot" hidden></span>
+                  </button>
+                </div>
+                <div class="action-menu-label">Theme</div>
+                <div class="theme-switcher" id="theme-switcher"></div>
+              </div>
+            </details>
             <button class="export-btn" id="open-palette" title="Command palette (⌘K)">⌘K</button>
           </div>
-          <div class="theme-switcher" id="theme-switcher"></div>
-          <div class="health-score"></div>
-          <div class="health-sub">REPO HEALTH</div>
-          <div class="health-track"><div class="health-fill" style="width: 0%"></div></div>
-          <div class="fit-header-chip" id="fit-header-chip" style="display: none"></div>
+          <div class="health-summary">
+            <div class="health-score"></div>
+            <div class="health-sub">REPO HEALTH</div>
+            <div class="health-track"><div class="health-fill" style="width: 0%"></div></div>
+            <div class="fit-header-chip" id="fit-header-chip" style="display: none"></div>
+          </div>
         </div>
       </div>
 

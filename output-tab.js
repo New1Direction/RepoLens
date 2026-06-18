@@ -75,6 +75,22 @@ function renderThemeSwitcher() {
   }
 }
 
+let headerActionsReady = false;
+function initHeaderActions() {
+  if (headerActionsReady) return;
+  headerActionsReady = true;
+  const menu = document.querySelector('.action-menu');
+  if (!menu) return;
+  document.addEventListener('click', (e) => {
+    if (menu.open && !menu.contains(e.target)) menu.open = false;
+  });
+  menu.querySelectorAll('button.export-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      menu.open = false;
+    });
+  });
+}
+
 const params = new URLSearchParams(location.search);
 const sessionKey = params.get('key');
 
@@ -550,6 +566,7 @@ async function init() {
     })
     .catch(() => {});
   renderThemeSwitcher();
+  initHeaderActions();
   renderDeepDive(data);
   renderFrameworkLens(data, SYSTEMS_CFG);
   renderFrameworkLens(data, IDEATE_CFG);
