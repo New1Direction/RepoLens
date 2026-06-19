@@ -238,7 +238,10 @@ function updateLoadingStage(data = {}) {
 }
 
 async function waitForData() {
-  const deadline = Date.now() + 90_000;
+  const startedAt = Date.now();
+  const softTimeoutMs = 90_000;
+  const maxTimeoutMs = 6 * 60_000;
+  const staleHeartbeatMs = 45_000;
   let phraseIndex = 0;
   let lastStatus = null;
   let cycleTimer = null;
@@ -256,7 +259,8 @@ async function waitForData() {
 
   try {
     while (true) {
-      if (Date.now() > deadline) throw new Error('Analysis timed out — please try again.');
+      const now = Date.now();
+      const elapsed = now - startedAt;
       const stored = await chrome.storage.session.get(sessionKey);
       const data = stored[sessionKey];
 
@@ -266,6 +270,13 @@ async function waitForData() {
       }
 
       if (data.loading) {
+        const latestPulse = Math.max(data.updatedAt || 0, data.heartbeatAt || 0, data.startedAt || 0);
+        const hasFreshPulse = latestPulse > 0 && now - latestPulse < staleHeartbeatMs;
+        if (elapsed > maxTimeoutMs) throw new Error('Analysis timed out after 6 minutes — please retry.');
+        if (elapsed > softTimeoutMs && latestPulse > 0 && !hasFreshPulse) {
+          throw new Error('Analysis timed out — the background scan stopped responding.');
+        }
+
         let changed = false;
         updateLoadingStage(data);
         if (data.repoId) setLoadingName(data.repoId);
@@ -274,7 +285,11 @@ async function waitForData() {
             clearInterval(cycleTimer);
             cycleTimer = null;
           }
-          setLoadingMsg(data.statusMsg);
+          const slowMsg =
+            elapsed > softTimeoutMs && hasFreshPulse
+              ? 'Still working — the provider is taking longer than usual…'
+              : data.statusMsg;
+          setLoadingMsg(slowMsg);
           if (data.status !== lastStatus) {
             lastStatus = data.status;
             changed = true;
@@ -591,8 +606,9 @@ async function init() {
         'font-size:12px;color:var(--text-muted);text-align:center;max-width:360px;line-height:1.6;margin-top:-4px';
       errorMsg.insertAdjacentElement('afterend', hintEl);
     }
-    hintEl.textContent =
-      'The background scan stopped responding. Reload the extension, then retry this repo.';
+    hintEl.textContent = /stopped responding/i.test(err?.message || '')
+      ? 'The background scan stopped responding. Reload the extension, then retry this repo.'
+      : 'The provider may be slow or overloaded. Retry, or pick a faster model/provider in Settings.';
     if (settingsBtn) settingsBtn.style.display = 'none';
     if (retryBtn) retryBtn.style.display = retryContext ? '' : 'none';
     if (mascotOn) renderMascot(document.getElementById('error-vee'), 'error');
