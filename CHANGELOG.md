@@ -11,6 +11,8 @@ the same day, as a rapid burst of improvements, so they share a date.
 
 ### Added
 
+- **More consistent scan start.** Clicking the extension icon now opens the loading tab immediately, then checks cache/provider setup in parallel, so first-press feedback is instant and cached scans swap in cleanly.
+- **More playful scan loading.** The loading screen now has scan stages, live phase labels, rotating signal copy, and a livelier reduced-motion-safe lens animation.
 - **Smoother navigation.** Scan tabs now use reduced-motion-safe view transitions, restore per-tab scroll position, avoid quick-verdict re-renders while loading, and make large Library grids cheaper to scroll.
 - **Structured scan schema.** Core scans now ask for a mental model, risk register, adoption simulation, and learning path — with parser fallbacks so older scans still render useful structured sections.
 - **Decision-grade Verdict tab.** The Verdict view now leads with a best next action, confidence, evidence, and a 30-minute trial plan so every scan tells you what to do next — not just what the repo is.

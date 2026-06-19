@@ -206,6 +206,37 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
+const PROVIDER_GATE_KEYS = [
+  'anthropicKey',
+  ANTHROPIC_ACCESS_KEY,
+  ANTHROPIC_REFRESH_KEY,
+  'googleKey',
+  'openrouterKey',
+  'xaiKey',
+  'xaiRefresh',
+  'nousKey',
+  OPENAI_CREDENTIALS_KEY,
+  ...compatStorageKeys(),
+];
+
+function hasConnectedScanProvider(keys) {
+  const firstClass =
+    keys.anthropicKey ||
+    keys[ANTHROPIC_ACCESS_KEY] ||
+    keys[ANTHROPIC_REFRESH_KEY] ||
+    keys.googleKey ||
+    keys.openrouterKey ||
+    keys.xaiKey ||
+    keys.xaiRefresh ||
+    keys.nousKey ||
+    keys[OPENAI_CREDENTIALS_KEY]?.refresh_token;
+  return Boolean(firstClass || COMPAT_PROVIDERS.some((p) => isCompatConnected(p.id, keys)));
+}
+
+function initialScanState(detected, statusMsg = 'Opening the lens…') {
+  return { loading: true, status: 'preflight', statusMsg, startedAt: Date.now(), ...detected };
+}
+
 // Scan a link right-clicked anywhere — detect platform from the href, open output tab.
 chrome.contextMenus.onClicked.addListener(async (info) => {
   if (info.menuItemId !== 'repolens-scan-link') return;
@@ -219,31 +250,12 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
     chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${sessionKey}`) });
     return;
   }
-  const gateKeys = await chrome.storage.local.get([
-    'anthropicKey',
-    ANTHROPIC_ACCESS_KEY,
-    ANTHROPIC_REFRESH_KEY,
-    'googleKey',
-    'openrouterKey',
-    'xaiKey',
-    'xaiRefresh',
-    'nousKey',
-    OPENAI_CREDENTIALS_KEY,
-    ...compatStorageKeys(),
-  ]);
-  const hasKey =
-    gateKeys.anthropicKey ||
-    gateKeys[ANTHROPIC_ACCESS_KEY] ||
-    gateKeys[ANTHROPIC_REFRESH_KEY] ||
-    gateKeys.googleKey ||
-    gateKeys.openrouterKey ||
-    gateKeys.xaiKey ||
-    gateKeys.xaiRefresh ||
-    gateKeys.nousKey ||
-    gateKeys[OPENAI_CREDENTIALS_KEY]?.refresh_token ||
-    compatStorageKeys().some((k) => gateKeys[k]);
   const sessionKey = SESSION_KEY_PREFIX + crypto.randomUUID();
-  if (!hasKey) {
+  await chrome.storage.session.set({ [sessionKey]: initialScanState(detected, 'Checking scan setup…') });
+  chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${sessionKey}`) });
+
+  const gateKeys = await chrome.storage.local.get(PROVIDER_GATE_KEYS);
+  if (!hasConnectedScanProvider(gateKeys)) {
     await chrome.storage.session.set({
       [sessionKey]: {
         loading: false,
@@ -251,11 +263,9 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
         errorKind: 'none',
       },
     });
-    chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${sessionKey}`) });
     return;
   }
-  await chrome.storage.session.set({ [sessionKey]: { loading: true, status: 'fetching', ...detected } });
-  chrome.tabs.create({ url: chrome.runtime.getURL(`output-tab.html?key=${sessionKey}`) });
+  await chrome.storage.session.set({ [sessionKey]: initialScanState(detected, 'Starting fresh scan…') });
   runAnalysis(sessionKey, detected);
 });
 
@@ -284,7 +294,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'RERUN' && msg.sessionKey && msg.platform && msg.repoId) {
     const detected = { platform: msg.platform, repoId: msg.repoId };
     chrome.storage.session
-      .set({ [msg.sessionKey]: { loading: true, status: 'fetching', ...detected } })
+      .set({ [msg.sessionKey]: initialScanState(detected, 'Restarting fresh scan…') })
       .then(() => {
         sendResponse({ ok: true });
         runAnalysis(msg.sessionKey, detected, sender.tab?.id); // fire and forget; tab polls the session
@@ -688,47 +698,38 @@ chrome.action.onClicked.addListener(async (tab) => {
 
   const sessionKey = SESSION_KEY_PREFIX + crypto.randomUUID();
 
-  // Cache hit → show the saved analysis instantly (no AI call, works offline).
+  // Always open feedback first. Cache/provider checks then race in the background,
+  // so the first icon press feels consistent even when storage is warming up.
+  await chrome.storage.session.set({ [sessionKey]: initialScanState(detected) });
+  await chrome.tabs.create({ url: `output-tab.html?key=${sessionKey}` });
+
+  const [cached, gateKeys] = await Promise.all([
+    getCached(detected.platform, detected.repoId).catch(() => null),
+    chrome.storage.local.get(PROVIDER_GATE_KEYS),
+  ]);
+
+  // Cache hit → swap the loading tab to the saved analysis instantly (no AI call, works offline).
   // The output tab offers a "Re-run fresh" affordance.
-  const cached = await getCached(detected.platform, detected.repoId);
   if (cached) {
     await chrome.storage.session.set({ [sessionKey]: { ...cached, cached: true, loading: false } });
-    await chrome.tabs.create({ url: `output-tab.html?key=${sessionKey}` });
     return;
   }
 
   // Gate: at least one provider must be configured (runAnalysis reads the rest).
-  const gateKeys = await chrome.storage.local.get([
-    'anthropicKey',
-    ANTHROPIC_ACCESS_KEY,
-    ANTHROPIC_REFRESH_KEY,
-    'googleKey',
-    'openrouterKey',
-    'xaiKey',
-    'xaiRefresh',
-    'nousKey',
-    OPENAI_CREDENTIALS_KEY,
-    ...compatStorageKeys(),
-  ]);
-  const firstClass =
-    gateKeys.anthropicKey ||
-    gateKeys[ANTHROPIC_ACCESS_KEY] ||
-    gateKeys[ANTHROPIC_REFRESH_KEY] ||
-    gateKeys.googleKey ||
-    gateKeys.openrouterKey ||
-    gateKeys.xaiKey ||
-    gateKeys.xaiRefresh ||
-    gateKeys.nousKey ||
-    gateKeys[OPENAI_CREDENTIALS_KEY]?.refresh_token;
-  const anyCompat = COMPAT_PROVIDERS.some((p) => isCompatConnected(p.id, gateKeys));
-  if (!firstClass && !anyCompat) {
+  if (!hasConnectedScanProvider(gateKeys)) {
+    await chrome.storage.session.set({
+      [sessionKey]: {
+        ...detected,
+        loading: false,
+        error: 'No AI provider configured — open Settings to add a key.',
+        errorKind: 'none',
+      },
+    });
     chrome.runtime.openOptionsPage();
     return;
   }
 
-  // Open the output tab immediately with a loading state, then run the analysis.
-  await chrome.storage.session.set({ [sessionKey]: { loading: true, status: 'fetching', ...detected } });
-  await chrome.tabs.create({ url: `output-tab.html?key=${sessionKey}` });
+  await chrome.storage.session.set({ [sessionKey]: initialScanState(detected, 'Starting fresh scan…') });
   runAnalysis(sessionKey, detected, tab.id);
 });
 
@@ -736,22 +737,13 @@ chrome.action.onClicked.addListener(async (tab) => {
 // call is made. Single source of truth — add a provider here and every scan path
 // picks it up.
 const PROVIDER_KEYS = [
-  'anthropicKey',
-  ANTHROPIC_ACCESS_KEY,
-  ANTHROPIC_REFRESH_KEY,
+  ...PROVIDER_GATE_KEYS, // credentials + compat registry slots + ChatGPT-login OAuth record
   ANTHROPIC_EXPIRY_KEY,
   'anthropicModel',
-  'googleKey',
   'googleModel',
-  'openrouterKey',
   'openrouterModel',
-  'xaiKey',
-  'xaiRefresh',
   'xaiModel',
-  'nousKey',
   'nousModel',
-  ...compatStorageKeys(), // registry providers' key / model / endpoint / enabled / proto slots
-  OPENAI_CREDENTIALS_KEY, // ChatGPT-login OAuth record (drives re-mint on 401)
   'partRouting', // per-part model routing map (loaded alongside provider keys)
 ];
 
@@ -781,7 +773,10 @@ async function runBatchScan(batchKey, urls) {
     const subKey = SESSION_KEY_PREFIX + crypto.randomUUID();
     try {
       await chrome.storage.session.set({
-        [subKey]: { loading: true, status: 'fetching', platform: items[i].platform, repoId: items[i].repoId },
+        [subKey]: initialScanState(
+          { platform: items[i].platform, repoId: items[i].repoId },
+          `Queued from batch (${i + 1}/${items.length})…`
+        ),
       });
       runAnalysis(subKey, { platform: items[i].platform, repoId: items[i].repoId });
 
@@ -858,7 +853,8 @@ async function runAnalysis(sessionKey, detected, tabId) {
 
     startScanAnim(tabId); // fire-and-forget; no-ops without a tabId / when disabled / reduced motion
     // Snapshot the previous cached analysis for diff comparison (before it's overwritten).
-    const prevCached = await getCached(detected.platform, detected.repoId).catch(() => null);
+    // Run it beside metadata fetch so retries/rescans do not pay a serial cache read.
+    const prevCachedPromise = getCached(detected.platform, detected.repoId).catch(() => null);
 
     // Fetch metadata + README
     await chrome.storage.session.set({
@@ -911,7 +907,7 @@ async function runAnalysis(sessionKey, detected, tabId) {
     };
 
     // Attach diff against the previous scan (null on first scan — tab renders "Nothing to compare").
-    const diff = diffAnalyses(prevCached, fullData);
+    const diff = diffAnalyses(await prevCachedPromise, fullData);
     await chrome.storage.session.set({ [sessionKey]: { ...fullData, diff } });
     cacheAnalysis(detected.platform, detected.repoId, fullData).catch(() => {}); // history/cache (no diff stored)
 

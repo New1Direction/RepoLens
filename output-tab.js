@@ -154,6 +154,19 @@ function veeToVerdict() {
 }
 
 const FETCH_PHRASES = ['Pulling the README…', 'Grabbing the metadata…'];
+const PREFLIGHT_SIGNALS = ['Warming the lens…', 'Checking your route…', 'Looking for a cached scan…'];
+const FETCH_SIGNALS = [
+  'Peeking at the README…',
+  'Counting languages…',
+  'Checking license clues…',
+  'Sketching the repo shape…',
+];
+const THINK_SIGNALS = [
+  'Turning repo facts into a verdict…',
+  'Looking for sharp edges…',
+  'Building a trial plan…',
+  'Separating signal from hype…',
+];
 
 const THINK_PHRASES = [
   'Mapping the architecture…',
@@ -195,6 +208,35 @@ function setLoadingName(name) {
   if (el && !el.textContent) el.textContent = name;
 }
 
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el && text && el.textContent !== text) el.textContent = text;
+}
+
+function scanStageFor(status) {
+  if (status === 'thinking') return 2;
+  if (status === 'fetching') return 1;
+  return 0;
+}
+
+function rotatingSignal(items, startedAt) {
+  if (!items.length) return '';
+  const age = Math.max(0, Date.now() - (startedAt || Date.now()));
+  return items[Math.floor(age / 2600) % items.length];
+}
+
+function updateLoadingStage(data = {}) {
+  const stage = scanStageFor(data.status);
+  const labels = ['Ready lens', 'Read repo', 'Judge fit'];
+  setText('loading-phase', labels[stage]);
+  const signalItems = stage === 2 ? THINK_SIGNALS : stage === 1 ? FETCH_SIGNALS : PREFLIGHT_SIGNALS;
+  setText('loading-signal', rotatingSignal(signalItems, data.startedAt));
+  document.querySelectorAll('.scan-stage').forEach((el, i) => {
+    el.classList.toggle('active', i === stage);
+    el.classList.toggle('done', i < stage);
+  });
+}
+
 async function waitForData() {
   const deadline = Date.now() + 90_000;
   let phraseIndex = 0;
@@ -225,6 +267,7 @@ async function waitForData() {
 
       if (data.loading) {
         let changed = false;
+        updateLoadingStage(data);
         if (data.repoId) setLoadingName(data.repoId);
         if (data.statusMsg) {
           if (cycleTimer) {
@@ -242,10 +285,11 @@ async function waitForData() {
           if (data.status === 'thinking') startCycling(thinkPhrases(data.provider));
           else startCycling(FETCH_PHRASES);
         }
-        // Progress bar: fetching=15%, quickData ready=40%, thinking=55-90% (animated)
+        // Progress bar: preflight=8%, fetching=18%, quickData ready=45%, thinking=55-92% (animated)
         const bar = document.getElementById('loading-bar');
         if (bar) {
-          const pct = data.status === 'thinking' ? (data.quickData ? 55 : 40) : 15;
+          const pct =
+            data.status === 'thinking' ? (data.quickData ? 55 : 40) : data.status === 'fetching' ? 18 : 8;
           bar.style.width = pct + '%';
           if (data.status === 'thinking') {
             bar.style.transition = 'width 25s cubic-bezier(.1,0,.4,1)';

@@ -23,6 +23,192 @@
         min-height: 100vh;
       }
 
+      .scan-loader {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        gap: 10px;
+        overflow: hidden;
+        padding: 40px 20px;
+      }
+      .scan-loader::before {
+        content: '';
+        position: absolute;
+        width: min(520px, 80vw);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent), transparent 58%),
+          conic-gradient(
+            from 120deg,
+            transparent,
+            color-mix(in srgb, var(--accent) 28%, transparent),
+            transparent
+          );
+        opacity: 0.45;
+        filter: blur(18px);
+        animation: scan-aura 5s linear infinite;
+        pointer-events: none;
+      }
+      .scan-loader > * {
+        position: relative;
+        z-index: 1;
+      }
+      .scan-orb-wrap {
+        width: 64px;
+        height: 64px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 6px;
+      }
+      .scan-orb {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: var(--accent-grad);
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+          0 18px 44px -18px var(--accent);
+        animation: scan-breathe 1.8s var(--ease-out) infinite;
+      }
+      .scan-orb::before,
+      .scan-orb::after {
+        content: '';
+        position: absolute;
+        inset: -9px;
+        border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+        border-radius: 18px;
+        animation: scan-ring 2.4s linear infinite;
+      }
+      .scan-orb::after {
+        inset: -17px;
+        opacity: 0.5;
+        animation-duration: 3.2s;
+        animation-direction: reverse;
+      }
+      .scan-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.3px;
+        min-height: 22px;
+        text-align: center;
+      }
+      .scan-msg {
+        font-size: 13px;
+        color: var(--text-faint);
+        transition: opacity 0.3s;
+      }
+      .scan-phase {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 4px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--accent);
+        padding: 5px 10px;
+        font: 800 10px/1 var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .scan-phase::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 10px currentColor;
+      }
+      .scan-progress {
+        width: min(320px, 78vw);
+        height: 4px;
+        background: var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 6px;
+      }
+      .scan-progress-fill {
+        height: 100%;
+        width: 5%;
+        background: var(--accent-grad);
+        border-radius: inherit;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .scan-stages {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .scan-stage {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--text-faint);
+        font: 700 10px/1 var(--mono);
+      }
+      .scan-stage i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--border-2);
+      }
+      .scan-stage.done,
+      .scan-stage.active {
+        color: var(--text-sub);
+      }
+      .scan-stage.done i {
+        background: var(--ok-ink);
+      }
+      .scan-stage.active i {
+        background: var(--accent);
+        box-shadow: 0 0 10px var(--accent);
+      }
+      .scan-signal {
+        min-height: 18px;
+        margin-top: 4px;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .quick-verdict-card {
+        display: none;
+        margin-top: 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px 20px;
+        min-width: min(320px, 88vw);
+        max-width: 500px;
+        text-align: left;
+        box-shadow: 0 18px 50px -32px rgba(0, 0, 0, 0.45);
+      }
+      @keyframes scan-breathe {
+        0%,
+        100% {
+          transform: scale(1) rotate(0deg);
+        }
+        50% {
+          transform: scale(1.06) rotate(4deg);
+        }
+      }
+      @keyframes scan-ring {
+        to {
+          transform: rotate(1turn);
+        }
+      }
+      @keyframes scan-aura {
+        to {
+          transform: rotate(1turn);
+        }
+      }
+
       .header {
         background: var(--surface);
         border-bottom: 1px solid var(--border);
@@ -4320,89 +4506,22 @@
   </head>
   <body>
     <!-- Loading state -->
-    <div
-      id="loading-state"
-      style="
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 80vh;
-        gap: 10px;
-      "
-    >
-      <div id="loading-vee" style="margin-bottom: 6px">
-        <div
-          style="
-            width: 36px;
-            height: 36px;
-            background: var(--accent-grad);
-            border-radius: 10px;
-            animation: pulse 1.5s ease-in-out infinite;
-          "
-        ></div>
+    <div id="loading-state" class="scan-loader">
+      <div id="loading-vee" class="scan-orb-wrap"><div class="scan-orb" aria-hidden="true"></div></div>
+      <div id="loading-name" class="scan-title"></div>
+      <div id="loading-msg" class="scan-msg">Starting…</div>
+      <div id="loading-phase" class="scan-phase">Ready lens</div>
+      <div class="scan-progress" aria-hidden="true">
+        <div id="loading-bar" class="scan-progress-fill"></div>
       </div>
-      <div
-        id="loading-name"
-        style="
-          font-size: 16px;
-          font-weight: 800;
-          color: var(--text);
-          letter-spacing: -0.3px;
-          min-height: 22px;
-        "
-      ></div>
-      <div id="loading-msg" style="font-size: 13px; color: var(--text-faint); transition: opacity 0.3s">
-        Starting…
+      <div class="scan-stages" aria-label="Scan progress">
+        <span class="scan-stage active"><i></i>Ready</span>
+        <span class="scan-stage"><i></i>Read</span>
+        <span class="scan-stage"><i></i>Judge</span>
       </div>
-      <!-- Slim progress track -->
-      <div
-        style="
-          width: 220px;
-          height: 3px;
-          background: var(--border);
-          border-radius: 2px;
-          overflow: hidden;
-          margin-top: 4px;
-        "
-      >
-        <div
-          id="loading-bar"
-          style="
-            height: 100%;
-            width: 5%;
-            background: var(--accent);
-            border-radius: 2px;
-            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-          "
-        ></div>
-      </div>
+      <div id="loading-signal" class="scan-signal">Warming the lens…</div>
       <!-- Quick verdict: GitHub API data rendered while AI thinks -->
-      <div
-        id="quick-verdict"
-        style="
-          display: none;
-          margin-top: 18px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          padding: 16px 20px;
-          min-width: 320px;
-          max-width: 500px;
-          text-align: left;
-        "
-      ></div>
-      <style>
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.4;
-          }
-        }
-      </style>
+      <div id="quick-verdict" class="quick-verdict-card"></div>
     </div>
 
     <!-- Error state -->

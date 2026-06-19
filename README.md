@@ -51,6 +51,7 @@ Newest first — the highlights. Full, detailed notes live in the **[changelog](
 
 ### Unreleased — Theme pack, provider refresh, stability
 
+- 🚀 **Instant scan feedback.** Clicking RepoLens opens the loading tab immediately, checks cache/provider setup in parallel, and shows a more playful staged scan loader.
 - ✨ **Smoother app feel.** Scan tabs preserve scroll, transition more softly, avoid loading-card flicker, and large Library grids scroll more cheaply.
 - 🧭 **Structured scan schema.** Scans now include a mental model, risk register, adoption simulation, and learning path, with fallbacks for old results.
 - ✅ **Decision-grade Verdict.** Scans now produce a best next action, confidence, evidence, and a 30-minute trial plan.
