@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RepoLens — v3.0.0 Discover</title>
+    <title>RepoLens — v3.1.0 Patch Notes</title>
     <style>
       :root {
         --bg: #06060d;
@@ -720,29 +720,29 @@
     <div class="wrap">
       <!-- HERO -->
       <header class="hero">
-        <span class="kicker"><span class="pulse"></span> Shipped · Jun 12–14, 2026</span>
+        <span class="kicker"><span class="pulse"></span> Shipped · Jun 19, 2026</span>
         <div class="hero-vee"><span class="vee is-scanning" id="heroVee" aria-hidden="true"></span></div>
-        <h1>Your library<br /><span class="grad">finds its own peers.</span></h1>
+        <h1>Verdicts now<br /><span class="grad">tell you what to do.</span></h1>
         <p class="hero-sub">
-          Search GitHub from inside the extension, get AI recommendations based on your adopted repos, compare
-          any N repos in a structured matrix, export a full decision matrix with eval scores and decisions,
-          and a daily drift alert when repos go stale — five features, one version.
+          The latest RepoLens pass turns scans into action: a best next move, confidence, evidence, and a
+          30-minute trial plan — plus 21 themes, live provider catalogs, Claude sign-in, and fixes for stuck
+          scans and Library save/load hangs.
         </p>
-        <div class="hero-meta">🔭 RepoLens · v1.1.0 → v3.0.0</div>
+        <div class="hero-meta">🔭 RepoLens · v3.1.0 patch notes</div>
       </header>
 
       <!-- STATS -->
       <section class="stats reveal">
         <div class="stat">
-          <div class="n">33</div>
-          <div class="l">Releases</div>
+          <div class="n">35</div>
+          <div class="l">Release notes</div>
         </div>
         <div class="stat">
-          <div class="n">731</div>
+          <div class="n">904</div>
           <div class="l">Tests passing</div>
         </div>
         <div class="stat">
-          <div class="n">13</div>
+          <div class="n">21</div>
           <div class="l">Themes</div>
         </div>
         <div class="stat">
@@ -759,115 +759,111 @@
       <section class="sec">
         <div class="reveal">
           <div class="sec-eyebrow">Just shipped</div>
-          <h2 class="sec-title">v3.0.0 — Discover.</h2>
+          <h2 class="sec-title">v3.1.0 — Actionable scans.</h2>
           <p class="sec-note">
-            Five features that turn your library from a passive catalogue into an active research tool: search
-            GitHub from inside the extension, get AI recommendations from your adopted repos, compare any N
-            repos in a structured matrix, export a full decision matrix with eval scores and criteria, and a
-            daily drift alert when repos go stale.
+            Verdicts now lead with the decision: what to do next, how confident RepoLens is, which evidence
+            matters, and how to run a quick trial before adopting a repo.
           </p>
         </div>
 
         <div class="latest-card reveal">
           <div class="latest-top">
-            <span class="vtag new">v3.0.0</span>
+            <span class="vtag new">v3.1.0</span>
             <span class="vnew">● NEWEST</span>
-            <span class="vtheme">Discover.</span>
-            <span class="vdate">Jun 14</span>
+            <span class="vtheme">Actionable Verdict.</span>
+            <span class="vdate">Jun 19</span>
           </div>
 
           <div class="bento">
             <div class="feat">
-              <div class="ic">🔍</div>
-              <h3>Discovery mode</h3>
+              <div class="ic">✅</div>
+              <h3>Best next action</h3>
               <p>
-                Click "Discover" in the toolbar to open a GitHub search panel. Type any query — "rust async
-                runtime", "react state management" — and get 12 starred results, filtered to repos you don't
-                already have. One click to open and scan.
+                The Verdict tab now opens with an explicit recommendation — adopt, trial, compare, hold, or
+                avoid — plus the very next thing to do. No more reading a report and wondering what the move
+                is.
               </p>
               <div class="tagrow">
-                <span class="tag">discover</span><span class="tag">search</span
-                ><span class="tag">github</span>
+                <span class="tag">verdict</span><span class="tag">action</span
+                ><span class="tag">decision</span>
               </div>
             </div>
             <div class="feat">
-              <div class="ic">✦</div>
-              <h3>Recommendations</h3>
+              <div class="ic">🧪</div>
+              <h3>30-minute trial plan</h3>
               <p>
-                Click "Recommendations" in the discovery panel to get repos suggested from your own
-                adopted/trial decisions. RepoLens extracts your top capabilities and primary language, then
-                searches GitHub for similar repos you haven't seen yet.
+                Every new scan asks the model for a short validation plan: what to read, what to run, what
+                good looks like, and which questions to answer before a repo enters your stack.
               </p>
               <div class="tagrow">
-                <span class="tag">recommendations</span><span class="tag">ai</span
-                ><span class="tag">discovery</span>
+                <span class="tag">trial</span><span class="tag">checklist</span
+                ><span class="tag">education</span>
               </div>
             </div>
             <div class="feat">
-              <div class="ic">⊞</div>
-              <h3>N-way compare table</h3>
+              <div class="ic">🎨</div>
+              <h3>21 themes</h3>
               <p>
-                Select any 2–10 repos in selection mode and hit "⊞ Compare N". A full-screen matrix opens with
-                every repo as a column and fit, health, stars, language, decision, eval score, per-rubric
-                stars, capabilities, and note as rows. Export as Markdown or CSV directly from the modal.
+                Liquid Glass joined the theme list, then six DESIGN.md-inspired looks landed: Command Blue,
+                Aubergine Trace, Emerald DB, Paperline, Toybox Red, and Gradient Aurora.
               </p>
               <div class="tagrow">
-                <span class="tag">compare</span><span class="tag">matrix</span><span class="tag">export</span>
+                <span class="tag">themes</span><span class="tag">design.md</span
+                ><span class="tag">css-only</span>
               </div>
             </div>
             <div class="feat">
-              <div class="ic">📊</div>
-              <h3>Decision matrix export</h3>
+              <div class="ic">🔄</div>
+              <h3>Live model catalogs</h3>
               <p>
-                Two new palette commands export the full visible library as a structured matrix — CSV or
-                Markdown — with every column: fit, health, stars, language, decision date, eval score,
-                individual rubric criterion scores, eval note, and personal note. Ready for Notion, Obsidian,
-                or a spreadsheet.
+                Gemini, OpenRouter, and Nous now load provider model catalogs in Settings. Gemini stays stable
+                by default, while newer model IDs remain available when your key exposes them.
               </p>
               <div class="tagrow">
-                <span class="tag">export</span><span class="tag">csv</span><span class="tag">matrix</span>
+                <span class="tag">models</span><span class="tag">providers</span
+                ><span class="tag">gemini</span>
               </div>
             </div>
             <div class="feat">
-              <div class="ic">⏰</div>
-              <h3>Drift alerts</h3>
+              <div class="ic">🔓</div>
+              <h3>Claude sign-in</h3>
               <p>
-                A background alarm fires once a day, counts repos not scanned in 14+ days, and writes a
-                summary. When you open the library a dismissable amber banner tells you exactly how many repos
-                have gone stale — with a one-click "Refresh stale" shortcut.
+                Anthropic supports the Claude Code / Pi-style OAuth flow again, while Console API keys remain
+                available for teams that prefer key-based access.
               </p>
               <div class="tagrow">
-                <span class="tag">drift</span><span class="tag">alerts</span><span class="tag">stale</span>
+                <span class="tag">claude</span><span class="tag">oauth</span
+                ><span class="tag">providers</span>
               </div>
             </div>
             <div class="feat">
-              <div class="ic">🗂</div>
-              <h3>Compare includes eval data</h3>
+              <div class="ic">🛟</div>
+              <h3>Stability hardening</h3>
               <p>
-                The N-way compare modal and both matrix exports include your rubric scores per criterion, so
-                you can see not just "who scored higher" but "which repo is better documented" and "which has
-                stronger type safety" side-by-side.
+                Output tabs keep the MV3 worker warm during scans, repository fetches time out cleanly, and
+                IndexedDB blocked-upgrade states no longer leave Library blank or saves stuck forever.
               </p>
               <div class="tagrow">
-                <span class="tag">eval</span><span class="tag">compare</span><span class="tag">rubric</span>
+                <span class="tag">stability</span><span class="tag">library</span
+                ><span class="tag">scan</span>
               </div>
             </div>
           </div>
 
           <div class="changed">
             <div class="chg">
-              <span class="ci">🔧</span>
+              <span class="ci">🗒️</span>
               <div>
-                <b>alarms permission added.</b>
+                <b>Patch notes are easier to reach.</b>
                 <span
-                  >Manifest now includes "alarms" so the background drift check can fire on a 24-hour schedule
-                  without requiring an open tab.</span
+                  >The output header and Library toolbar now expose What's New directly instead of hiding it
+                  behind docs.</span
                 >
               </div>
             </div>
             <div class="chg">
               <span class="ci">🧪</span>
-              <div><b>903 tests, all green.</b> <span>No regressions across 97 test files.</span></div>
+              <div><b>904 tests, all green.</b> <span>No regressions across 97 test files.</span></div>
             </div>
           </div>
         </div>
@@ -1199,7 +1195,7 @@
         </div>
         <div>
           🔭 <b>RepoLens</b> — built for people who read code before they trust it.<br />
-          Full detail in the <a href="CHANGELOG.md">changelog</a>. Now at v3.0.0.
+          Full detail in the <a href="CHANGELOG.md">changelog</a>. Now at v3.1.0.
         </div>
       </footer>
     </div>

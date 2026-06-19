@@ -3523,6 +3523,9 @@ async function checkOnboarding() {
 
 async function init() {
   document.getElementById('settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
+  document
+    .getElementById('lib-whats-new')
+    ?.addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('whats-new.html') }));
   document.getElementById('lib-btn-grid')?.addEventListener('click', showGridView);
   document.getElementById('lib-btn-radar')?.addEventListener('click', toggleRadarView);
   document.getElementById('lib-btn-corkboard')?.addEventListener('click', toggleCorkboardView);

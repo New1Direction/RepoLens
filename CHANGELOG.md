@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/) and groups chang
 by theme. Dates are when the release landed on `main`. 1.1.0 through 1.6.0 shipped
 the same day, as a rapid burst of improvements, so they share a date.
 
-## [Unreleased]
+## [Unreleased] — 2026-06-19 · _Actionable Verdict · Theme Pack · Provider Refresh · Stability_
 
 ### Added
 

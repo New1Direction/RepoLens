@@ -3528,7 +3528,7 @@ document.getElementById('open-library')?.addEventListener('click', async () => {
   }
 });
 
-const CURRENT_VERSION = '3.0.0';
+const CURRENT_VERSION = '3.1.0';
 const whatsNewBtn = document.getElementById('whats-new-btn');
 const whatsNewDot = document.getElementById('whats-new-dot');
 chrome.storage.local.get('seenVersion', ({ seenVersion }) => {
