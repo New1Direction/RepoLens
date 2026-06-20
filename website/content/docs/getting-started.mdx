@@ -18,9 +18,9 @@ The 🔭 icon appears in your toolbar.
 
 1. Open any repo page — e.g. a project on **github.com**.
 2. Click the **RepoLens** icon.
-3. A new tab opens on the **Verdict** — fit call, bottom line, measured facts, and the top things worth noting.
+3. A loading tab opens immediately, then RepoLens checks cache/provider setup while it fetches the repo. When the scan finishes, it lands on the **Verdict** — fit call, bottom line, measured facts, structured risks, learning path, and the top things worth noting.
 
-The first scan needs an AI provider connected. If you haven't yet, RepoLens points you to **Options** to add one — paste an API key from any provider, sign in with OAuth (Claude, ChatGPT/OpenAI, Grok, OpenRouter), or run a **local Ollama** with no key at all. For Gemini, OpenRouter, and Nous, Settings loads the live model list from your connected account. See [Models](/docs/models).
+The first scan needs an AI provider connected. If you haven't yet, RepoLens points you to **Options** to add one — paste an API key from any provider, sign in with OAuth (Claude, ChatGPT/OpenAI, Grok, OpenRouter), or run a **local Ollama** with no key at all. For Gemini, OpenRouter, and Nous, Settings loads the live model list from your connected account. Slow provider calls keep going while the background scan heartbeat is alive, so a long scan should not falsely fail at 90 seconds. See [Models](/docs/models).
 
 > **Want it your way?** **Options → Appearance** has 21 themes (light, dark, Mono Ink, Liquid Glass, DESIGN.md-inspired themes, and more), and **Voice** changes the *writing tone* of the analysis — it's text, not audio, anywhere from blunt-and-technical to friendly-and-plain.
 

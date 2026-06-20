@@ -724,9 +724,10 @@
         <div class="hero-vee"><span class="vee is-scanning" id="heroVee" aria-hidden="true"></span></div>
         <h1>Verdicts now<br /><span class="grad">tell you what to do.</span></h1>
         <p class="hero-sub">
-          The latest RepoLens pass turns scans into action: a best next move, confidence, evidence, and a
-          30-minute trial plan — plus 21 themes, live provider catalogs, Claude sign-in, and fixes for stuck
-          scans and Library save/load hangs.
+          The latest RepoLens pass turns scans into action: a best next move, confidence, evidence, a
+          30-minute trial plan, structured risk/learning fields, smoother tab navigation, instant scan
+          startup, and long-scan heartbeat recovery — plus 21 themes, live provider catalogs, and Claude
+          sign-in.
         </p>
         <div class="hero-meta">🔭 RepoLens · v3.1.0 patch notes</div>
       </header>
@@ -738,7 +739,7 @@
           <div class="l">Release notes</div>
         </div>
         <div class="stat">
-          <div class="n">904</div>
+          <div class="n">905</div>
           <div class="l">Tests passing</div>
         </div>
         <div class="stat">
@@ -863,7 +864,7 @@
             </div>
             <div class="chg">
               <span class="ci">🧪</span>
-              <div><b>904 tests, all green.</b> <span>No regressions across 97 test files.</span></div>
+              <div><b>905 tests, all green.</b> <span>No regressions across 97 test files.</span></div>
             </div>
           </div>
         </div>
@@ -883,13 +884,14 @@
           <div class="rel reveal">
             <div class="rel-head">
               <span class="rel-v">Next</span
-              ><span class="rel-theme">Theme pack, provider refresh, stability.</span
+              ><span class="rel-theme">Actionable scans, smoother loading, provider refresh.</span
               ><span class="rel-date">Jun 19</span>
             </div>
             <div class="rel-body">
-              RepoLens gets a decision-grade Verdict tab, seven new CSS-only themes, live model catalogs for
-              Gemini/OpenRouter/Nous, Claude Code / Pi-style Anthropic sign-in, and hardening for stuck scans
-              plus Library save/load hangs.
+              RepoLens gets a decision-grade Verdict tab, structured scan schema, smoother scan startup, a
+              heartbeat-aware long-scan loader, seven new CSS-only themes, live model catalogs for
+              Gemini/OpenRouter/Nous, Claude Code / Pi-style Anthropic sign-in, and Library save/load
+              hardening.
             </div>
             <ul class="rel-list">
               <li>
@@ -897,6 +899,10 @@
                 cache and provider setup in parallel.
               </li>
               <li><b>More playful loading</b> — scan stages, live phase labels, and rotating signal copy.</li>
+              <li>
+                <b>Heartbeat-aware timeouts</b> — slow provider calls keep going while the background scan is
+                still alive.
+              </li>
               <li>
                 <b>Smoother navigation</b> — softer tab transitions, restored tab scroll, steadier loading.
               </li>
@@ -1200,7 +1206,7 @@
       <footer class="reveal">
         <div class="pills">
           <span class="pill">No backend</span>
-          <span class="pill">No accounts</span>
+          <span class="pill">No RepoLens account</span>
           <span class="pill">Your keys, your machine</span>
           <span class="pill">Manifest V3</span>
         </div>

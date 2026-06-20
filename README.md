@@ -49,9 +49,10 @@ Plus **SKTPG** (a one-tap State / Known-pitfalls / Trajectory / Proof / Growth r
 
 Newest first — the highlights. Full, detailed notes live in the **[changelog](CHANGELOG.md)**.
 
-### Unreleased — Theme pack, provider refresh, stability
+### Unreleased — Actionable scans, smoother loading, provider refresh
 
 - 🚀 **Instant scan feedback.** Clicking RepoLens opens the loading tab immediately, checks cache/provider setup in parallel, and shows a more playful staged scan loader.
+- 🫀 **Long-scan heartbeat.** Slow-but-alive provider calls no longer fail at a fixed 90 seconds; RepoLens waits while the background scan is still reporting progress.
 - ✨ **Smoother app feel.** Scan tabs preserve scroll, transition more softly, avoid loading-card flicker, and large Library grids scroll more cheaply.
 - 🧭 **Structured scan schema.** Scans now include a mental model, risk register, adoption simulation, and learning path, with fallbacks for old results.
 - ✅ **Decision-grade Verdict.** Scans now produce a best next action, confidence, evidence, and a 30-minute trial plan.
@@ -128,12 +129,12 @@ Use almost any AI provider, not just the built-in five.
 toolbar click
    → fetch repo metadata + README (GitHub / GitLab / npm / PyPI)
    → AI provider of your choice (with smart fallback)
-   → structured analysis (verdict, pros/cons, health, eli5, …)
+   → structured analysis (verdict, evidence, risk register, learning path, …)
    → saved to your in-browser library
    → rendered as a verdict-first tab
 ```
 
-No accounts. No backend. Your keys, your machine.
+No RepoLens account. No backend. Your keys, your machine.
 
 ---
 

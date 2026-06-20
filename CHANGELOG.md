@@ -1,13 +1,13 @@
 # Changelog
 
 Every release of RepoLens, newest first. Want the friendly highlights instead of
-the full detail? See **[What's new](README.md)** in the README.
+the full detail? Open **What's New** in the extension, or read `whats-new.html`.
 
 This project follows [Semantic Versioning](https://semver.org/) and groups changes
 by theme. Dates are when the release landed on `main`. 1.1.0 through 1.6.0 shipped
 the same day, as a rapid burst of improvements, so they share a date.
 
-## [Unreleased] — 2026-06-19 · _Actionable Verdict · Theme Pack · Provider Refresh · Stability_
+## [Unreleased] — 2026-06-19 · _Actionable Scans · Smooth Loading · Provider Refresh · Stability_
 
 ### Added
 
