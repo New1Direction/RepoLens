@@ -13,27 +13,47 @@ export type Release = {
 };
 
 export const LATEST: Release = {
-  version: '3.0.0',
-  theme: 'Discover',
-  date: 'Jun 14, 2026',
+  version: '3.1.1',
+  theme: 'Subscription Auth Fix',
+  date: 'Jun 25, 2026',
   summary:
-    'Five features that turn your library from a passive catalogue into an active research tool.',
+    'ChatGPT and Claude subscription sign-ins now actually work — Codex Responses API replaces the broken API-key minting path, plus rate-limit retry for Claude.',
   highlights: [
-    'Discovery mode — search GitHub from inside the extension; results filtered to repos you don’t already have.',
-    'Recommendations — peers suggested from your own adopted and trial decisions.',
-    'N-way compare — any 2–10 repos as columns in a structured matrix, exportable to CSV or Markdown.',
-    'Decision-matrix export — the full visible library with fit, health, decisions, and per-rubric eval scores.',
-    'Drift alerts — a daily background check flags repos that have gone stale.',
+    'ChatGPT sign-in uses the Codex Responses API (chatgpt.com/backend-api/codex/responses) with the OAuth access token directly — no API platform access required.',
+    'Claude token exchange and refresh now retry with exponential backoff on 429 rate limits.',
+    'OpenAI model catalog updated: GPT-5.4 (recommended), GPT-5.4 mini, and GPT-5.5 added.',
+    'OAuth error messages fixed — no more [object Object] on failed token exchanges.',
   ],
 };
 
 export const RELEASES: Release[] = [
   {
+    version: '3.1.0',
+    theme: 'Interactive Canvas',
+    date: 'Jun 16, 2026',
+    summary:
+      'Blueprint canvas, guided tour, corkboard, stack studio, live first-class model catalogs, Claude sign-in restored, and six new themes.',
+  },
+  {
+    version: '3.0.0',
+    theme: 'Discover',
+    date: 'Jun 14, 2026',
+    summary:
+      'Five features that turn your library from a passive catalogue into an active research tool.',
+    highlights: [
+      "Discovery mode — search GitHub from inside the extension; results filtered to repos you don't already have.",
+      "Recommendations — peers suggested from your own adopted and trial decisions.",
+      "N-way compare — any 2–10 repos as columns in a structured matrix, exportable to CSV or Markdown.",
+      "Decision-matrix export — the full visible library with fit, health, decisions, and per-rubric eval scores.",
+      "Drift alerts — a daily background check flags repos that have gone stale.",
+    ],
+  },
+  {
     version: '2.9.0',
     theme: 'Evaluate',
     date: 'Jun 14, 2026',
     summary:
-      'Evaluations Workbench: score repos 1–5 against a custom weighted rubric (e), a weighted-average badge on every card, sort by eval score, an evaluated-only filter, and a one-command auto-decide from Vee’s fit suggestion.',
+      "Evaluations Workbench: score repos 1–5 against a custom weighted rubric, a weighted-average badge on every card, sort by eval score, an evaluated-only filter, and a one-command auto-decide from Vee\u2019s fit suggestion.",
   },
   {
     version: '2.8.0',
