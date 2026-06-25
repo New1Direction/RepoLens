@@ -224,7 +224,14 @@ async function tokenErrorMessage(res, fallback) {
   const body = await res.text().catch(() => '');
   try {
     const e = JSON.parse(body);
-    return e.error_description || e.error?.message || e.error || e.message || fallback || `Token request failed (${res.status})`;
+    return (
+      e.error_description ||
+      e.error?.message ||
+      e.error ||
+      e.message ||
+      fallback ||
+      `Token request failed (${res.status})`
+    );
   } catch {
     // body isn't JSON — if it's an object stringified somehow, stringify it properly
     if (body && typeof body === 'object') return JSON.stringify(body).slice(0, 160);

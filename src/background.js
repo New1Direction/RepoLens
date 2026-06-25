@@ -1711,7 +1711,11 @@ async function callOpenAIOAuth(model = 'gpt-5.4', prompt) {
     }
     const detail = await res.text().catch(() => '');
     let msg;
-    try { msg = JSON.parse(detail)?.error?.message; } catch { msg = ''; }
+    try {
+      msg = JSON.parse(detail)?.error?.message;
+    } catch {
+      msg = '';
+    }
     throw new Error(msg || `OpenAI Codex API error ${res.status}`);
   }
 
@@ -1750,7 +1754,11 @@ async function parseCodexResponsesSSE(response, timeoutMs = 60_000) {
       for (const data of dataLines) {
         if (data === '[DONE]') continue;
         let evt;
-        try { evt = JSON.parse(data); } catch { continue; }
+        try {
+          evt = JSON.parse(data);
+        } catch {
+          continue;
+        }
         if (evt.type === 'response.output_text.delta' && typeof evt.delta === 'string') {
           fullText += evt.delta;
         }

@@ -254,7 +254,12 @@ describe('mintOpenAIApiKey', () => {
 
 describe('waitForOpenAIOAuthResult', () => {
   it('resolves with ok once OAuth credentials appear', async () => {
-    store[OPENAI_CREDENTIALS_KEY] = { access_token: 'acc', refresh_token: 'ref', id_token: 'id', expires_at: Date.now() + 3600000 };
+    store[OPENAI_CREDENTIALS_KEY] = {
+      access_token: 'acc',
+      refresh_token: 'ref',
+      id_token: 'id',
+      expires_at: Date.now() + 3600000,
+    };
     const r = await waitForOpenAIOAuthResult({ timeoutMs: 1000, intervalMs: 10 });
     expect(r).toEqual({ ok: true });
   });

@@ -71,7 +71,7 @@ async function fetchWithRetry(url, opts, { maxRetries = 2, baseDelayMs = 2000 } 
       if (res.status !== 429) return res;
       // Rate limited — read retry hint and back off
       const retryAfter = res.headers.get('retry-after');
-      const delay = retryAfter ? Math.max(1000, Number(retryAfter) * 1000) : baseDelayMs * (2 ** attempt);
+      const delay = retryAfter ? Math.max(1000, Number(retryAfter) * 1000) : baseDelayMs * 2 ** attempt;
       if (attempt < maxRetries) {
         await _sleep(Math.min(delay, 30000));
         continue;
@@ -80,7 +80,7 @@ async function fetchWithRetry(url, opts, { maxRetries = 2, baseDelayMs = 2000 } 
     } catch (err) {
       lastErr = err;
       if (attempt < maxRetries) {
-        await _sleep(baseDelayMs * (2 ** attempt));
+        await _sleep(baseDelayMs * 2 ** attempt);
         continue;
       }
       throw err;
