@@ -1,3 +1,6 @@
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
+
 import { callModel } from './model.js';
 import { attachHtmlReport } from './report.js';
 
@@ -72,20 +75,80 @@ function normalizeUrl(raw) {
     throw new Error('analyze_product requires a valid URL');
   }
   if (!['http:', 'https:'].includes(url.protocol)) throw new Error('analyze_product only supports http(s) URLs');
-  if (['localhost', '127.0.0.1', '::1'].includes(url.hostname)) throw new Error('analyze_product does not fetch localhost URLs');
+  if (url.username || url.password) throw new Error('analyze_product does not allow URLs with embedded credentials');
+  return url;
+}
+
+function isPrivateIpv4(ip) {
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return true;
+  const [a, b] = parts;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    a >= 224
+  );
+}
+
+function isPrivateIp(ip) {
+  const kind = isIP(ip);
+  if (kind === 4) return isPrivateIpv4(ip);
+  if (kind !== 6) return true;
+  const normalized = ip.toLowerCase();
+  return (
+    normalized === '::' ||
+    normalized === '::1' ||
+    normalized.startsWith('fc') ||
+    normalized.startsWith('fd') ||
+    normalized.startsWith('fe8') ||
+    normalized.startsWith('fe9') ||
+    normalized.startsWith('fea') ||
+    normalized.startsWith('feb') ||
+    normalized.startsWith('::ffff:127.') ||
+    normalized.startsWith('::ffff:10.') ||
+    normalized.startsWith('::ffff:192.168.')
+  );
+}
+
+export async function assertPublicUrl(raw) {
+  const url = normalizeUrl(raw);
+  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')) {
+    throw new Error('analyze_product only fetches public hosts');
+  }
+  if (isIP(host)) {
+    if (isPrivateIp(host)) throw new Error('analyze_product only fetches public hosts');
+    return url;
+  }
+  const records = await lookup(host, { all: true, verbatim: true });
+  if (!records.length || records.some((record) => isPrivateIp(record.address))) {
+    throw new Error('analyze_product only fetches public hosts');
+  }
   return url;
 }
 
 async function fetchProductPage(rawUrl) {
-  const url = normalizeUrl(rawUrl);
+  const url = await assertPublicUrl(rawUrl);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
   try {
     const res = await fetch(url, {
-      redirect: 'follow',
+      redirect: 'manual',
       signal: controller.signal,
-      headers: { 'user-agent': 'RepoLens-MCP/0.1 (+https://github.com/New1Direction/RepoLens)' },
+      headers: { 'user-agent': 'RepoLens-MCP/0.2 (+https://github.com/New1Direction/RepoLens)' },
     });
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (!location) throw new Error(`Product page redirect ${res.status} without Location header`);
+      const redirected = new URL(location, url);
+      await assertPublicUrl(redirected.href);
+      return fetchProductPage(redirected.href);
+    }
     if (!res.ok) throw new Error(`Product page HTTP ${res.status}`);
     const type = res.headers.get('content-type') || '';
     if (!type.includes('text/html') && !type.includes('text/plain')) {
@@ -94,7 +157,7 @@ async function fetchProductPage(rawUrl) {
     const declared = Number(res.headers.get('content-length') || 0);
     if (declared > MAX_HTML_BYTES) throw new Error(`Product page exceeds ${MAX_HTML_BYTES} bytes`);
     const html = (await res.text()).slice(0, MAX_HTML_BYTES);
-    return { finalUrl: res.url || url.href, title: extractTitle(html, url.hostname), text: cleanText(html) };
+    return { finalUrl: url.href, title: extractTitle(html, url.hostname), text: cleanText(html) };
   } finally {
     clearTimeout(timer);
   }
