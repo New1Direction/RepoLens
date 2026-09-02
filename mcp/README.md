@@ -14,6 +14,11 @@ posts. RepoLens gives the agent a dependency due-diligence tool:
 
 > “Should I use this repo, what are the risks, and what should I try first?”
 
+It can also inspect a deployed product page without pretending that marketing
+claims are implementation facts. Product analysis marks website-only evidence
+explicitly and tells the agent what code, contract, runtime, or accounting
+evidence would still be needed to verify important claims.
+
 ## Tools
 
 - `scan_repo` — verdict-first report: fit, health, pros, cons, red flags,
@@ -23,12 +28,47 @@ posts. RepoLens gives the agent a dependency due-diligence tool:
 - `blueprint_scene` — graph-shaped architecture map with nodes/edges/positions.
 - `compare_repos` — compare 2-5 repos/packages for a use case, pick a winner,
   and open a visual bake-off report.
+- `evaluate_for_goal` — evaluate one repo against a concrete goal and explicit
+  constraints; returns adopt/trial/hold/reject, fit score, blockers, costs,
+  dependency risk, evidence, and a short trial plan.
+- `analyze_product` — inspect a public product URL and return its product model,
+  core loop, dependencies, critical systems, failure modes, and a claim/evidence
+  verification map. Website claims remain unverified unless separate evidence is
+  supplied later.
 
 Single-repo tools accept:
 
 ```json
 {
   "repo": "honojs/hono",
+  "report": true,
+  "openReport": true
+}
+```
+
+`evaluate_for_goal` accepts:
+
+```json
+{
+  "repo": "honojs/hono",
+  "goal": "HTTP layer for a deterministic autonomous agent runtime",
+  "constraints": [
+    "low dependency count",
+    "edge compatible",
+    "actively maintained",
+    "no mandatory cloud dependency"
+  ],
+  "report": true,
+  "openReport": true
+}
+```
+
+`analyze_product` accepts:
+
+```json
+{
+  "url": "https://www.orbio.so/",
+  "goal": "Understand the fee-to-inference loop and identify what must be verified before trusting the accounting",
   "report": true,
   "openReport": true
 }
@@ -140,41 +180,9 @@ Before you add this dependency, run RepoLens scan_repo and open the report.
 ```
 
 ```text
-Generate a RepoLens deep_dive for github.com/fastify/fastify and summarize the gaps.
+Use RepoLens evaluate_for_goal on honojs/hono for a deterministic agent API runtime.
 ```
 
 ```text
-Use blueprint_scene on remix-run/remix so I can see how the repo is structured.
+Analyze https://www.orbio.so/ as a product. Separate website claims from verified implementation facts and tell me what evidence is still needed.
 ```
-
-```text
-Compare honojs/hono vs fastify/fastify for an edge API and open the RepoLens report.
-```
-
-## Supported inputs
-
-`scan_repo` supports all fetcher-backed RepoLens targets:
-
-```text
-honojs/hono
-https://github.com/honojs/hono
-github:honojs/hono
-gitlab:inkscape/inkscape
-https://gitlab.com/inkscape/inkscape
-npm:react
-https://www.npmjs.com/package/@modelcontextprotocol/sdk
-pypi:fastapi
-https://pypi.org/project/fastapi/
-```
-
-`deep_dive` and `blueprint_scene` accept the same inputs, but source-tree reads are
-GitHub-deep today; non-GitHub targets degrade to README/metadata context.
-
-## Current scope
-
-- Local-only: no hosted backend, no RepoLens account.
-- Provider support: Anthropic, OpenAI, OpenRouter, and Google via env keys.
-- The Chrome extension still has the richest provider/platform UI; MCP is the
-  agent-native path.
-
-Planned next steps: publish `repolens-mcp` to npm and add a comparison tool.
