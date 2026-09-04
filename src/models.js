@@ -48,7 +48,12 @@ export const CATALOG = {
   openrouter: {
     label: 'OpenRouter',
     models: [
-      { value: 'x-ai/grok-4.3', label: 'xAI: Grok 4.3', recommended: true },
+      {
+        value: 'openrouter/free',
+        label: 'OpenRouter Free router — variable availability',
+        recommended: true,
+      },
+      { value: 'x-ai/grok-4.3', label: 'xAI: Grok 4.3' },
       { value: 'x-ai/grok-4.20', label: 'xAI: Grok 4.20' },
       { value: 'anthropic/claude-opus-4.8', label: 'Anthropic: Claude Opus 4.8' },
       { value: 'anthropic/claude-sonnet-4.6', label: 'Anthropic: Claude Sonnet 4.6' },

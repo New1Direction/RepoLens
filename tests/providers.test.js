@@ -96,6 +96,10 @@ describe('compatModelFor', () => {
   it('falls back to the recommended catalog model', () => {
     expect(compatModelFor('deepseek', {})).toBe('deepseek-chat');
   });
+
+  it('uses the current local Ollama recommendation by default', () => {
+    expect(compatModelFor('ollama', {})).toBe('qwen3:8b');
+  });
   it('falls back to the first model when none is recommended', () => {
     // volcengine has an empty catalog → empty string is acceptable (user must set one)
     expect(compatModelFor('volcengine', {})).toBe('');

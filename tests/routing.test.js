@@ -24,6 +24,10 @@ describe('modelFor', () => {
     expect(modelFor('anthropic', { anthropicModel: 'claude-opus-4-8' })).toBe('claude-opus-4-8');
     expect(modelFor('anthropic', {})).toBe(DEFAULT_MODELS.anthropic);
   });
+
+  it('defaults OpenRouter to its free routing alias', () => {
+    expect(modelFor('openrouter', {})).toBe('openrouter/free');
+  });
 });
 
 describe('buildAttemptPlan', () => {

@@ -92,12 +92,13 @@ The highest provider in that order that's **connected** becomes your primary; th
 
 Want finer control? A scan is really **eight parts** (core scan, Deep Dive, Versus, …), and you can route **each part to a different model** — heavy judgment to a big model, bulk re-tagging to a cheap fast one. Each routed part still falls back to the chain, so it can't dead-end.
 
-## Run it for $0
+## Run it for $0 or close to it
 
-Two genuinely-free paths, both first-class:
+Three low-cost paths are built in:
 
-- **Local Ollama** — install Ollama, run a model, and RepoLens does the AI step on your own machine. No key, no bill, fully private.
+- **Local Ollama** — install Ollama, run a model, and RepoLens does the AI step on your own machine. No key, no bill, fully private. Start with `qwen3:8b` for coding/reasoning or `gemma3:4b` for a lighter model.
 - **Gemini's free tier** — paste a free Google AI Studio key. RepoLens then loads the Gemini models that key can actually call.
+- **OpenRouter Free router** — after OpenRouter OAuth, choose **OpenRouter Free router**. It selects an available free model. Availability and rate limits vary, so connect Gemini or Ollama as a fallback instead of relying on it alone.
 
 (Only the *AI step* is local with Ollama — RepoLens still reads the public repo page over the network.)
 

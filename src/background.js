@@ -2023,14 +2023,14 @@ async function callNous(key, model = 'stepfun/step-3.7-flash', prompt) {
   }
 }
 
-async function callOpenRouter(key, model = 'x-ai/grok-4.3', prompt) {
+async function callOpenRouter(key, model = 'openrouter/free', prompt) {
   const res = await fetchWithTimeout(
     'https://openrouter.ai/api/v1/chat/completions',
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: model || 'x-ai/grok-4.3',
+        model: model || 'openrouter/free',
         max_tokens: 4096,
         messages: [{ role: 'user', content: prompt }],
       }),

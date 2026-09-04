@@ -415,6 +415,16 @@ async function loadLiveModelCatalog(provider, stored = {}) {
   const models = rows
     .map((row) => normalizeLiveModel(provider, row))
     .filter((model) => model && !seen.has(model.value) && seen.add(model.value));
+  // The free router is a routing alias rather than a fixed model, so it is not
+  // guaranteed to appear in /models. Keep it selectable when the live catalog wins.
+  if (provider === 'openrouter' && !models.some((model) => model.value === 'openrouter/free')) {
+    models.unshift({
+      value: 'openrouter/free',
+      label: 'OpenRouter Free router — variable availability',
+      aliases: [],
+      recommended: true,
+    });
+  }
   if (!models.length) throw new Error(`${provider} returned no text models`);
   liveCatalog[provider] = models;
   return models;
@@ -945,11 +955,14 @@ document.getElementById('btn-openrouter').addEventListener('click', async () => 
     return;
   }
 
+  const oauthStorage = chrome.storage.session || chrome.storage.local;
+  const oauthKeys = ['openrouterCodeVerifier', 'openrouterRedirectUri'];
   try {
     setButtonBusy(btn, true);
 
     const { verifier, challenge } = await createPkcePair();
-    const redirectUrl = chrome.identity.getRedirectURL();
+    const redirectUrl = chrome.identity.getRedirectURL('openrouter');
+    await oauthStorage.set({ openrouterCodeVerifier: verifier, openrouterRedirectUri: redirectUrl });
     const authUrl =
       `https://openrouter.ai/auth?callback_url=${encodeURIComponent(redirectUrl)}` +
       `&code_challenge=${challenge}&code_challenge_method=S256`;
@@ -964,25 +977,43 @@ document.getElementById('btn-openrouter').addEventListener('click', async () => 
       });
     });
 
-    const code = new URL(responseUrl).searchParams.get('code');
+    const callback = new URL(responseUrl);
+    const authError = callback.searchParams.get('error');
+    if (authError) {
+      throw new Error(callback.searchParams.get('error_description') || authError);
+    }
+    const code = callback.searchParams.get('code');
     if (!code) throw new Error('No authorization code returned');
 
+    const stored = await oauthStorage.get(oauthKeys);
+    if (!stored.openrouterCodeVerifier) throw new Error('Sign-in expired — start OpenRouter sign-in again.');
+    if (stored.openrouterRedirectUri !== redirectUrl) {
+      throw new Error('OpenRouter sign-in callback changed — start the sign-in again.');
+    }
     const res = await fetch('https://openrouter.ai/api/v1/auth/keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, code_verifier: verifier, code_challenge_method: 'S256' }),
+      body: JSON.stringify({
+        code,
+        code_verifier: stored.openrouterCodeVerifier,
+        code_challenge_method: 'S256',
+      }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || err.error || `Token exchange failed (${res.status})`);
+      throw new Error(
+        err.error?.message || err.error || err.message || `Token exchange failed (${res.status})`
+      );
     }
     const { key } = await res.json();
     if (!key) throw new Error('OpenRouter returned no key');
 
+    await oauthStorage.remove(oauthKeys);
     chrome.storage.local.set({ openrouterKey: key }, () =>
       setConnected('openrouter', key, { method: 'oauth' })
     );
   } catch (err) {
+    await oauthStorage.remove(oauthKeys);
     setButtonBusy(btn, false);
     showStatus('✗ OpenRouter: ' + err.message, '#f87171');
   }

@@ -154,7 +154,7 @@ function buildCard(p, snapshot) {
     openAiOAuthBtn = el('button', { class: 'svc-btn', id: 'cc-openai-oauth', text: 'Sign in with ChatGPT' });
     const note = el('p', {
       class: 'token-instruction',
-      text: 'Use your ChatGPT account — the same login the Codex CLI uses. Needs API access on your plan; if it’s not included, paste an API key below instead.',
+      text: 'Use your ChatGPT account — the same login the Codex CLI uses. RepoLens sends scan requests through the Codex Responses API; if your subscription cannot use it, paste an API key below instead.',
     });
     panel.prepend(el('div', { class: 'cc-row' }, [openAiOAuthBtn]), note);
     openAiOAuthBtn.addEventListener('click', connectOpenAiOAuth);
