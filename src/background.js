@@ -652,7 +652,7 @@ async function handleOpenAIOAuthCallback(rawUrl, tabId) {
   }
 
   try {
-    const creds = await exchangeOpenAICode({ code, state, verifier, storedState });
+    await exchangeOpenAICode({ code, state, verifier, storedState });
     // Store the OAuth credentials. Inference uses the Codex Responses API
     // with the access token directly — no API key minting needed.
     await cleanupFlowMarkers();

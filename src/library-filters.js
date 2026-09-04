@@ -11,12 +11,12 @@ const FIT_ORDER = ['strong', 'solid', 'care', 'risky'];
 /**
  * Filter + sort the library rows for display/export.
  * @param {Array} allRows every library row
- * @param {{ query?: string, sort?: string, collection?: string, decision?: string, lang?: string, mastery?: string }} state
- * @param {{ decisionMap?: Map, evalMap?: Map, rubric?: Array, collections?: Array, nlFilter?: object }} ctx
+ * @param {{ query?: string, sort?: string, collection?: string, decision?: string, lang?: string, mastery?: string, review?: boolean }} state
+ * @param {{ decisionMap?: Map, evalMap?: Map, rubric?: Array, collections?: Array, nlFilter?: object, now?: number }} ctx
  * @returns {Array} the visible rows, ordered
  */
 export function applyFilters(allRows, state, ctx = {}) {
-  const { decisionMap, evalMap, rubric, collections, nlFilter } = ctx;
+  const { decisionMap, evalMap, rubric, collections, nlFilter, now = Date.now() } = ctx;
   let rows = sortRows(filterRows(allRows, state), state.sort);
 
   // 'decided' sort uses decisionMap, which lives in the library module.
@@ -69,6 +69,18 @@ export function applyFilters(allRows, state, ctx = {}) {
   }
   // Mastery level filter — repos with no record default to 'new'.
   if (state.mastery) rows = rows.filter((r) => (r.masteryLevel || 'new') === state.mastery);
+  // Review queue: pending adoption calls (Trial/Hold) and scans that are 14+ days old.
+  // Invalid or missing timestamps stay visible: hiding them would silently lose work.
+  if (state.review) {
+    const staleBefore = now - 14 * 24 * 60 * 60 * 1000;
+    rows = rows.filter((r) => {
+      const decision = decisionMap?.get(r.repoId)?.decision;
+      const scannedAt = Date.parse(r.savedAt);
+      return (
+        decision === 'trial' || decision === 'hold' || !Number.isFinite(scannedAt) || scannedAt < staleBefore
+      );
+    });
+  }
   // NL filter: restrict to the AI-ranked id list, preserving the AI order.
   if (nlFilter?.ids?.length) {
     const idOrder = new Map(nlFilter.ids.map((id, i) => [id, i]));

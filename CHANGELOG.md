@@ -9,7 +9,14 @@ the same day, as a rapid burst of improvements, so they share a date.
 
 ## [Unreleased] — 2026-06-25 · _Subscription Auth Fix · Codex Responses API_
 
+### Added
+
+- **Review Queue in Library.** One toggle narrows the Library to pending **Trial** / **Hold** adoption decisions and scans older than 14 days. It composes with existing search, collections, decisions, exports, and sorts, making a periodic review session a focused list instead of a manual hunt.
+
 ### Fixed
+
+- **MCP product-page SSRF guard rejects IPv6 loopback correctly.** URL hostnames are normalized before IP classification, so `http://[::1]/` cannot fall through to DNS resolution.
+- **Root and MCP dependency audits are clean.** Updated lockfiles resolve the reported high/moderate advisories.
 
 - **ChatGPT subscription sign-in now works without API platform access.** The previous flow tried to mint an OpenAI API key (`sk-…`) from the OAuth `id_token` via a token-exchange grant — which only works if your ChatGPT plan includes API platform access. Most ChatGPT Plus/Pro subscriptions don't, so every sign-in failed with "Couldn't enable API access for this ChatGPT account." RepoLens now uses the **Codex Responses API** at `chatgpt.com/backend-api/codex/responses` with the OAuth access token directly — the same endpoint the Codex CLI and Aside browser use. No API key minting required; the subscription itself authorizes the request.
 - **ChatGPT OAuth error messages are now readable.** The token-exchange error handler was stringifying nested error objects as `[object Object]`. It now drills into `error.message`, `error_description`, and stringifies objects properly.

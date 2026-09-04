@@ -99,6 +99,11 @@
         border-color: var(--danger);
         color: var(--danger);
       }
+      .lib-btn.on {
+        color: var(--accent);
+        border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+        background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+      }
       .lib-btn-kbd {
         font-family: var(--mono);
         letter-spacing: 0.02em;
@@ -2385,6 +2390,14 @@
             title="Auto-group repos by detected language and category"
           >
             ✦ Auto-organize
+          </button>
+          <button
+            class="lib-btn"
+            id="review-queue"
+            title="Show stale scans and Trial/Hold decisions that need attention"
+            aria-pressed="false"
+          >
+            ◷ Review
           </button>
           <button class="lib-btn" id="batch-scan-link" title="Scan multiple repos at once">📦 Batch</button>
           <span class="lib-div" aria-hidden="true"></span>

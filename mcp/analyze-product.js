@@ -74,8 +74,10 @@ function normalizeUrl(raw) {
   } catch {
     throw new Error('analyze_product requires a valid URL');
   }
-  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('analyze_product only supports http(s) URLs');
-  if (url.username || url.password) throw new Error('analyze_product does not allow URLs with embedded credentials');
+  if (!['http:', 'https:'].includes(url.protocol))
+    throw new Error('analyze_product only supports http(s) URLs');
+  if (url.username || url.password)
+    throw new Error('analyze_product does not allow URLs with embedded credentials');
   return url;
 }
 
@@ -117,7 +119,10 @@ function isPrivateIp(ip) {
 
 export async function assertPublicUrl(raw) {
   const url = normalizeUrl(raw);
-  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  const host = url.hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/\.$/, '');
   if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')) {
     throw new Error('analyze_product only fetches public hosts');
   }
@@ -164,7 +169,10 @@ async function fetchProductPage(rawUrl) {
 }
 
 function extractJson(rawText) {
-  const text = String(rawText || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const text = String(rawText || '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '');
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('No JSON object found in product analysis response');
@@ -172,15 +180,23 @@ function extractJson(rawText) {
 }
 
 const strings = (xs, max = 12) =>
-  Array.isArray(xs) ? xs.map(String).map((s) => s.trim()).filter(Boolean).slice(0, max) : [];
+  Array.isArray(xs)
+    ? xs
+        .map(String)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, max)
+    : [];
 
 export function buildProductPrompt(page, goal = '') {
-  return `You are RepoLens analyzing a deployed software product from its public product page.\n\nURL: ${page.finalUrl}\nTitle: ${page.title}\nEvaluation goal: ${goal || 'Understand how the product works and what must be verified before trusting it.'}\n\nVisible page text:\n${page.text}\n\nImportant rules:\n- Treat page statements as product claims, not verified implementation facts.\n- Never say code, contracts, accounting, security, or runtime behavior is verified unless the supplied page itself proves it.\n- Separate observed website evidence from inferred architecture.\n- Identify what source/code/contract/runtime evidence would be needed to verify important claims.\n\nReturn ONLY valid JSON:\n{\n  \"product_model\": \"One concise explanation of how value/data/actions flow through the product.\",\n  \"core_loop\": [\"Step 1\", \"Step 2\"],\n  \"dependencies\": [\"External dependency or subsystem\"],\n  \"strengths\": [\"Architectural/product strength visible from the page\"],\n  \"critical_systems\": [\"Subsystem whose correctness matters\"],\n  \"failure_modes\": [\"Concrete way the system could fail\"],\n  \"claims\": [{\n    \"claim\": \"Important product claim\",\n    \"website_evidence\": \"Short paraphrase of what the page says\",\n    \"verification_status\": \"website_only | partial | verified | contradicted | unknown\",\n    \"needs\": [\"code\", \"contract\", \"runtime\", \"accounting\"],\n    \"confidence\": \"high | medium | low\"\n  }],\n  \"verdict\": \"Decision-oriented conclusion focused on architecture and verification gaps.\",\n  \"confidence\": \"high | medium | low\"\n}`;
+  return `You are RepoLens analyzing a deployed software product from its public product page.\n\nURL: ${page.finalUrl}\nTitle: ${page.title}\nEvaluation goal: ${goal || 'Understand how the product works and what must be verified before trusting it.'}\n\nVisible page text:\n${page.text}\n\nImportant rules:\n- Treat page statements as product claims, not verified implementation facts.\n- Never say code, contracts, accounting, security, or runtime behavior is verified unless the supplied page itself proves it.\n- Separate observed website evidence from inferred architecture.\n- Identify what source/code/contract/runtime evidence would be needed to verify important claims.\n\nReturn ONLY valid JSON:\n{\n  "product_model": "One concise explanation of how value/data/actions flow through the product.",\n  "core_loop": ["Step 1", "Step 2"],\n  "dependencies": ["External dependency or subsystem"],\n  "strengths": ["Architectural/product strength visible from the page"],\n  "critical_systems": ["Subsystem whose correctness matters"],\n  "failure_modes": ["Concrete way the system could fail"],\n  "claims": [{\n    "claim": "Important product claim",\n    "website_evidence": "Short paraphrase of what the page says",\n    "verification_status": "website_only | partial | verified | contradicted | unknown",\n    "needs": ["code", "contract", "runtime", "accounting"],\n    "confidence": "high | medium | low"\n  }],\n  "verdict": "Decision-oriented conclusion focused on architecture and verification gaps.",\n  "confidence": "high | medium | low"\n}`;
 }
 
 export function parseProductResponse(rawText) {
   const data = extractJson(rawText);
-  const confidence = ['high', 'medium', 'low'].includes(String(data.confidence)) ? String(data.confidence) : 'low';
+  const confidence = ['high', 'medium', 'low'].includes(String(data.confidence))
+    ? String(data.confidence)
+    : 'low';
   return {
     product_model: String(data.product_model || ''),
     core_loop: strings(data.core_loop),
@@ -203,7 +219,8 @@ export async function runAnalyzeProduct(args) {
     title: page.title,
     goal,
     ...analysis,
-    source_scope: 'Public product-page HTML only. Code, contracts, private APIs, and runtime behavior are unverified unless separately supplied.',
+    source_scope:
+      'Public product-page HTML only. Code, contracts, private APIs, and runtime behavior are unverified unless separately supplied.',
   };
   return attachHtmlReport('analyze_product', page.title || page.finalUrl, result, args);
 }

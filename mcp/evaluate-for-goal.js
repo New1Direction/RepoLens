@@ -49,10 +49,19 @@ export const EVALUATE_FOR_GOAL_TOOL = {
 };
 
 const strings = (xs, max = 20) =>
-  Array.isArray(xs) ? xs.map(String).map((s) => s.trim()).filter(Boolean).slice(0, max) : [];
+  Array.isArray(xs)
+    ? xs
+        .map(String)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, max)
+    : [];
 
 function extractJson(rawText) {
-  const text = String(rawText || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const text = String(rawText || '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '');
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('No JSON object found in goal evaluation response');
@@ -60,7 +69,7 @@ function extractJson(rawText) {
 }
 
 export function buildGoalPrompt(scan, goal, constraints = []) {
-  return `You are evaluating whether an experienced software engineer should adopt a repository for a specific goal.\n\nGoal:\n${goal}\n\nConstraints:\n${constraints.length ? constraints.map((c) => `- ${c}`).join('\n') : '- none provided'}\n\nRepoLens base scan evidence:\n${JSON.stringify(scan, null, 2)}\n\nTreat the base scan as evidence, not truth. Do not infer verification that is not present. Return ONLY valid JSON with this shape:\n{\n  \"decision\": \"adopt | trial | hold | reject\",\n  \"fit_score\": 0,\n  \"confidence\": \"high | medium | low\",\n  \"bottom_line\": \"One decisive sentence.\",\n  \"blockers\": [\"Concrete blocker\"],\n  \"integration_cost\": \"low | medium | high | unknown\",\n  \"replacement_cost\": \"low | medium | high | unknown\",\n  \"dependency_risk\": \"low | medium | high | unknown\",\n  \"evidence\": [{\"claim\": \"Why it fits or fails\", \"source\": \"base_scan | metadata | readme | inferred\", \"verified\": false}],\n  \"trial_plan\": [\"A concrete short test\"]\n}`;
+  return `You are evaluating whether an experienced software engineer should adopt a repository for a specific goal.\n\nGoal:\n${goal}\n\nConstraints:\n${constraints.length ? constraints.map((c) => `- ${c}`).join('\n') : '- none provided'}\n\nRepoLens base scan evidence:\n${JSON.stringify(scan, null, 2)}\n\nTreat the base scan as evidence, not truth. Do not infer verification that is not present. Return ONLY valid JSON with this shape:\n{\n  "decision": "adopt | trial | hold | reject",\n  "fit_score": 0,\n  "confidence": "high | medium | low",\n  "bottom_line": "One decisive sentence.",\n  "blockers": ["Concrete blocker"],\n  "integration_cost": "low | medium | high | unknown",\n  "replacement_cost": "low | medium | high | unknown",\n  "dependency_risk": "low | medium | high | unknown",\n  "evidence": [{"claim": "Why it fits or fails", "source": "base_scan | metadata | readme | inferred", "verified": false}],\n  "trial_plan": ["A concrete short test"]\n}`;
 }
 
 export function parseGoalResponse(rawText) {
@@ -68,7 +77,7 @@ export function parseGoalResponse(rawText) {
   const allowedDecision = new Set(['adopt', 'trial', 'hold', 'reject']);
   const allowedConfidence = new Set(['high', 'medium', 'low']);
   const allowedCost = new Set(['low', 'medium', 'high', 'unknown']);
-  const cost = (v) => allowedCost.has(String(v)) ? String(v) : 'unknown';
+  const cost = (v) => (allowedCost.has(String(v)) ? String(v) : 'unknown');
   return {
     decision: allowedDecision.has(String(data.decision)) ? String(data.decision) : 'trial',
     fit_score: Math.max(0, Math.min(100, Number(data.fit_score) || 0)),

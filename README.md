@@ -9,8 +9,8 @@
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-1a73e8?logo=googlechrome&logoColor=white)
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-900%2B_passing-2f7d34)
-![Version](https://img.shields.io/badge/version-3.1.0-c2691c)
+![Tests](https://img.shields.io/badge/tests-955_passing-2f7d34)
+![Version](https://img.shields.io/badge/version-3.1.1-c2691c)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -98,6 +98,7 @@ Newest first — the highlights. Full, detailed notes live in the **[changelog](
 - 🧠 **Gemini Ultra-ready, stable by default.** The Google picker uses your API key to show the Gemini models your account can actually call, while fresh scans fall back to stable Gemini 2.5 unless you opt into newer IDs.
 - 🔓 **Sign in with Claude.** Anthropic now supports the same Claude Code / Pi OAuth flow, while still accepting a Console API key.
 - 🧭 **Safer routing and scan recovery.** Legacy saved model IDs are normalized before calls, OAuth-only providers count as connected, scans keep the MV3 worker warm, and IndexedDB blocked-upgrade hangs now surface cleanly.
+- ◷ **Review Queue.** The Library now isolates the scans that need attention: every **Trial** or **Hold** decision and every scan that is 14+ days old. It is a toggle, so you can focus a review session without losing any of your normal filters, collections, or exports.
 
 ### v3.1.0 — Interactive Canvas
 

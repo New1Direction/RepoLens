@@ -185,7 +185,7 @@ const state = {
   decision: '',
   lang: '',
   mastery: '',
-  view: 'list',
+  review: false,
 };
 
 // Mastery records (repoId → { level, ... }), loaded once in init. Drives the
@@ -1471,6 +1471,13 @@ function wireToolbar() {
       btn.title = densityCompact ? 'Switch to comfortable view' : 'Switch to compact view';
     }
     chrome.storage.local.set({ libraryDensity: densityCompact ? 'compact' : 'comfortable' });
+  });
+  document.getElementById('review-queue')?.addEventListener('click', (e) => {
+    state.review = !state.review;
+    e.currentTarget.classList.toggle('on', state.review);
+    e.currentTarget.setAttribute('aria-pressed', String(state.review));
+    e.currentTarget.textContent = state.review ? '◷ Reviewing' : '◷ Review';
+    render();
   });
   document
     .getElementById('batch-scan-link')

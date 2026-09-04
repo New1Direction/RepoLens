@@ -88,4 +88,19 @@ describe('applyFilters', () => {
     expect(out[0].repoId).toBe('a/three'); // 5 > 2 > unscored(-1)
     expect(out[out.length - 1].repoId).toBe('a/two'); // unscored sinks
   });
+
+  it('review queue keeps pending decisions and stale scans', () => {
+    const reviewRows = [
+      mkRow('a/fresh', { savedAt: '2026-09-03T00:00:00Z' }),
+      mkRow('a/trial', { savedAt: '2026-09-03T00:00:00Z' }),
+      mkRow('a/stale', { savedAt: '2026-08-01T00:00:00Z' }),
+    ];
+    const decisionMap = new Map([['a/trial', { decision: 'trial' }]]);
+    const out = applyFilters(
+      reviewRows,
+      { ...base, review: true },
+      { decisionMap, now: Date.parse('2026-09-04T00:00:00Z') }
+    );
+    expect(out.map((r) => r.repoId)).toEqual(['a/stale', 'a/trial']);
+  });
 });

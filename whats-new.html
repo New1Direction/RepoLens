@@ -762,9 +762,9 @@
           <div class="sec-eyebrow">Just shipped</div>
           <h2 class="sec-title">v3.1.1 — Subscription auth fixed.</h2>
           <p class="sec-note">
-            ChatGPT and Claude subscription sign-ins now work. RepoLens uses the Codex Responses API
-            with your OAuth token directly — no API platform access required. Plus rate-limit retry
-            for Claude and updated model catalogs.
+            ChatGPT and Claude subscription sign-ins now work. RepoLens uses the Codex Responses API with your
+            OAuth token directly — no API platform access required. Plus rate-limit retry for Claude and
+            updated model catalogs.
           </p>
         </div>
 
@@ -776,11 +776,13 @@
             <span class="vdate">Jun 25</span>
           </div>
           <div class="latest-body">
-            <p><b>The fix:</b> ChatGPT sign-in was trying to mint an OpenAI API key from your
-            subscription's OAuth token — which only works if your plan includes API platform access.
-            Most ChatGPT Plus/Pro subscriptions don't, so every sign-in failed. RepoLens now calls
-            the <b>Codex Responses API</b> at <code>chatgpt.com/backend-api/codex/responses</code>
-            with the access token directly — the same approach the Codex CLI and Aside browser use.</p>
+            <p>
+              <b>The fix:</b> ChatGPT sign-in was trying to mint an OpenAI API key from your subscription's
+              OAuth token — which only works if your plan includes API platform access. Most ChatGPT Plus/Pro
+              subscriptions don't, so every sign-in failed. RepoLens now calls the
+              <b>Codex Responses API</b> at <code>chatgpt.com/backend-api/codex/responses</code> with the
+              access token directly — the same approach the Codex CLI and Aside browser use.
+            </p>
             <ul>
               <li><b>ChatGPT sign-in:</b> Codex Responses API replaces broken API-key minting path</li>
               <li><b>Claude sign-in:</b> Token exchange now retries with backoff on 429 rate limits</li>
