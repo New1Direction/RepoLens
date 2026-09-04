@@ -917,23 +917,17 @@
           <span class="model-label">Model</span>
           <select class="model-select" id="openrouterModel">
             <option value="z-ai/glm-5.2:free" selected>Z.ai: GLM 5.2 — ★ Free, structured output</option>
-            <option value="x-ai/grok-4.3">xAI: Grok 4.3</option>
-            <option value="x-ai/grok-4.20">xAI: Grok 4.20</option>
-            <option value="anthropic/claude-sonnet-4.6">Anthropic: Claude Sonnet 4.6</option>
-            <option value="anthropic/claude-opus-4.8">Anthropic: Claude Opus 4.8</option>
-            <option value="google/gemini-2.5-pro">Google: Gemini 2.5 Pro</option>
-            <option value="google/gemini-2.5-flash">Google: Gemini 2.5 Flash</option>
           </select>
         </div>
         <p class="svc-hint" style="margin: 6px 0 0 28px">
-          Free models stay first after the live catalog loads. <b>★ Free</b> means no token charge;
-          <b>structured output</b> keeps scans parseable. Availability and rate limits can change.
+          Only free, text-only models that currently advertise JSON response-format support appear here. The
+          live OpenRouter catalog is checked each time Settings opens; availability and rate limits can
+          change.
         </p>
         <div class="token-panel" id="custom-openrouter">
           <p class="token-instruction">
-            Settings loads OpenRouter's live /api/v1/models catalog. Enter any model ID from
-            <a id="link-openrouter">openrouter.ai/models</a> if you need one that is not listed (e.g.
-            <strong style="color: var(--text)">meta-llama/llama-3.3-70b-instruct</strong>).
+            Settings accepts only currently free structured-text models from OpenRouter's live catalog. Use a
+            custom model ID only when you intentionally want to override that free-only list.
           </p>
           <div class="token-row">
             <input type="text" id="openrouterModelCustom" placeholder="vendor/model-id" />

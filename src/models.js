@@ -55,12 +55,6 @@ export const CATALOG = {
         label: 'Z.ai: GLM 5.2 — ★ Free, structured output',
         recommended: true,
       },
-      { value: 'x-ai/grok-4.3', label: 'xAI: Grok 4.3' },
-      { value: 'x-ai/grok-4.20', label: 'xAI: Grok 4.20' },
-      { value: 'anthropic/claude-opus-4.8', label: 'Anthropic: Claude Opus 4.8' },
-      { value: 'anthropic/claude-sonnet-4.6', label: 'Anthropic: Claude Sonnet 4.6' },
-      { value: 'google/gemini-2.5-pro', label: 'Google: Gemini 2.5 Pro' },
-      { value: 'google/gemini-2.5-flash', label: 'Google: Gemini 2.5 Flash' },
     ],
   },
   xai: {

@@ -18,6 +18,7 @@ import { renderCompatProviders, compatPartGroups, anyCompatConnected } from './o
 import { THEMES, initTheme, saveTheme } from './theme.js';
 import { TONES, DEFAULT_TONE } from './tone.js';
 import { listCached, removeCached, openCachedAnalysis } from './cache.js';
+import { isFreeStructuredOpenRouterTextModel } from './openrouter-catalog.js';
 
 // ─── Core settings ───────────────────────────────────────────────────────────
 
@@ -347,7 +348,8 @@ function normalizeLiveModel(provider, raw) {
     .map((x) => String(x).replace(/^models\//, ''));
   const rec = CATALOG[provider]?.models.find((m) => m.recommended)?.value;
   const canonicalRec = canonicalModel(provider, rec);
-  const free = provider === 'openrouter' && (value === 'openrouter/free' || value.endsWith(':free'));
+  const free = provider === 'openrouter' && isFreeStructuredOpenRouterTextModel(raw);
+  if (provider === 'openrouter' && !free) return null;
   return {
     value,
     label: String(raw?.displayName || raw?.name || value)
@@ -387,18 +389,10 @@ function applyLiveModelList(provider, models, storedModel) {
     }
   };
   if (provider === 'openrouter') {
-    const freeModels = models.filter((model) => model.free);
-    const paidModels = models.filter((model) => !model.free);
     const freeGroup = document.createElement('optgroup');
-    freeGroup.label = 'Free models — $0';
-    appendOptions(freeGroup, freeModels);
+    freeGroup.label = 'Free structured text models — $0';
+    appendOptions(freeGroup, models);
     sel.appendChild(freeGroup);
-    if (paidModels.length) {
-      const paidGroup = document.createElement('optgroup');
-      paidGroup.label = 'Other models — may charge';
-      appendOptions(paidGroup, paidModels);
-      sel.appendChild(paidGroup);
-    }
   } else {
     appendOptions(sel, models);
   }
@@ -411,6 +405,12 @@ function applyLiveModelList(provider, models, storedModel) {
     sel.value = match.value;
     customInput.value = '';
     if (previous && previous !== match.value) chrome.storage.local.set({ [cfg.storageKey]: match.value });
+  } else if (provider === 'openrouter') {
+    const fallback = models.find((m) => m.recommended)?.value || models[0]?.value || CUSTOM;
+    sel.value = fallback;
+    customInput.value = '';
+    if (fallback !== CUSTOM && previous !== fallback)
+      chrome.storage.local.set({ [cfg.storageKey]: fallback });
   } else if (hasStoredModel && previous && previous !== CUSTOM) {
     sel.value = CUSTOM;
     customInput.value = previous;

@@ -33,6 +33,11 @@ describe('CATALOG', () => {
     });
   });
 
+  it('keeps static OpenRouter fallbacks free while the live catalog loads', () => {
+    expect(CATALOG.openrouter.models).toHaveLength(1);
+    expect(CATALOG.openrouter.models[0].value).toMatch(/:free$/);
+  });
+
   it('every model has a non-empty value and label', () => {
     for (const { models } of Object.values(CATALOG)) {
       for (const m of models) {
