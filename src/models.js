@@ -1,3 +1,5 @@
+import { OPENROUTER_STRUCTURED_FREE_MODEL } from './openrouter.js';
+
 // Single source of truth for the per-part model pickers: the scan parts that can be routed,
 // and the provider × model catalog (with one ★ recommended model per provider). Pure data.
 
@@ -49,7 +51,7 @@ export const CATALOG = {
     label: 'OpenRouter',
     models: [
       {
-        value: 'z-ai/glm-5.2:free',
+        value: OPENROUTER_STRUCTURED_FREE_MODEL,
         label: 'Z.ai: GLM 5.2 — ★ Free, structured output',
         recommended: true,
       },
@@ -91,7 +93,7 @@ export const MODEL_ALIASES = {
     'anthropic/claude-opus-4-8': 'anthropic/claude-opus-4.8',
   },
   openrouter: {
-    'openrouter/free': 'z-ai/glm-5.2:free',
+    'openrouter/free': OPENROUTER_STRUCTURED_FREE_MODEL,
     'anthropic/claude-opus-4-8': 'anthropic/claude-opus-4.8',
     'anthropic/claude-sonnet-4-6': 'anthropic/claude-sonnet-4.6',
     'anthropic/claude-haiku-4-5-20251001': 'anthropic/claude-haiku-4.5',

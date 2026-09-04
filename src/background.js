@@ -32,6 +32,11 @@ import {
 } from './providers.js';
 import { withRetry } from './retry.js';
 import { categorizeError, rankErrors } from './errors.js';
+import {
+  isTruncatedOpenRouterResponse,
+  OPENROUTER_SCAN_MAX_TOKENS,
+  openRouterScanBody,
+} from './openrouter.js';
 import { estimateTokens } from './estimate.js';
 import { buildTagPrompt, parseTags } from './tag-prompt.js';
 import { nodeIdFor, edgeIdFor, ideaIdFor } from './graph.js';
@@ -2023,27 +2028,13 @@ async function callNous(key, model = 'stepfun/step-3.7-flash', prompt) {
   }
 }
 
-// GLM 5.2 currently exposes OpenRouter's JSON response format on its free tier.
-// The generic free router can select models that do not, which turns a successful
-// inference into an unusable scan when they emit JSON fragments.
-const OPENROUTER_STRUCTURED_FREE_MODEL = 'z-ai/glm-5.2:free';
-
-async function callOpenRouter(key, model = OPENROUTER_STRUCTURED_FREE_MODEL, prompt) {
-  const selectedModel = model || OPENROUTER_STRUCTURED_FREE_MODEL;
-  const body = {
-    model: selectedModel,
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }],
-  };
-  if (selectedModel === OPENROUTER_STRUCTURED_FREE_MODEL) {
-    body.response_format = { type: 'json_object' };
-  }
+async function callOpenRouter(key, model, prompt) {
   const res = await fetchWithTimeout(
     'https://openrouter.ai/api/v1/chat/completions',
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(openRouterScanBody(model, prompt)),
     },
     'OpenRouter'
   );
@@ -2052,6 +2043,11 @@ async function callOpenRouter(key, model = OPENROUTER_STRUCTURED_FREE_MODEL, pro
     throw new Error(err.error?.message ?? `OpenRouter API error ${res.status}`);
   }
   const data = await res.json();
+  if (isTruncatedOpenRouterResponse(data)) {
+    throw new Error(
+      `OpenRouter reached the ${OPENROUTER_SCAN_MAX_TOKENS.toLocaleString()}-token scan limit; retry the scan.`
+    );
+  }
   const text = data.choices?.[0]?.message?.content;
   if (!text) throw new Error('OpenRouter returned no text content');
   return text;

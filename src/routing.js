@@ -2,6 +2,8 @@
 // are connected, produce the ordered list of (provider, model) attempts for a scan part.
 // No DOM, no network, no chrome — unit-tested. background.js executes the plan.
 
+import { OPENROUTER_STRUCTURED_FREE_MODEL } from './openrouter.js';
+
 import { COMPAT_PROVIDERS, isCompatConnected, compatModelFor } from './providers.js';
 import { canonicalModel } from './models.js';
 
@@ -14,7 +16,7 @@ export const CHAIN = ['nous', 'google', 'openrouter', 'xai', 'anthropic'];
 export const DEFAULT_MODELS = {
   nous: 'stepfun/step-3.7-flash',
   google: 'gemini-2.5-flash',
-  openrouter: 'z-ai/glm-5.2:free',
+  openrouter: OPENROUTER_STRUCTURED_FREE_MODEL,
   xai: 'grok-4.3',
   anthropic: 'claude-sonnet-4-6',
 };

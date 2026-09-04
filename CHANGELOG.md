@@ -25,6 +25,7 @@ the same day, as a rapid burst of improvements, so they share a date.
 - **Claude sign-in rate-limit handling.** Anthropic's token endpoint rate-limits aggressively on repeated sign-in attempts or concurrent refreshes, surfacing as "Claude token exchange failed: Rate limited." Both the token exchange and refresh paths now retry with exponential backoff (up to 2 retries, reads `retry-after` header, 30s max delay) before giving up.
 - **OpenRouter OAuth now preserves its PKCE verifier and callback target in session storage.** The connection flow uses the extension-specific callback path, validates the returned callback before exchanging the one-time code, surfaces the provider's authorization error, and clears the one-time state on every outcome.
 - **Free OpenRouter scans no longer use the generic free router.** Its provider-selected models can return comma-separated JSON fragments, which made otherwise successful scans fail in the response parser. RepoLens now defaults to `z-ai/glm-5.2:free`, whose current OpenRouter capabilities include JSON response format support, sends JSON-object mode for that model, keeps the generic router migrated to the reliable default, and constrains scan replies to fit within the available output budget.
+- **Long structured OpenRouter responses no longer fail as malformed JSON.** The scan completion ceiling is now 8,192 tokens (was 4,096), and a provider `finish_reason: "length"` is reported as an actionable limit error rather than passed to the JSON parser as a partial object.
 
 ### Changed
 
