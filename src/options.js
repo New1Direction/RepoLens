@@ -347,6 +347,7 @@ function normalizeLiveModel(provider, raw) {
     .map((x) => String(x).replace(/^models\//, ''));
   const rec = CATALOG[provider]?.models.find((m) => m.recommended)?.value;
   const canonicalRec = canonicalModel(provider, rec);
+  const free = provider === 'openrouter' && (value === 'openrouter/free' || value.endsWith(':free'));
   return {
     value,
     label: String(raw?.displayName || raw?.name || value)
@@ -354,12 +355,14 @@ function normalizeLiveModel(provider, raw) {
       .trim(),
     aliases,
     recommended: value === canonicalRec || aliases.includes(rec) || aliases.includes(canonicalRec),
+    free,
   };
 }
 
 function liveOptionText(model) {
   const id = model.value && model.label !== model.value ? ` — ${model.value}` : '';
-  return `${model.label}${id}${model.recommended ? ' — ★ Recommended' : ''}`;
+  const badge = model.free ? ' — ★ Free' : model.recommended ? ' — ★ Recommended' : '';
+  return `${model.label}${id}${badge}`;
 }
 
 function applyLiveModelList(provider, models, storedModel) {
@@ -375,11 +378,29 @@ function applyLiveModelList(provider, models, storedModel) {
   );
 
   sel.textContent = '';
-  for (const model of models) {
-    const opt = document.createElement('option');
-    opt.value = model.value;
-    opt.textContent = liveOptionText(model);
-    sel.appendChild(opt);
+  const appendOptions = (parent, rows) => {
+    for (const model of rows) {
+      const opt = document.createElement('option');
+      opt.value = model.value;
+      opt.textContent = liveOptionText(model);
+      parent.appendChild(opt);
+    }
+  };
+  if (provider === 'openrouter') {
+    const freeModels = models.filter((model) => model.free);
+    const paidModels = models.filter((model) => !model.free);
+    const freeGroup = document.createElement('optgroup');
+    freeGroup.label = 'Free models — $0';
+    appendOptions(freeGroup, freeModels);
+    sel.appendChild(freeGroup);
+    if (paidModels.length) {
+      const paidGroup = document.createElement('optgroup');
+      paidGroup.label = 'Other models — may charge';
+      appendOptions(paidGroup, paidModels);
+      sel.appendChild(paidGroup);
+    }
+  } else {
+    appendOptions(sel, models);
   }
   const custom = document.createElement('option');
   custom.value = CUSTOM;
@@ -423,6 +444,7 @@ async function loadLiveModelCatalog(provider, stored = {}) {
       label: 'OpenRouter Free router — variable availability',
       aliases: [],
       recommended: true,
+      free: true,
     });
   }
   if (!models.length) throw new Error(`${provider} returned no text models`);

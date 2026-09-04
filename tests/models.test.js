@@ -25,6 +25,14 @@ describe('CATALOG', () => {
     }
   });
 
+  it('makes the OpenRouter free router the explicit default', () => {
+    const openrouter = CATALOG.openrouter.models;
+    expect(openrouter.find((model) => model.recommended)).toMatchObject({
+      value: 'openrouter/free',
+      label: expect.stringContaining('Free'),
+    });
+  });
+
   it('every model has a non-empty value and label', () => {
     for (const { models } of Object.values(CATALOG)) {
       for (const m of models) {
