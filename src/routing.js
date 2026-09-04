@@ -14,7 +14,7 @@ export const CHAIN = ['nous', 'google', 'openrouter', 'xai', 'anthropic'];
 export const DEFAULT_MODELS = {
   nous: 'stepfun/step-3.7-flash',
   google: 'gemini-2.5-flash',
-  openrouter: 'openrouter/free',
+  openrouter: 'z-ai/glm-5.2:free',
   xai: 'grok-4.3',
   anthropic: 'claude-sonnet-4-6',
 };

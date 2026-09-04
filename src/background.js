@@ -2023,17 +2023,27 @@ async function callNous(key, model = 'stepfun/step-3.7-flash', prompt) {
   }
 }
 
-async function callOpenRouter(key, model = 'openrouter/free', prompt) {
+// GLM 5.2 currently exposes OpenRouter's JSON response format on its free tier.
+// The generic free router can select models that do not, which turns a successful
+// inference into an unusable scan when they emit JSON fragments.
+const OPENROUTER_STRUCTURED_FREE_MODEL = 'z-ai/glm-5.2:free';
+
+async function callOpenRouter(key, model = OPENROUTER_STRUCTURED_FREE_MODEL, prompt) {
+  const selectedModel = model || OPENROUTER_STRUCTURED_FREE_MODEL;
+  const body = {
+    model: selectedModel,
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: prompt }],
+  };
+  if (selectedModel === OPENROUTER_STRUCTURED_FREE_MODEL) {
+    body.response_format = { type: 'json_object' };
+  }
   const res = await fetchWithTimeout(
     'https://openrouter.ai/api/v1/chat/completions',
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: model || 'openrouter/free',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
-      }),
+      body: JSON.stringify(body),
     },
     'OpenRouter'
   );

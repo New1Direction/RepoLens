@@ -49,8 +49,8 @@ export const CATALOG = {
     label: 'OpenRouter',
     models: [
       {
-        value: 'openrouter/free',
-        label: 'OpenRouter Free router — variable availability',
+        value: 'z-ai/glm-5.2:free',
+        label: 'Z.ai: GLM 5.2 — ★ Free, structured output',
         recommended: true,
       },
       { value: 'x-ai/grok-4.3', label: 'xAI: Grok 4.3' },
@@ -91,6 +91,7 @@ export const MODEL_ALIASES = {
     'anthropic/claude-opus-4-8': 'anthropic/claude-opus-4.8',
   },
   openrouter: {
+    'openrouter/free': 'z-ai/glm-5.2:free',
     'anthropic/claude-opus-4-8': 'anthropic/claude-opus-4.8',
     'anthropic/claude-sonnet-4-6': 'anthropic/claude-sonnet-4.6',
     'anthropic/claude-haiku-4-5-20251001': 'anthropic/claude-haiku-4.5',

@@ -38,6 +38,11 @@ describe('parseClaudeResponse', () => {
   it('throws on invalid JSON', () => {
     expect(() => parseClaudeResponse('not json')).toThrow();
   });
+
+  it('rejects a comma-separated JSON fragment sequence', () => {
+    const fragment = '{"name":"reshade","purpose":"hooking"},{"name":"imgui","purpose":"UI"}';
+    expect(() => parseClaudeResponse(fragment)).toThrow(/Failed to parse Claude response/);
+  });
   it('fills missing optional arrays with empty defaults', () => {
     const minimal = { ...validResponse, alternatives: undefined, red_flags: undefined };
     const result = parseClaudeResponse(JSON.stringify(minimal));

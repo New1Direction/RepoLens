@@ -65,6 +65,10 @@ describe('buildPrompt', () => {
     const prompt = buildPrompt(sampleRepo);
     expect(prompt.toLowerCase()).toContain('valid json');
   });
+
+  it('sets a bounded JSON response budget for free-model reliability', () => {
+    expect(buildPrompt(sampleRepo)).toMatch(/under 2,500 tokens/i);
+  });
   it('requests tech_stack and lists real dependency names when present', () => {
     const prompt = buildPrompt({ ...sampleRepo, dependencies: [{ name: 'scheduler', version: '^0.23' }] });
     expect(prompt).toContain('"tech_stack"');

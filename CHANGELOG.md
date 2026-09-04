@@ -24,6 +24,7 @@ the same day, as a rapid burst of improvements, so they share a date.
 - **ChatGPT OAuth callback no longer clears credentials on success.** The callback handler was still calling `mintOpenAIApiKey()` after the code exchange, which failed and then wiped the just-stored OAuth credentials — making the provider look disconnected even though the sign-in itself succeeded.
 - **Claude sign-in rate-limit handling.** Anthropic's token endpoint rate-limits aggressively on repeated sign-in attempts or concurrent refreshes, surfacing as "Claude token exchange failed: Rate limited." Both the token exchange and refresh paths now retry with exponential backoff (up to 2 retries, reads `retry-after` header, 30s max delay) before giving up.
 - **OpenRouter OAuth now preserves its PKCE verifier and callback target in session storage.** The connection flow uses the extension-specific callback path, validates the returned callback before exchanging the one-time code, surfaces the provider's authorization error, and clears the one-time state on every outcome.
+- **Free OpenRouter scans no longer use the generic free router.** Its provider-selected models can return comma-separated JSON fragments, which made otherwise successful scans fail in the response parser. RepoLens now defaults to `z-ai/glm-5.2:free`, whose current OpenRouter capabilities include JSON response format support, sends JSON-object mode for that model, keeps the generic router migrated to the reliable default, and constrains scan replies to fit within the available output budget.
 
 ### Changed
 

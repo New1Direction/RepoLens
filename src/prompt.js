@@ -72,7 +72,7 @@ How to write this briefing:
 - COMPLETE: Fill every field with substance. No empty strings, no "N/A", no filler.
 - Health scoring is calibrated on evidence, not stars: 90–100 = exceptional, very active, low bus-factor risk; 70–89 = healthy and maintained; 50–69 = usable but with real maintenance/adoption risk; below 50 = concerning (stale, abandoned, or one-person).
 
-Return ONLY a valid JSON object. No markdown fences, no explanation — raw JSON only.
+Return ONLY one valid JSON object. No markdown fences, no explanation — raw JSON only. Keep the entire response under 2,500 tokens: concise fields beat exhaustive prose, but do not omit schema keys.
 
 {
   "eli5": "One vivid paragraph in plain English explaining what it is and why it exists. Zero jargon — a smart non-developer should get it.",

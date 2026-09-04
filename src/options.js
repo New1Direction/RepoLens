@@ -436,17 +436,6 @@ async function loadLiveModelCatalog(provider, stored = {}) {
   const models = rows
     .map((row) => normalizeLiveModel(provider, row))
     .filter((model) => model && !seen.has(model.value) && seen.add(model.value));
-  // The free router is a routing alias rather than a fixed model, so it is not
-  // guaranteed to appear in /models. Keep it selectable when the live catalog wins.
-  if (provider === 'openrouter' && !models.some((model) => model.value === 'openrouter/free')) {
-    models.unshift({
-      value: 'openrouter/free',
-      label: 'OpenRouter Free router — variable availability',
-      aliases: [],
-      recommended: true,
-      free: true,
-    });
-  }
   if (!models.length) throw new Error(`${provider} returned no text models`);
   liveCatalog[provider] = models;
   return models;

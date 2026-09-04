@@ -25,8 +25,8 @@ describe('modelFor', () => {
     expect(modelFor('anthropic', {})).toBe(DEFAULT_MODELS.anthropic);
   });
 
-  it('defaults OpenRouter to its free routing alias', () => {
-    expect(modelFor('openrouter', {})).toBe('openrouter/free');
+  it('defaults OpenRouter to a structured free model', () => {
+    expect(modelFor('openrouter', {})).toBe('z-ai/glm-5.2:free');
   });
 });
 
