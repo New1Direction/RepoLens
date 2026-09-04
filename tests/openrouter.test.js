@@ -7,12 +7,14 @@ import {
 } from '../src/openrouter.js';
 
 describe('openRouterScanBody', () => {
-  it('gives the structured free default enough room to close its JSON object', () => {
+  it('disables GLM reasoning and requires JSON-capable provider routes', () => {
     expect(openRouterScanBody(undefined, 'scan')).toEqual({
       model: OPENROUTER_STRUCTURED_FREE_MODEL,
       max_tokens: OPENROUTER_SCAN_MAX_TOKENS,
       messages: [{ role: 'user', content: 'scan' }],
+      reasoning: { enabled: false },
       response_format: { type: 'json_object' },
+      provider: { require_parameters: true },
     });
     expect(OPENROUTER_SCAN_MAX_TOKENS).toBe(8192);
   });

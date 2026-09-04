@@ -30,31 +30,29 @@ describe('buildPrompt', () => {
     expect(prompt).toMatch(/decisive/i);
     expect(prompt).toMatch(/calibrated/i); // health rubric
   });
-  it('contains all required JSON keys in instructions', () => {
+  it('contains the compact core JSON schema', () => {
     const prompt = buildPrompt(sampleRepo);
     [
       'eli5',
-      'analogies',
+      'bottom_line',
+      'recommendation',
+      'confidence',
+      'evidence',
+      'action_plan',
+      'mental_model',
+      'risk_register',
       'technical',
       'use_cases',
       'skip_if',
-      'enables',
       'pros',
       'cons',
       'alternatives',
       'health',
-      'red_flags',
-      'start_here',
-      'compare_hooks',
-      'tags',
-      'category',
+      'tech_stack',
+      'capabilities',
       'highlights',
     ].forEach((key) => expect(prompt).toContain(`"${key}"`));
-  });
-  it('asks ELI5 for multiple distinct analogies', () => {
-    const prompt = buildPrompt(sampleRepo);
-    expect(prompt).toContain('"analogies"');
-    expect(prompt).toMatch(/different domain/i);
+    expect(prompt).not.toContain('"analogies"');
   });
   it('includes highlights with the severity vocabulary', () => {
     const prompt = buildPrompt(sampleRepo);
@@ -66,8 +64,8 @@ describe('buildPrompt', () => {
     expect(prompt.toLowerCase()).toContain('valid json');
   });
 
-  it('sets a bounded JSON response budget for free-model reliability', () => {
-    expect(buildPrompt(sampleRepo)).toMatch(/under 2,500 tokens/i);
+  it('sets a compact JSON response budget for free-model reliability', () => {
+    expect(buildPrompt(sampleRepo)).toMatch(/under 1,200 tokens/i);
   });
   it('requests tech_stack and lists real dependency names when present', () => {
     const prompt = buildPrompt({ ...sampleRepo, dependencies: [{ name: 'scheduler', version: '^0.23' }] });

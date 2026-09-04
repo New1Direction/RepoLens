@@ -96,7 +96,7 @@ Want finer control? A scan is really **eight parts** (core scan, Deep Dive, Vers
 
 Three low-cost paths are built in:
 
-- **Local Ollama** — install Ollama, run a model, and RepoLens does the AI step on your own machine. No key, no bill, fully private. Start with `qwen3:8b` for coding/reasoning or `gemma3:4b` for a lighter model.
+- **Local Ollama** — install Ollama, run a model, and RepoLens does the AI step on your own machine. No key, no bill, fully private. Start with `llama3.2:3b` for reliable local JSON; choose Qwen3 4B/8B when deeper local reasoning is worthwhile.
 - **Gemini's free tier** — paste a free Google AI Studio key. RepoLens then loads the Gemini models that key can actually call.
 - **OpenRouter structured free default** — after OpenRouter OAuth, RepoLens uses **Z.ai: GLM 5.2** (`z-ai/glm-5.2:free`) with JSON-object mode, avoiding the malformed JSON fragments produced by the generic free router. Other live `:free` variants remain marked **★ Free** and appear first. Availability and rate limits vary, so connect Gemini or Ollama as a fallback instead of relying on it alone.
 

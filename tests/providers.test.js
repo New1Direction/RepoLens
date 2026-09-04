@@ -21,8 +21,10 @@ import {
   anthropicBody,
   parseOpenAiText,
   parseAnthropicText,
+  ollamaBody,
+  parseOllamaText,
+  isTruncatedOllamaResponse,
 } from '../src/providers.js';
-
 describe('registry integrity', () => {
   it('every provider has id/label/protocol and a non-empty endpoint (except custom/azure)', () => {
     for (const p of COMPAT_PROVIDERS) {
@@ -97,8 +99,8 @@ describe('compatModelFor', () => {
     expect(compatModelFor('deepseek', {})).toBe('deepseek-chat');
   });
 
-  it('uses the current local Ollama recommendation by default', () => {
-    expect(compatModelFor('ollama', {})).toBe('qwen3:8b');
+  it('uses the reliable local Ollama recommendation by default', () => {
+    expect(compatModelFor('ollama', {})).toBe('llama3.2:3b');
   });
   it('falls back to the first model when none is recommended', () => {
     // volcengine has an empty catalog → empty string is acceptable (user must set one)
@@ -226,6 +228,15 @@ describe('request bodies + response parsers', () => {
       messages: [{ role: 'user', content: 'hi' }],
     });
   });
+  it('ollamaBody uses native JSON mode and a bounded completion', () => {
+    expect(ollamaBody('llama3.2:3b', 'hi', 99)).toEqual({
+      model: 'llama3.2:3b',
+      stream: false,
+      format: 'json',
+      options: { num_predict: 99 },
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+  });
   it('parseOpenAiText reads choices[0].message.content', () => {
     expect(parseOpenAiText({ choices: [{ message: { content: 'out' } }] })).toBe('out');
   });
@@ -245,5 +256,13 @@ describe('request bodies + response parsers', () => {
   });
   it('parseAnthropicText throws on empty', () => {
     expect(() => parseAnthropicText({ content: [] })).toThrow(/no text/i);
+  });
+  it('parseOllamaText reads native Ollama chat output', () => {
+    expect(parseOllamaText({ message: { content: 'out' } })).toBe('out');
+    expect(() => parseOllamaText({ message: {} })).toThrow(/no text/i);
+  });
+  it('recognizes a native Ollama completion cut off at its limit', () => {
+    expect(isTruncatedOllamaResponse({ done_reason: 'length' })).toBe(true);
+    expect(isTruncatedOllamaResponse({ done_reason: 'stop' })).toBe(false);
   });
 });

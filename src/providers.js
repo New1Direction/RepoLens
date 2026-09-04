@@ -211,10 +211,11 @@ export const COMPAT_PROVIDERS = [
     host: 'http://localhost/*',
     docsUrl: 'https://ollama.com',
     models: [
-      { value: 'qwen3:8b', label: 'Qwen3 8B — coding and reasoning', recommended: true },
+      { value: 'llama3.2:3b', label: 'Llama 3.2 3B — reliable local JSON', recommended: true },
+      { value: 'qwen3:4b', label: 'Qwen3 4B — coding and reasoning' },
+      { value: 'qwen3:8b', label: 'Qwen3 8B — stronger coding and reasoning' },
       { value: 'gemma3:4b', label: 'Gemma 3 4B — lighter, long context' },
       { value: 'llama3.1', label: 'Llama 3.1' },
-      { value: 'qwen2.5-coder', label: 'Qwen2.5 Coder' },
       { value: 'deepseek-r1', label: 'DeepSeek-R1' },
     ],
   },
@@ -462,6 +463,17 @@ export function openaiBody(model, prompt, maxTokens = 4096) {
   return { model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] };
 }
 
+/** Native Ollama chat body: its JSON mode avoids model-specific markdown wrappers. */
+export function ollamaBody(model, prompt, maxTokens = 1600) {
+  return {
+    model,
+    stream: false,
+    format: 'json',
+    options: { num_predict: maxTokens },
+    messages: [{ role: 'user', content: prompt }],
+  };
+}
+
 export function anthropicBody(model, prompt, maxTokens = 4096) {
   return { model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] };
 }
@@ -478,6 +490,16 @@ export function parseAnthropicText(json) {
     : json?.content?.[0]?.text;
   if (!t) throw new Error('Provider returned no text content');
   return t;
+}
+
+export function parseOllamaText(json) {
+  const t = json?.message?.content;
+  if (!t) throw new Error('Ollama returned no text content');
+  return t;
+}
+
+export function isTruncatedOllamaResponse(json) {
+  return json?.done_reason === 'length';
 }
 
 /** Request body for an OpenAI-compatible /embeddings POST. */

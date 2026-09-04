@@ -11,7 +11,12 @@ export function openRouterScanBody(model, prompt) {
     messages: [{ role: 'user', content: prompt }],
   };
   if (selectedModel === OPENROUTER_STRUCTURED_FREE_MODEL) {
+    // GLM 5.2 enables high-effort reasoning by default. Reasoning tokens consume
+    // the same completion budget as the JSON response and were exhausting it.
+    body.reasoning = { enabled: false };
     body.response_format = { type: 'json_object' };
+    // Refuse provider routes that silently ignore JSON mode.
+    body.provider = { require_parameters: true };
   }
   return body;
 }

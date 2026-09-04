@@ -29,6 +29,9 @@ import {
   embeddingsBody,
   parseEmbeddings,
   pickEmbeddingsProvider,
+  ollamaBody,
+  parseOllamaText,
+  isTruncatedOllamaResponse,
 } from './providers.js';
 import { withRetry } from './retry.js';
 import { categorizeError, rankErrors } from './errors.js';
@@ -1570,12 +1573,14 @@ function dispatch(provider, model, keys, prompt) {
 
 // Generic dispatch for a registry (OpenAI/Anthropic-compatible) provider.
 function callCompat(provider, model, keys, prompt) {
+  const m = model || compatModelFor(provider, keys);
+  if (!m) throw new Error(`${providerLabel(provider)}: choose a model in Settings`);
+  if (provider === 'ollama') return callOllama(m, prompt);
+
   const endpoint = compatEndpoint(provider, keys);
   if (!endpoint) throw new Error(`${providerLabel(provider)}: no endpoint configured`);
   const key = keys[provKeyName(provider)] || '';
   const protocol = compatProtocol(provider, keys);
-  const m = model || compatModelFor(provider, keys);
-  if (!m) throw new Error(`${providerLabel(provider)}: choose a model in Settings`);
   if (protocol === 'anthropic') {
     return callAnthropicCompatible({ endpoint, key, model: m, prompt, label: providerLabel(provider) });
   }
@@ -1638,6 +1643,29 @@ async function callOpenAICompatible({
     throw new Error(err.error?.message ?? err.message ?? `${label} API error ${res.status}`);
   }
   return parseOpenAiText(await res.json());
+}
+
+// Ollama's native endpoint can force JSON mode. Its OpenAI-compatible endpoint
+// ignores the local thinking controls for Qwen, leading to empty truncated replies.
+async function callOllama(model, prompt) {
+  const res = await fetchWithTimeout(
+    'http://localhost:11434/api/chat',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ollamaBody(model, prompt)),
+    },
+    'Ollama'
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? err.message ?? `Ollama API error ${res.status}`);
+  }
+  const data = await res.json();
+  if (isTruncatedOllamaResponse(data)) {
+    throw new Error('Ollama reached its scan completion limit; retry the scan.');
+  }
+  return parseOllamaText(data);
 }
 
 // Embeddings via the configured OpenAI-protocol provider (BYO-key). Returns

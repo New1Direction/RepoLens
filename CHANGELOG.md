@@ -12,7 +12,7 @@ the same day, as a rapid burst of improvements, so they share a date.
 ### Added
 
 - **Review Queue in Library.** One toggle narrows the Library to pending **Trial** / **Hold** adoption decisions and scans older than 14 days. It composes with existing search, collections, decisions, exports, and sorts, making a periodic review session a focused list instead of a manual hunt.
-- **Cost-aware model defaults.** New OpenRouter connections now start on `openrouter/free`, and local Ollama starts on `qwen3:8b`; `gemma3:4b` remains a lighter local option. Existing saved model selections are unchanged.
+- **Cost-aware model defaults.** New OpenRouter connections start on `z-ai/glm-5.2:free`; local Ollama starts on `llama3.2:3b`, a reliable JSON-capable local model. Qwen3 4B/8B remain available for deeper local reasoning. Existing saved model selections are unchanged.
 
 ### Fixed
 
