@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { Vee } from './Vee';
 import { ThemeToggle } from './ThemeToggle';
+import { InstallButton } from './InstallButton';
+import { GITHUB_URL } from '@/lib/distribution';
 
-export const GITHUB_URL = 'https://github.com/New1Direction/RepoLens';
+export { GITHUB_URL };
 
 export function SiteHeader() {
   return (
@@ -23,9 +25,7 @@ export function SiteHeader() {
 
         <div className="site-header-actions">
           <ThemeToggle />
-          <Link href="/docs/getting-started" className="btn btn-primary btn-sm">
-            Add to Chrome
-          </Link>
+          <InstallButton className="btn btn-primary btn-sm" label="Install" />
         </div>
       </div>
     </header>

@@ -26,6 +26,18 @@ jobs:
         run: npm run check:html
       - name: Format check
         run: npm run format:check
+      - name: Release consistency
+        run: npm run check:release
+      # Builds the exact Chrome Web Store upload and fails on CSP violations,
+      # unresolved imports, dev files, icon/manifest problems, or permissions
+      # without a store justification.
+      - name: Package extension
+        run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repolens-extension-zip
+          path: dist/
+          if-no-files-found: error
       - name: Dependency audit
         run: npm audit --audit-level=high
 

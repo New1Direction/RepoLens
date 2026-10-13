@@ -7,3 +7,4 @@ package-lock.json
 *.min.js
 icons
 vendor
+dist

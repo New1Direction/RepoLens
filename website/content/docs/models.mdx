@@ -32,9 +32,9 @@ Whichever is highest in that order *and* connected is your primary; the rest are
 Under **Options → More model providers**, RepoLens speaks **any OpenAI- or Anthropic-compatible endpoint** — so you're not limited to the five above:
 
 - **OpenAI** · **DeepSeek** · **Groq** · **NVIDIA NIM** · **Kimi (Moonshot)** · **Zhipu GLM** · **Qwen (Aliyun)** · **Xiaomi MiMo** · **Volcengine Ark** · **Ollama Cloud** · **MiniMax**
-- **OpenAI — Sign in with ChatGPT** — the OpenAI card has a one-click **ChatGPT login** (the same OAuth the **Codex CLI** uses), so you can connect without pasting a key. It mints a working key from your account behind the scenes — which needs **API access on your ChatGPT plan**; if that isn't included, RepoLens says so and you can paste an API key instead.
+- **OpenAI — Sign in with ChatGPT** — the OpenAI card has a one-click **ChatGPT login** (the same OAuth the **Codex CLI** uses), so you can connect without pasting a key. Scans then run on your ChatGPT subscription through the Codex Responses API; no API platform access is needed.
 - **Azure OpenAI** — point at your resource endpoint and deployment.
-- **Ollama (Local)** — runs on `localhost`, **no key needed**. The simplest way to scan fully offline.
+- **Ollama (Local)** — runs on `localhost`, **no key needed**. The simplest way to keep the AI step on your own machine (RepoLens still fetches the public repo online). Start Ollama with `OLLAMA_ORIGINS=chrome-extension://*` — without it Ollama answers the extension with a 403.
 - **Custom** — any other OpenAI- or Anthropic-compatible server. Paste the URL, pick the protocol, done.
 
 Every provider keeps its **own key**, so switching between them never loses your other settings. Gemini, OpenRouter, and Nous load their live model catalogs when Settings opens, so renamed slugs and newly exposed Ultra / portal models appear without waiting for a RepoLens release. Each card has:

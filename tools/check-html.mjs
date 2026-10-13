@@ -15,10 +15,7 @@ import prettier from 'prettier';
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
-const files = execSync('git ls-files "*.html"', { encoding: 'utf8' })
-  .trim()
-  .split('\n')
-  .filter(Boolean);
+const files = execSync('git ls-files "*.html"', { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
 
 const failures = [];
 for (const file of files) {

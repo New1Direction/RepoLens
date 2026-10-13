@@ -32,12 +32,17 @@ function statusOf(err) {
   return m ? Number(m[1]) : 0;
 }
 
-function humanize(kind, provider, fallback) {
+function humanize(kind, provider, fallback, status) {
   const who = provider || 'This provider';
   switch (kind) {
     case 'none':
       return 'No AI provider connected — open Settings to add a key.';
     case 'auth': {
+      // Local Ollama has no credential: a 403 there is its origin check refusing
+      // chrome-extension:// requests, which only OLLAMA_ORIGINS fixes.
+      if (status === 403 && /^ollama \(local\)$/i.test(who)) {
+        return 'Ollama (Local) refused the request from the extension. Quit Ollama, start it again with OLLAMA_ORIGINS=chrome-extension://* set, then retry.';
+      }
       // Surface the provider's actual reason when we have one — the generic line
       // hides *why* (e.g. an OAuth subscription token refused at inference time,
       // which reads very differently from a mistyped API key).
@@ -100,7 +105,7 @@ export function categorizeError(err, provider = '') {
     retryable: meta.retryable,
     fixable: meta.fixable,
     priority: meta.priority,
-    userMessage: humanize(kind, provider, msg),
+    userMessage: humanize(kind, provider, msg, status),
   };
 }
 

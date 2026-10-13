@@ -186,3 +186,10 @@ Use RepoLens evaluate_for_goal on honojs/hono for a deterministic agent API runt
 ```text
 Analyze https://www.orbio.so/ as a product. Separate website claims from verified implementation facts and tell me what evidence is still needed.
 ```
+
+## Related
+
+RepoLens answers "should my agent depend on this code?". If the thing your agent
+needs is a website that doesn't ship its own MCP server, [wmcp.sh](https://wmcp.sh)
+turns a site URL into agent-callable tools, and RepoLens's `analyze_product` can
+inspect that product first.

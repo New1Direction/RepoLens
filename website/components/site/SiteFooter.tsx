@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Vee } from './Vee';
-import { GITHUB_URL } from './SiteHeader';
+import { GITHUB_URL } from '@/lib/distribution';
+import { LATEST } from '@/lib/releases';
 
 const PILLS = ['No backend', 'No accounts', 'Your keys, your machine', 'Manifest V3'];
 
@@ -36,6 +37,8 @@ export function SiteFooter() {
             <Link href="/docs">Introduction</Link>
             <Link href="/docs/how-it-works">How it works</Link>
             <Link href="/docs/storage">Storage</Link>
+            <Link href="/docs/agents">Use from your agent</Link>
+            <Link href="/docs/privacy">Privacy</Link>
             <Link href="/docs/runner">The runner</Link>
           </div>
           <div className="footer-col">
@@ -54,7 +57,7 @@ export function SiteFooter() {
       </div>
 
       <div className="site-footer-base">
-        <span>RepoLens — v3.0 · client-side only</span>
+        <span>RepoLens — v{LATEST.version} · client-side only</span>
         <span>Bring your own model. Nothing leaves your browser.</span>
       </div>
     </footer>

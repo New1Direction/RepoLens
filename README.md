@@ -9,8 +9,8 @@
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-1a73e8?logo=googlechrome&logoColor=white)
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-955_passing-2f7d34)
-![Version](https://img.shields.io/badge/version-3.1.1-c2691c)
+[![CI](https://github.com/New1Direction/RepoLens/actions/workflows/ci.yml/badge.svg)](https://github.com/New1Direction/RepoLens/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-3.2.0-c2691c)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>
@@ -207,13 +207,13 @@ Migrating from an old VelesDB server? **Options → Import from VelesDB** pulls 
 
 ## Install
 
-First get the code — `git clone` the repo (or download the ZIP and unzip it). Then:
+RepoLens isn't on the Chrome Web Store yet. Until it is:
 
-```text
-chrome://extensions  →  Developer mode (top-right)  →  Load unpacked  →  select the folder
-```
+1. Download `repolens-v<version>.zip` from the [latest release](https://github.com/New1Direction/RepoLens/releases/latest) (or `git clone` the repo) and unzip it.
+2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick the folder.
+3. Click the RepoLens icon on any repo page. Settings open on first install so you can connect a model.
 
-Then click the RepoLens icon on any repo page.
+RepoLens doesn't ask to read your browsing history, and nothing goes to a RepoLens server — there isn't one. [PRIVACY.md](PRIVACY.md) lists exactly what is stored and sent. The [install guide](https://new1direction.github.io/RepoLens/docs/getting-started) covers local Ollama and updating.
 
 ## Develop
 
@@ -226,9 +226,12 @@ npm run test:watch
 npm run test:coverage  # v8 coverage for the pure modules
 npm run lint           # eslint (flat config)
 npm run format:check   # prettier
+npm run check:release  # every file agrees on the version
+npm run package        # validated, deterministic store zip → dist/
+npm run verify         # all of the above
 ```
 
-CI (`.github/workflows/ci.yml`) runs the suite on every push and PR. Pure ES modules, **no build step**.
+CI (`.github/workflows/ci.yml`) runs the suite on every push and PR. Pure ES modules, **no build step**. Releasing and the Chrome Web Store submission are documented in [`docs/store/chrome-web-store.md`](docs/store/chrome-web-store.md).
 
 ---
 

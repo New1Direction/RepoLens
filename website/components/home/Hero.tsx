@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { GITHUB_URL } from '@/components/site/SiteHeader';
+import { GITHUB_URL } from '@/lib/distribution';
+import { InstallButton } from '@/components/site/InstallButton';
 
 export function Hero() {
   return (
@@ -23,9 +23,7 @@ export function Hero() {
           </p>
 
           <div className="hero-cta">
-            <Link href="/docs/getting-started" className="btn btn-primary">
-              Add to Chrome — local/private
-            </Link>
+            <InstallButton />
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
               View on GitHub →
             </a>

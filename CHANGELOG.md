@@ -7,26 +7,48 @@ This project follows [Semantic Versioning](https://semver.org/) and groups chang
 by theme. Dates are when the release landed on `main`. 1.1.0 through 1.6.0 shipped
 the same day, as a rapid burst of improvements, so they share a date.
 
-## [Unreleased] — 2026-06-25 · _Subscription Auth Fix · Codex Responses API_
+## [3.2.0] — 2026-10-13 · _Store Ready · Review Queue · Free Scans_
+
+The first build packaged for the Chrome Web Store, plus the review and free-model
+work that landed after 3.1.1.
 
 ### Added
 
 - **Review Queue in Library.** One toggle narrows the Library to pending **Trial** / **Hold** adoption decisions and scans older than 14 days. It composes with existing search, collections, decisions, exports, and sorts, making a periodic review session a focused list instead of a manual hunt.
 - **Cost-aware model defaults.** New OpenRouter connections start on `z-ai/glm-5.2:free`; local Ollama starts on `llama3.2:3b`, a reliable JSON-capable local model. Qwen3 4B/8B remain available for deeper local reasoning. Existing saved model selections are unchanged.
+- **Chrome Web Store package.** `npm run package` builds `dist/repolens-v<version>.zip` deterministically (sorted entries, pinned timestamps, byte-identical rebuilds) with a `.sha256`, and refuses to build if the package would ship a broken page: inline scripts or handlers the MV3 CSP blocks, imports or page URLs that don't resolve, wrong icon sizes, manifest store limits, dev files, or a permission without a store justification. Tag pushes attach the zip to a GitHub Release.
+- **Release consistency gate.** `npm run check:release` fails when the manifest, package, lockfile, CHANGELOG, What's New, README, or website disagree on the current version.
+- **Privacy policy and store listing kit.** A plain-language [privacy policy](PRIVACY.md) (also on the website) and `docs/store/chrome-web-store.md` with listing copy, permission justifications, data-use disclosures, and the asset checklist.
+- **MCP: goal-aware evaluation and product analysis.** `evaluate_for_goal` scores a repo against a concrete goal, and `analyze_product` inspects a public product URL (private and loopback hosts are refused).
+
+### Changed
+
+- **Fewer permissions.** RepoLens no longer requests `tabs` or `webNavigation`, so the install prompt no longer says it can read your browsing history. Unused host access to `claude.ai`, `grok.com`, and the redundant `pypi.org/pypi/*` was removed. ChatGPT sign-in now reads its loopback callback through `tabs.onUpdated` and the existing `localhost` permission.
+- **Website install path is honest.** "Add to Chrome" buttons now say **Install for Chrome** and lead to a step-by-step install guide (release zip or source) until the Web Store listing is live; one setting flips them to the store link.
 
 ### Fixed
 
+- **Library page loads again.** It imported its animation helpers from `src/vendor/`, which hasn't existed since the source tree moved into `src/`, so the whole Library script failed to load. It now imports from `vendor/`.
+- **Share card and What's New pages run their scripts.** Both used inline `<script>` blocks, which the MV3 content security policy blocks: the share card stuck on "Loading…" and What's New stayed blank below the hero. The scripts now live in `src/share.js` and `src/whats-new.js`.
+- **Pressing Enter in Ask your library no longer reloads the page.** The form relied on an inline `onsubmit` handler that the CSP also blocks.
+- **Local Ollama 403s say how to fix them.** Ollama refuses `chrome-extension://` origins unless `OLLAMA_ORIGINS` allows them, which surfaced as a misleading "credential was rejected". The error now names the `OLLAMA_ORIGINS=chrome-extension://*` fix, and the install and model docs include it.
 - **MCP product-page SSRF guard rejects IPv6 loopback correctly.** URL hostnames are normalized before IP classification, so `http://[::1]/` cannot fall through to DNS resolution.
-- **Root and MCP dependency audits are clean.** Updated lockfiles resolve the reported high/moderate advisories.
+- **Root and MCP dependency audits are clean.** Updated lockfiles resolve the reported high/moderate advisories, including the ones published since (brace-expansion, source-map-js, the MCP SDK, and proxy-addr).
+- **OpenRouter OAuth now preserves its PKCE verifier and callback target in session storage.** The connection flow uses the extension-specific callback path, validates the returned callback before exchanging the one-time code, surfaces the provider's authorization error, and clears the one-time state on every outcome.
+- **Free OpenRouter scans no longer use the generic free router.** Its provider-selected models can return comma-separated JSON fragments, which made otherwise successful scans fail in the response parser. RepoLens now defaults to `z-ai/glm-5.2:free`, whose current OpenRouter capabilities include JSON response format support, sends JSON-object mode for that model, keeps the generic router migrated to the reliable default, and constrains scan replies to fit within the available output budget.
+- **Long structured OpenRouter responses no longer fail as malformed JSON.** The scan completion ceiling is now 8,192 tokens (was 4,096), and a provider `finish_reason: "length"` is reported as an actionable limit error rather than passed to the JSON parser as a partial object.
+- **OpenRouter model picker is now genuinely free-only.** It rebuilds from the live catalog using zero prompt/completion pricing, text-only output, and JSON response-format support; paid, audio-capable, generic-router, and stale saved selections are removed from the picker.
+
+---
+
+## [3.1.1] — 2026-06-25 · _Subscription Auth Fix · Codex Responses API_
+
+### Fixed
 
 - **ChatGPT subscription sign-in now works without API platform access.** The previous flow tried to mint an OpenAI API key (`sk-…`) from the OAuth `id_token` via a token-exchange grant — which only works if your ChatGPT plan includes API platform access. Most ChatGPT Plus/Pro subscriptions don't, so every sign-in failed with "Couldn't enable API access for this ChatGPT account." RepoLens now uses the **Codex Responses API** at `chatgpt.com/backend-api/codex/responses` with the OAuth access token directly — the same endpoint the Codex CLI and Aside browser use. No API key minting required; the subscription itself authorizes the request.
 - **ChatGPT OAuth error messages are now readable.** The token-exchange error handler was stringifying nested error objects as `[object Object]`. It now drills into `error.message`, `error_description`, and stringifies objects properly.
 - **ChatGPT OAuth callback no longer clears credentials on success.** The callback handler was still calling `mintOpenAIApiKey()` after the code exchange, which failed and then wiped the just-stored OAuth credentials — making the provider look disconnected even though the sign-in itself succeeded.
 - **Claude sign-in rate-limit handling.** Anthropic's token endpoint rate-limits aggressively on repeated sign-in attempts or concurrent refreshes, surfacing as "Claude token exchange failed: Rate limited." Both the token exchange and refresh paths now retry with exponential backoff (up to 2 retries, reads `retry-after` header, 30s max delay) before giving up.
-- **OpenRouter OAuth now preserves its PKCE verifier and callback target in session storage.** The connection flow uses the extension-specific callback path, validates the returned callback before exchanging the one-time code, surfaces the provider's authorization error, and clears the one-time state on every outcome.
-- **Free OpenRouter scans no longer use the generic free router.** Its provider-selected models can return comma-separated JSON fragments, which made otherwise successful scans fail in the response parser. RepoLens now defaults to `z-ai/glm-5.2:free`, whose current OpenRouter capabilities include JSON response format support, sends JSON-object mode for that model, keeps the generic router migrated to the reliable default, and constrains scan replies to fit within the available output budget.
-- **Long structured OpenRouter responses no longer fail as malformed JSON.** The scan completion ceiling is now 8,192 tokens (was 4,096), and a provider `finish_reason: "length"` is reported as an actionable limit error rather than passed to the JSON parser as a partial object.
-- **OpenRouter model picker is now genuinely free-only.** It rebuilds from the live catalog using zero prompt/completion pricing, text-only output, and JSON response-format support; paid, audio-capable, generic-router, and stale saved selections are removed from the picker.
 
 ### Changed
 
@@ -37,7 +59,7 @@ the same day, as a rapid burst of improvements, so they share a date.
 
 ---
 
-## [Unreleased] — 2026-06-19 · _Actionable Scans · Smooth Loading · Provider Refresh · Stability_
+## [3.1.0] — 2026-06-19 · _Actionable Scans · Smooth Loading · Provider Refresh · Stability_
 
 ### Added
 

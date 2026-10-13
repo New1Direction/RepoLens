@@ -29,6 +29,14 @@ describe('categorizeError', () => {
     expect(r.userMessage).toMatch(/reconnect it in Settings/i);
     expect(r.userMessage).not.toMatch(/API error/i);
   });
+  it('tells local Ollama users how to allow the extension origin on a 403', () => {
+    // Ollama answers chrome-extension:// origins with a bare 403 unless OLLAMA_ORIGINS allows them.
+    const r = categorizeError(new Error('Ollama (Local) API error 403'), 'Ollama (Local)');
+    expect(r.kind).toBe('auth');
+    expect(r.userMessage).toMatch(/OLLAMA_ORIGINS=chrome-extension:\/\/\*/);
+    // A real credential rejection elsewhere keeps the reconnect guidance.
+    expect(categorizeError({ status: 403 }, 'Ollama Cloud').userMessage).toMatch(/reconnect it in Settings/i);
+  });
   it('classifies rate limits as retryable', () => {
     expect(categorizeError(new Error('429 Too Many Requests')).kind).toBe('rate_limit');
     expect(categorizeError('rate limit exceeded').retryable).toBe(true);
