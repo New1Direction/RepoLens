@@ -1,0 +1,53 @@
+---
+title: Privacy
+description: What RepoLens stores, what it sends, and to whom. The extension's privacy policy.
+---
+
+_Last updated: 2026-10-13 · applies to the RepoLens Chrome extension 3.2.0 and later_
+
+RepoLens is a Chrome extension that reads public code repositories and asks an AI model you choose to explain them. **There is no RepoLens server and no RepoLens account. The developer receives none of your data.**
+
+## What RepoLens stores, and where
+
+Everything stays in your browser profile on your device:
+
+- **Settings and credentials** in `chrome.storage.local`: your theme, writing voice, model choices, API keys, and the OAuth tokens for providers you sign in to.
+- **Scan state** in `chrome.storage.session`: progress of scans that are running. Chrome clears it when the browser closes.
+- **Your library** in IndexedDB: saved analyses, notes, decisions, evaluations, collections, canvas layouts, and a scan cache.
+
+Removing the extension deletes all of it. **Library → Clear** deletes the library earlier if you want. **Library → Export** and **Options → Back up your settings** write files only when you ask for them, and settings backups never include API keys or OAuth tokens.
+
+## What leaves your browser, and why
+
+RepoLens sends data only when you start something that needs it, and only to the service doing that job:
+
+| When | Sent to | What is sent |
+| --- | --- | --- |
+| You scan a repo or package | GitHub, GitLab, npm, or PyPI public APIs | The repo or package name, to fetch its public metadata, README, and file list. A GitHub token is sent only if you add one in Options. |
+| A scan, lens, Ask, or Deep Dive runs | The AI provider you connected (for example Anthropic, OpenAI, Google, OpenRouter, or a local Ollama) | The public repo content above plus RepoLens's prompt, authenticated with your key or OAuth token. Your provider's own privacy policy covers what it does with requests. |
+| You sign in with Claude, ChatGPT, Grok, or OpenRouter | That provider's sign-in service | The standard OAuth authorization exchange. |
+| You use Discover | GitHub search API | Your search terms. |
+| You run the optional deeper-scan runner or local Ollama | Your own machine (`localhost`) | The repo URL or prompt. Nothing goes to the internet unless the runner downloads public source. |
+| You add a custom endpoint or import from VelesDB | The address you entered, after Chrome asks for your permission | The same request a built-in provider would get, or the import request. |
+
+RepoLens has a content script on GitHub, GitLab, npm, and PyPI pages. It only tells the extension that the current tab is a repo page, so the toolbar icon can light up. It does not read or send page content.
+
+Share cards put the verdict summary in the link itself (after `#`). Nothing is uploaded; whoever you send the link to sees what the link contains.
+
+## What RepoLens does not do
+
+- No analytics, telemetry, crash reporting, ads, or tracking.
+- No selling, renting, or transferring of data to anyone.
+- No use of your data for anything other than the feature you started.
+- No reading of your browsing history. RepoLens does not request the `tabs`, `history`, or `webNavigation` permissions.
+- No remotely hosted code. Everything RepoLens runs ships inside the extension.
+
+RepoLens's use of information complies with the [Chrome Web Store User Data Policy](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq), including the Limited Use requirements.
+
+## The RepoLens MCP server
+
+The separate `repolens-mcp` server runs on your computer when you start it. It calls the same public repository APIs, the public page you pass to `analyze_product`, and the AI provider whose key you set in its environment, and writes reports to local files. It sends nothing to the developer either.
+
+## Questions and changes
+
+Open an issue at [github.com/New1Direction/RepoLens/issues](https://github.com/New1Direction/RepoLens/issues). Changes to this policy are recorded in the repository history and the [changelog](/changelog).

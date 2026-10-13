@@ -1,26 +1,59 @@
 ---
 title: Getting Started
-description: Load the extension and run your first scan.
+description: Install RepoLens in Chrome and run your first scan.
 ---
 
-## Install (load unpacked)
+## Install
 
-RepoLens has **no build step** — it runs as-is.
+RepoLens runs in Chrome, Edge, Brave, Arc, and other Chromium browsers. It has no
+build step and needs no account.
 
-1. Clone or download the repo.
+### From the Chrome Web Store
+
+RepoLens isn't on the Chrome Web Store yet. Until it is, use the release zip below —
+it's the same package that will be uploaded to the store.
+
+### From the release zip (recommended)
+
+1. Download `repolens-v<version>.zip` from the [latest release](https://github.com/New1Direction/RepoLens/releases/latest) and unzip it into a folder you'll keep. (No release listed yet? Use [From source](#from-source) — it's the same code.)
 2. Open `chrome://extensions`.
-3. Toggle **Developer mode** (top right).
-4. Click **Load unpacked** and select the project folder.
+3. Turn on **Developer mode** (top right).
+4. Click **Load unpacked** and select the unzipped folder.
 
-The 🔭 icon appears in your toolbar.
+Chrome shows the permissions RepoLens asks for when you load it: access to the
+repo sites it reads, the AI providers you might connect, `localhost` for local
+models, and notifications. It does **not** ask to read your browsing history —
+see [Privacy](/docs/privacy) for exactly what is sent where.
+
+Pin the RepoLens icon from the puzzle-piece menu so it's one click away. Settings
+open automatically on first install.
+
+### From source
+
+[Download the source](https://github.com/New1Direction/RepoLens/archive/refs/heads/main.zip) or `git clone` the repo, then **Load unpacked** the project folder. The repo root is a working extension; the extra developer files are ignored by Chrome.
+
+**Updating:** replace the folder with the new release (or `git pull`), then press
+the reload icon on the RepoLens card in `chrome://extensions`. Your library and
+settings stay in the browser profile, so they survive the update.
+
+## Connect a model
+
+The first scan needs one AI provider. Open **Options** (RepoLens opens it for you
+if nothing is connected) and pick any one:
+
+- **Sign in** with a subscription: Claude, ChatGPT, Grok, or OpenRouter.
+- **Paste an API key** from any supported provider. Gemini and OpenRouter have free tiers.
+- **Run a local model** with [Ollama](https://ollama.com) — no key, no bill. Start Ollama with `OLLAMA_ORIGINS=chrome-extension://*` so it accepts requests from the extension, pull `llama3.2:3b`, and enable **Ollama (Local)** in Options.
+
+See [Models](/docs/models) for every provider and per-part routing.
 
 ## Your first scan
 
 1. Open any repo page — e.g. a project on **github.com**.
 2. Click the **RepoLens** icon.
-3. A loading tab opens immediately, then RepoLens checks cache/provider setup while it fetches the repo. When the scan finishes, it lands on the **Verdict** — fit call, bottom line, measured facts, structured risks, learning path, and the top things worth noting.
+3. A loading tab opens immediately, then RepoLens fetches the repo and asks your model. When the scan finishes, it lands on the **Verdict** — fit call, bottom line, measured facts, structured risks, learning path, and the top things worth noting.
 
-The first scan needs an AI provider connected. If you haven't yet, RepoLens points you to **Options** to add one — paste an API key from any provider, sign in with OAuth (Claude, ChatGPT/OpenAI, Grok, OpenRouter), or run a **local Ollama** with no key at all. For Gemini, OpenRouter, and Nous, Settings loads the live model list from your connected account. Slow provider calls keep going while the background scan heartbeat is alive, so a long scan should not falsely fail at 90 seconds. See [Models](/docs/models).
+You can also right-click any repo link and choose **Scan with RepoLens**, or paste a list into **Library → Batch**.
 
 > **Want it your way?** **Options → Appearance** has 21 themes (light, dark, Mono Ink, Liquid Glass, DESIGN.md-inspired themes, and more), and **Voice** changes the *writing tone* of the analysis — it's text, not audio, anywhere from blunt-and-technical to friendly-and-plain.
 
@@ -29,9 +62,9 @@ The first scan needs an AI provider connected. If you haven't yet, RepoLens poin
 For contributors — if you just want to *use* RepoLens, you're done after the steps above.
 
 ```bash
-npm install      # installs vitest
-npm test         # the unit suite
-npm run test:watch
+npm ci
+npm test           # the unit suite
+npm run verify     # tests, lint, HTML, format, release checks, and the store zip
 ```
 
-Pure ES modules, no bundler. Edit a file, reload the extension at `chrome://extensions`, scan again.
+Pure ES modules, no bundler. Edit a file, reload the extension at `chrome://extensions`, scan again. `npm run package` writes the store upload to `dist/`.

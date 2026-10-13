@@ -1,6 +1,6 @@
 {
   "name": "repolens",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "type": "module",
   "scripts": {
     "test": "vitest run",
@@ -9,8 +9,12 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check:html": "node tools/check-html.mjs",
+    "check:release": "node tools/check-release.mjs",
+    "package": "node tools/package-extension.mjs",
+    "package:check": "node tools/package-extension.mjs --check",
     "format": "prettier --write \"**/*.{js,json,css,html,md}\"",
-    "format:check": "prettier --check \"**/*.{js,json,css,html,md}\""
+    "format:check": "prettier --check \"**/*.{js,json,css,html,md}\"",
+    "verify": "npm test && npm run lint && npm run check:html && npm run format:check && npm run check:release && npm run package"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

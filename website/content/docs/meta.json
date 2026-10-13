@@ -1,4 +1,1 @@
-{
-  "title": "RepoLens",
-  "pages": ["index", "how-it-works", "getting-started", "the-scan", "triage", "evaluate", "discover", "models", "storage", "runner"]
-}
+{"title": "RepoLens", "pages": ["index", "how-it-works", "getting-started", "the-scan", "triage", "evaluate", "discover", "models", "storage", "runner", "agents", "privacy"]}

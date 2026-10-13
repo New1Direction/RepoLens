@@ -13,20 +13,33 @@ export type Release = {
 };
 
 export const LATEST: Release = {
-  version: '3.1.1',
-  theme: 'Subscription Auth Fix',
-  date: 'Jun 25, 2026',
+  version: '3.2.0',
+  theme: 'Store Ready',
+  date: 'Oct 13, 2026',
   summary:
-    'ChatGPT and Claude subscription sign-ins now actually work — Codex Responses API replaces the broken API-key minting path, plus rate-limit retry for Claude.',
+    'The first build packaged for the Chrome Web Store: fewer permissions, a privacy policy, a validated deterministic release zip, and fixes for three extension pages that failed to load or run their scripts.',
   highlights: [
-    'ChatGPT sign-in uses the Codex Responses API (chatgpt.com/backend-api/codex/responses) with the OAuth access token directly — no API platform access required.',
-    'Claude token exchange and refresh now retry with exponential backoff on 429 rate limits.',
-    'OpenAI model catalog updated: GPT-5.4 (recommended), GPT-5.4 mini, and GPT-5.5 added.',
-    'OAuth error messages fixed — no more [object Object] on failed token exchanges.',
+    'No more "read your browsing history" prompt — RepoLens dropped the tabs and webNavigation permissions and three unused hosts.',
+    'Library, share cards, and What\u2019s New load again: a stale vendor import and inline scripts blocked by the MV3 CSP are fixed.',
+    'Review Queue in Library narrows to pending Trial/Hold decisions and scans older than 14 days.',
+    'Free and local defaults: OpenRouter starts on a structured free model, Ollama on llama3.2:3b, with a clear fix when Ollama blocks the extension.',
   ],
 };
 
 export const RELEASES: Release[] = [
+  {
+    version: '3.1.1',
+    theme: 'Subscription Auth Fix',
+    date: 'Jun 25, 2026',
+    summary:
+      'ChatGPT and Claude subscription sign-ins now actually work — Codex Responses API replaces the broken API-key minting path, plus rate-limit retry for Claude.',
+    highlights: [
+      'ChatGPT sign-in uses the Codex Responses API (chatgpt.com/backend-api/codex/responses) with the OAuth access token directly — no API platform access required.',
+      'Claude token exchange and refresh now retry with exponential backoff on 429 rate limits.',
+      'OpenAI model catalog updated: GPT-5.4 (recommended), GPT-5.4 mini, and GPT-5.5 added.',
+      'OAuth error messages fixed — no more [object Object] on failed token exchanges.',
+    ],
+  },
   {
     version: '3.1.0',
     theme: 'Interactive Canvas',

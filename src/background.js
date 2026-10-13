@@ -603,16 +603,17 @@ function resolveCompetitor(input) {
   return { platform: 'github', repoId };
 }
 
-// One redirect can fire BOTH a navigation event and tabs.onUpdated, and the auth
-// code is single-use — this de-dups so only the first handler runs the exchange.
+// tabs.onUpdated can report the same callback URL more than once, and the auth
+// code is single-use — this de-dups so only the first event runs the exchange.
 const _handledOAuthCodes = new Set();
 
 // ─── OpenAI OAuth callback handling ("Sign in with ChatGPT", Codex CLI flow) ───
 //
 // The redirect lands on http://localhost:1455/auth/callback — the loopback server
-// the CLI runs doesn't exist in a browser, so the navigation can't complete. We
-// intercept it (onBeforeNavigate fires first, with the ?code=), exchange the code
-// for OAuth credentials. Inference uses the Codex Responses API with the access
+// the CLI runs doesn't exist in a browser, so the navigation can't complete. The
+// failed page still commits its URL, and the http://localhost/* host permission
+// lets tabs.onUpdated see it (no `tabs`/`webNavigation` permission needed). We
+// read the ?code= from it and exchange it for OAuth credentials. Inference uses the Codex Responses API with the access
 // token directly — no API key minting needed.
 
 async function handleOpenAIOAuthCallback(rawUrl, tabId) {
@@ -672,13 +673,6 @@ async function handleOpenAIOAuthCallback(rawUrl, tabId) {
     if (tabId) chrome.tabs.remove(tabId).catch(() => {});
   }
 }
-
-// The OpenAI loopback redirect can't load (no local server), so onCompleted never
-// fires for it — onBeforeNavigate runs first and still carries the ?code=.
-chrome.webNavigation.onBeforeNavigate.addListener((details) => {
-  if (details.frameId !== 0) return;
-  handleOpenAIOAuthCallback(details.url, details.tabId);
-});
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.url) {

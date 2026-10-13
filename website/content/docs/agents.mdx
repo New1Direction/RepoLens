@@ -1,0 +1,59 @@
+---
+title: Use from your agent
+description: The local RepoLens MCP server lets Claude, Cursor, and other agents vet a dependency before adding it.
+---
+
+Coding agents pick packages from README text, star counts, and stale blog posts. The **RepoLens MCP server** gives them a due-diligence step instead: the agent gets structured JSON, and RepoLens writes a self-contained HTML report and opens it in your browser so you see the same verdict.
+
+It runs locally over stdio, separate from the extension. Nothing is sent to RepoLens — see [Privacy](/docs/privacy).
+
+## Tools
+
+- `scan_repo` — verdict-first report: fit, health, pros, cons, red flags, capabilities, bottom line.
+- `deep_dive` — plain-English architecture explanation with weak spots and assumptions.
+- `blueprint_scene` — graph-shaped architecture map.
+- `compare_repos` — 2–5 repos or packages for one use case: a default pick, ranking, and tradeoff matrix.
+- `evaluate_for_goal` — one repo against a concrete goal and constraints: adopt / trial / hold / reject, blockers, and a trial plan.
+- `analyze_product` — a public product page: its model, core loop, dependencies, and which claims still need evidence.
+
+`scan_repo` and `compare_repos` accept GitHub, GitLab, npm, and PyPI inputs.
+
+## Set it up
+
+From a checkout of the repo:
+
+```bash
+cd mcp
+npm install
+export ANTHROPIC_API_KEY=sk-ant-...   # or OPENAI_API_KEY, OPENROUTER_API_KEY, GOOGLE_API_KEY
+export GITHUB_TOKEN=ghp_...           # optional; lifts GitHub's 60 requests/hour limit
+node server.js
+```
+
+For Claude Desktop, add it to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "repolens": {
+      "command": "node",
+      "args": ["/absolute/path/to/repolens/mcp/server.js"],
+      "env": { "ANTHROPIC_API_KEY": "sk-ant-..." }
+    }
+  }
+}
+```
+
+Every environment option is in [`mcp/README.md`](https://github.com/New1Direction/RepoLens/blob/main/mcp/README.md).
+
+## Ask for it
+
+> Use RepoLens to check whether I should use `honojs/hono` for an edge API.
+>
+> Before installing this package, run a RepoLens scan and open the report.
+>
+> Compare `honojs/hono` vs `fastify/fastify` for an edge API and open the report.
+
+## Related
+
+RepoLens tells your agent whether to depend on a piece of code. When what the agent needs is a website without its own MCP server, [wmcp.sh](https://wmcp.sh) turns the site's URL into agent-callable tools — and `analyze_product` can inspect that product before you wire it in.

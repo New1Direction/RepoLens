@@ -82,9 +82,9 @@ import {
 } from './evaluations.js';
 import { applyFilters } from './library-filters.js';
 // Vendored animation libs (local ES modules — never CDN; the MV3 CSP forbids remote scripts).
-import confetti from './vendor/confetti.mjs';
-import { autoAnimate } from './vendor/auto-animate.mjs';
-import { CountUp } from './vendor/countup.mjs';
+import confetti from '../vendor/confetti.mjs';
+import { autoAnimate } from '../vendor/auto-animate.mjs';
+import { CountUp } from '../vendor/countup.mjs';
 
 // Honour the user's chosen theme on this standalone page (sets <html data-theme>).
 initTheme();
@@ -3697,6 +3697,8 @@ async function init() {
   const askInput = document.getElementById('ask-input');
   const askBtn = document.getElementById('ask-btn');
   const doAsk = () => submitAsk(askInput?.value);
+  // The ask bar is a <form>; MV3 CSP blocks inline handlers, so stop implicit submit here.
+  document.getElementById('ask-bar')?.addEventListener('submit', (e) => e.preventDefault());
   askBtn?.addEventListener('click', doAsk);
   askInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doAsk();
