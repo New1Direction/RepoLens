@@ -313,18 +313,18 @@ export function isDangerousEndpointUrl(input) {
   }
 }
 
-/** User-entered provider endpoints must be public http(s) URLs. Ollama local has a dedicated provider. */
+/** Credentials and prompts must use HTTPS. Ollama local has a dedicated provider. */
 export function isAllowedCustomEndpointUrl(input) {
   try {
     const u = new URL(String(input || '').trim());
-    return (u.protocol === 'https:' || u.protocol === 'http:') && !isDangerousEndpointUrl(input);
+    return u.protocol === 'https:' && !u.username && !u.password && !isDangerousEndpointUrl(input);
   } catch {
     return false;
   }
 }
 
 export const CUSTOM_ENDPOINT_POLICY_MESSAGE =
-  'Use a public http(s) endpoint. Private, localhost, .local, and internal-network hosts are blocked here; use the dedicated Ollama provider for local models.';
+  'Use a public HTTPS endpoint without embedded credentials. Private, localhost, .local, and internal-network hosts are blocked here; use the dedicated Ollama provider for local models.';
 
 export function compatProviderById(id) {
   return COMPAT_PROVIDERS.find((p) => p.id === id) || null;

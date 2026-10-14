@@ -1598,7 +1598,7 @@ async function fetchWithTimeout(url, opts = {}, label = 'Provider', ms = AI_FETC
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
   try {
-    return await fetch(url, { ...opts, signal: ctrl.signal });
+    return await fetch(url, { ...opts, redirect: 'error', signal: ctrl.signal });
   } catch (e) {
     if (e && e.name === 'AbortError') throw new Error(`${label} timed out after ${Math.round(ms / 1000)}s`);
     throw e;

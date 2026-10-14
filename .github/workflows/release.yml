@@ -49,7 +49,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           node tools/check-release.mjs --notes > release-notes.md
-          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.sha256 \
+          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.json dist/*.sha256 \
             --title "RepoLens $GITHUB_REF_NAME" \
             --notes-file release-notes.md \
             --verify-tag

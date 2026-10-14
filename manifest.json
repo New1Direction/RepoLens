@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RepoLens",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Click any repo. Get a straight answer on whether to use it.",
   "homepage_url": "https://new1direction.github.io/RepoLens/",
   "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'" },
@@ -40,7 +40,7 @@
     "http://localhost/*",
     "http://127.0.0.1/*"
   ],
-  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "optional_host_permissions": ["https://*/*"],
   "background": {
     "service_worker": "src/background.js",
     "type": "module"

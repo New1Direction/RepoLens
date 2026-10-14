@@ -3,8 +3,20 @@
 
 import { saveRepo } from '../store.js';
 
-function normalizeUrl(url) {
-  return (url || '').trim().replace(/\/+$/, '') || 'http://localhost:9090';
+export function normalizeVelesdbUrl(url) {
+  const base = (url || '').trim().replace(/\/+$/, '') || 'http://localhost:9090';
+  const u = new URL(base);
+  const loopback = ['localhost', '127.0.0.1'].includes(u.hostname);
+  if (
+    (u.protocol !== 'https:' && !(u.protocol === 'http:' && loopback)) ||
+    u.username ||
+    u.password ||
+    u.search ||
+    u.hash
+  ) {
+    throw new Error('Use HTTPS for VelesDB, or HTTP on localhost/127.0.0.1, without URL credentials.');
+  }
+  return base;
 }
 
 /**
@@ -14,9 +26,10 @@ function normalizeUrl(url) {
  * not migrated (it rebuilds through use).
  */
 export async function importFromVelesdb(url, onProgress = () => {}) {
-  const base = normalizeUrl(url);
+  const base = normalizeVelesdbUrl(url);
   const res = await fetch(`${base}/v1/collections/repos/points/scroll`, {
     method: 'POST',
+    redirect: 'error',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ limit: 1000, with_payload: true }),
   });

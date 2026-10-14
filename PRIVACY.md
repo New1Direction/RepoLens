@@ -1,71 +1,93 @@
 # RepoLens privacy policy
 
-_Last updated: 2026-10-13 · applies to the RepoLens Chrome extension 3.2.0 and later_
+_Last updated: 2026-10-14 · applies to the RepoLens Chrome extension 3.2.1_
 
-RepoLens is a Chrome extension that reads public code repositories and asks an AI
-model you choose to explain them. There is no RepoLens server and no RepoLens
-account. The developer receives none of your data.
+RepoLens evaluates repositories and packages using an AI model you choose. There
+is no RepoLens account, hosted analysis service, analytics, or telemetry. The
+extension does not send your library or credentials to the developer. It does
+send data to repository hosts and your selected providers as described below.
 
-## What RepoLens stores, and where
+## Local storage and deletion
 
-Everything stays in your browser profile on your device:
+- **`chrome.storage.local`:** settings, model choices, API keys, OAuth credentials,
+  cached analyses, and recent Ask questions and answers. Credentials are stored
+  in your browser profile, not in a separate encrypted vault.
+- **`chrome.storage.session`:** active scan content, results, and progress. Chrome
+  clears this storage when the browser session ends or the extension reloads.
+- **IndexedDB:** saved repositories, analyses, notes, adoption decisions,
+  evaluations, collections, graphs, learning progress, and canvas layouts.
 
-- **Settings and credentials** in `chrome.storage.local`: your theme, writing
-  voice, model choices, API keys, and the OAuth tokens for providers you sign in
-  to.
-- **Scan state** in `chrome.storage.session`: progress of scans that are
-  running. Chrome clears it when the browser closes.
-- **Your library** in IndexedDB: saved analyses, notes, decisions, evaluations,
-  collections, canvas layouts, and a scan cache.
+Local data is retained until you delete it or remove the extension. **Library →
+Clear → Confirm** deletes the library, scan cache, and saved Ask history; it does
+not disconnect providers or clear open result tabs. Close those tabs and restart
+the browser to clear session data. Disconnect providers in Options to remove
+their stored credentials. Removing the extension removes its browser storage.
+Deletion does not recall requests already received by providers, downloaded
+backups, or links you shared.
 
-Removing the extension deletes all of it. **Library → Clear** deletes the library
-earlier if you want. **Library → Export** and **Options → Back up your settings**
-write files only when you ask for them, and settings backups never include API
-keys or OAuth tokens.
+**Library → Export** writes a local backup that may contain your notes and
+analyses. **Options → Back up your settings** exports only allowlisted preferences,
+not credential fields. Treat any export containing your own text as private.
 
-## What leaves your browser, and why
+## Network requests and recipients
 
-RepoLens sends data only when you start something that needs it, and only to the
-service doing that job:
+**Connected providers can be used as automatic fallbacks.** A per-part model
+choice is the first attempt, not an exclusive recipient. If it fails, another
+connected provider may receive the same prompt, including when the first model
+is local. Disconnect cloud providers if you want local-only AI. Deep Dive can
+also send extracted architecture text to a connected embedding-capable provider
+to support concept matching; it need not be the provider that generated the text.
 
-| When                                                    | Sent to                                                                                              | What is sent                                                                                                                                                            |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| You scan a repo or package                              | GitHub, GitLab, npm, or PyPI public APIs                                                             | The repo or package name, to fetch its public metadata, README, and file list. A GitHub token is sent only if you add one in Options.                                   |
-| A scan, lens, Ask, or Deep Dive runs                    | The AI provider you connected (for example Anthropic, OpenAI, Google, OpenRouter, or a local Ollama) | The public repo content above plus RepoLens's prompt, authenticated with your key or OAuth token. Your provider's own privacy policy covers what it does with requests. |
-| You sign in with Claude, ChatGPT, Grok, or OpenRouter   | That provider's sign-in service                                                                      | The standard OAuth authorization exchange.                                                                                                                              |
-| You use Discover                                        | GitHub search API                                                                                    | Your search terms.                                                                                                                                                      |
-| You run the optional deeper-scan runner or local Ollama | Your own machine (`localhost`)                                                                       | The repo URL or prompt. Nothing goes to the internet unless the runner downloads public source.                                                                         |
-| You add a custom endpoint or import from VelesDB        | The address you entered, after Chrome asks for your permission                                       | The same request a built-in provider would get, or the import request.                                                                                                  |
+| Action                                                                | Recipient and data                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scan or batch scan a repository/package                               | GitHub, GitLab, npm, or PyPI APIs receive its identifier to retrieve metadata, README, and file lists. A GitHub token is used if you configure one.                                                                                                                                                                     |
+| Scan, lens, Deep Dive, Ask, comparison, evaluation, or stack analysis | The selected AI provider receives relevant repository content, saved analyses/library context, your questions or goals, recent conversation context where applicable, and the analysis prompt. Your API key or OAuth token authenticates the request. Per-part routing can send different parts to different providers. |
+| Open Options or connect a provider                                    | Model catalogs are fetched from OpenRouter and Nous Research, and from Google when a Gemini key is saved. Google's catalog request uses that key. Connection/function tests send a small test prompt to the selected endpoint.                                                                                          |
+| Sign in or renew an expired token                                     | The selected provider's authorization service receives the OAuth authorization/token exchange. Account identifiers returned by providers may be stored with credentials and used for provider requests.                                                                                                                 |
+| Discover                                                              | GitHub's search API receives your search terms.                                                                                                                                                                                                                                                                         |
+| Open a result / request deeper analysis                               | RepoLens checks the configured local runner's health. A deeper scan sends the repo identifier to that runner, which may download source. Local Ollama receives prompts when selected. A genuinely local model does not require a remote AI service; repository metadata still comes from the internet.                  |
+| Custom endpoint or VelesDB import                                     | Your configured server receives provider requests or a request to read saved repository records. Custom providers require public HTTPS. VelesDB uses HTTPS except on localhost/127.0.0.1. Chrome requests permission for the selected origin if it is not already granted. Only grant access to servers you trust.      |
 
-RepoLens has a content script on GitHub, GitLab, npm, and PyPI pages. It only
-tells the extension that the current tab is a repo page, so the toolbar icon can
-light up. It does not read or send page content.
+Recipients necessarily receive connection information such as your IP address.
+Their own policies govern retention, logging, model training, and deletion.
+RepoLens cannot delete data they retain. Providers include Anthropic, OpenAI,
+Google, OpenRouter, xAI, Nous Research, the other vendors listed in Options, and
+any custom service you configure. RepoLens is not affiliated with those services.
+Do not put secrets or sensitive personal information into questions or prompts.
 
-Share cards put the verdict summary in the link itself (after `#`). Nothing is
-uploaded; whoever you send the link to sees what the link contains.
+## Website access and sharing
 
-## What RepoLens does not do
+The toolbar action reads the current tab URL to identify the requested repository.
+A content script on supported GitHub, GitLab, npm, and PyPI pages sends only a
+repo-page notification within the extension; it does not scrape page content.
+Repo URLs/identifiers and results are saved with your scans. RepoLens does not
+query Chrome's history database or collect a general browsing log. During
+ChatGPT sign-in, it reads the localhost authorization callback URL to finish login.
 
-- No analytics, telemetry, crash reporting, ads, or tracking.
-- No selling, renting, or transferring of data to anyone.
-- No use of your data for anything other than the feature you started.
-- No reading of your browsing history. RepoLens does not request the `tabs`,
-  `history`, or `webNavigation` permissions.
-- No remotely hosted code. Everything RepoLens runs ships inside the extension.
+Share cards put a summary in the link's fragment (after `#`); RepoLens does not
+upload the summary. Anyone receiving the link can read it. Visiting the project
+website or opening support on GitHub contacts those hosting services, which may
+log ordinary web requests. Information you post in a public support issue is public.
 
-RepoLens's use of information complies with the
-[Chrome Web Store User Data Policy](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq),
-including the Limited Use requirements.
+## Limited use
 
-## The RepoLens MCP server
+RepoLens does not sell user data, use it for advertising, or use it to determine
+creditworthiness or lending eligibility. It transfers data only to provide the
+features described above, not for unrelated purposes. RepoLens's use of information
+is intended to comply with the [Chrome Web Store User Data Policy](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq),
+including its Limited Use requirements. All executable extension code ships in
+the package; AI responses are treated as data, not downloaded executable code.
 
-The separate `repolens-mcp` server runs on your computer when you start it. It
-calls the same public repository APIs, the public page you pass to
-`analyze_product`, and the AI provider whose key you set in its environment, and writes reports to local files. It sends nothing to the
-developer either.
+## Separate MCP server
 
-## Questions and changes
+The optional `repolens-mcp` server is not in the extension package. When you run
+it, it calls repository APIs, the public page supplied to `analyze_product`, and
+the AI provider configured in its environment, and writes reports to local files.
+Its data is separate from the Chrome extension and is not deleted by uninstalling
+the extension.
 
-Open an issue at <https://github.com/New1Direction/RepoLens/issues>. Changes to
-this policy are recorded in the repository history and the
-[changelog](CHANGELOG.md).
+## Contact and changes
+
+Support and privacy questions: [GitHub issues](https://github.com/New1Direction/RepoLens/issues).
+Do not include credentials or private repository content in issues. Policy changes
+are recorded in repository history and the [changelog](CHANGELOG.md).

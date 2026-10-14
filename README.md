@@ -10,7 +10,7 @@
 ![Zero build](https://img.shields.io/badge/build-none-0e1722)
 ![Vanilla ES modules](https://img.shields.io/badge/vanilla-ES_modules-f7df1e?logo=javascript&logoColor=black)
 [![CI](https://github.com/New1Direction/RepoLens/actions/workflows/ci.yml/badge.svg)](https://github.com/New1Direction/RepoLens/actions/workflows/ci.yml)
-![Version](https://img.shields.io/badge/version-3.2.0-c2691c)
+![Version](https://img.shields.io/badge/version-3.2.1-c2691c)
 ![Storage](https://img.shields.io/badge/storage-in--browser_IndexedDB-38bdf8)
 
 </div>

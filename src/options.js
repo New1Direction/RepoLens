@@ -11,7 +11,7 @@ import {
   saveAnthropicOAuthTokens,
 } from './oauth-anthropic.js';
 import { pollXaiDeviceToken, requestXaiDeviceCode, storeXaiOAuthTokens } from './oauth-xai.js';
-import { importFromVelesdb } from './migrate/velesdb-import.js';
+import { importFromVelesdb, normalizeVelesdbUrl } from './migrate/velesdb-import.js';
 import { SAFE_SETTING_KEYS, buildSettingsBackup, validateSettingsBackup } from './settings-backup.js';
 import { PARTS, CATALOG, canonicalModel } from './models.js';
 import { renderCompatProviders, compatPartGroups, anyCompatConnected } from './options-providers.js';
@@ -213,12 +213,12 @@ if (importBtn) {
     importStatus.style.color = 'var(--text-sub)';
     importStatus.textContent = 'Connecting to VelesDB…';
     try {
-      const { imported, failed, total } = await importFromVelesdb(
-        importUrlInput.value,
-        ({ imported, total }) => {
-          importStatus.textContent = `Importing… ${imported}/${total}`;
-        }
-      );
+      const base = normalizeVelesdbUrl(importUrlInput.value);
+      const granted = await chrome.permissions.request({ origins: [new URL(base).origin + '/*'] });
+      if (!granted) throw new Error('Permission was not granted for this VelesDB origin.');
+      const { imported, failed, total } = await importFromVelesdb(base, ({ imported, total }) => {
+        importStatus.textContent = `Importing… ${imported}/${total}`;
+      });
       importStatus.style.color = '#4ade80';
       importStatus.textContent =
         total === 0

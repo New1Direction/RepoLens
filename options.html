@@ -25,8 +25,9 @@
         margin-bottom: 6px;
       }
       .sub {
-        font-size: 12px;
-        color: var(--text-fainter);
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--text-body);
         margin-bottom: 36px;
       }
       .sub a {
@@ -606,7 +607,16 @@
   <body>
     <h1>RepoLens</h1>
     <p class="sub">
-      Everything stored locally. Nothing leaves your machine except calls to each service's own API.
+      Settings and library are stored locally. AI features send repository content, relevant saved analyses,
+      and your questions to your selected provider; credentials authenticate those requests. Opening Options
+      also fetches model catalogs. Connected providers can be tried as fallbacks, even when a local model is
+      selected. Disconnect cloud providers for local-only AI. Provider fees and data-retention policies apply.
+      <a
+        href="https://new1direction.github.io/RepoLens/docs/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Privacy policy ↗</a
+      >
       <a id="open-library-link">Open Library →</a>
     </p>
 

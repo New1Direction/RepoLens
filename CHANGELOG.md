@@ -7,6 +7,17 @@ This project follows [Semantic Versioning](https://semver.org/) and groups chang
 by theme. Dates are when the release landed on `main`. 1.1.0 through 1.6.0 shipped
 the same day, as a rapid burst of improvements, so they share a date.
 
+## [3.2.1] — 2026-10-14 · _Store submission kit_
+
+- Require HTTPS for custom AI endpoints; remove optional access to arbitrary HTTP hosts. Provider requests reject redirects so credentials and prompts cannot be redirected to an unapproved origin. Local Ollama remains available through its dedicated provider.
+- Request the selected VelesDB origin before import and reject insecure remote import URLs.
+- Library Clear now removes learning progress and concept records as well as the other library stores.
+- Stop sending the unused page URL from the repo-page content script.
+- Correct privacy disclosures for model catalogs, user questions, account identifiers, local caches, provider transfers, and deletion. Keep the website policy synchronized from `PRIVACY.md`.
+- Complete the store kit with real, credential-free UI screenshots, owner-only submission steps, and reviewer instructions. No store submission or approval is implied.
+- Add the recommended transparent padding to the packaged 128px icon. Update root test and website dependency locks for current security fixes; the website's remaining advisories are in its development-only lint chain.
+- Harden package checks against symlinks, development/credential files, common secret signatures, invalid Chrome versions, insecure host permissions, and missing store assets. Emit a per-file inventory and a separate checksummed store kit.
+
 ## [3.2.0] — 2026-10-13 · _Store Ready · Review Queue · Free Scans_
 
 The first build packaged for the Chrome Web Store, plus the review and free-model

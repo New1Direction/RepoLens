@@ -6,7 +6,7 @@
 //   npm run check:release -- --tag v3.2.0 also require the git tag to match
 //   node tools/check-release.mjs --notes  print this version's CHANGELOG section
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,6 +16,18 @@ const args = process.argv.slice(2);
 
 const version = JSON.parse(read('package.json')).version;
 const changelog = read('CHANGELOG.md');
+// PRIVACY.md is authoritative; keep the public MDX page mechanically identical.
+const privacyPath = 'website/content/docs/privacy.mdx';
+const privacyPage = `---\ntitle: Privacy\ndescription: What RepoLens stores, what it sends, and to whom. The extension's privacy policy.\n---\n\n${read(
+  'PRIVACY.md'
+)
+  .replace(/^# RepoLens privacy policy\n\n/, '')
+  .replace('(CHANGELOG.md)', '(/changelog)')}`;
+if (args.includes('--sync-privacy')) {
+  writeFileSync(join(root, privacyPath), privacyPage);
+  console.log(`Updated ${privacyPath} from PRIVACY.md`);
+  process.exit(0);
+}
 
 /** CHANGELOG section for `v`, without its heading. */
 function changelogSection(text, v) {
@@ -51,6 +63,11 @@ const firstRelease = headings.find((h) => h !== 'Unreleased');
 const staleUnreleased = headings.indexOf('Unreleased') > headings.indexOf(firstRelease);
 
 const checks = [
+  [
+    'public privacy policy matches PRIVACY.md',
+    read(privacyPath) === privacyPage,
+    'run npm run check:release -- --sync-privacy',
+  ],
   ['manifest.json version', manifest.version === version, manifest.version],
   [
     'package-lock.json version',
@@ -65,6 +82,7 @@ const checks = [
     'LATEST mismatch',
   ],
   ['whats-new.html newest tag', whatsNew.includes(`<span class="vtag new">v${version}</span>`), 'missing'],
+  ['whats-new.html title', whatsNew.includes(`<title>RepoLens — v${version} Patch Notes</title>`), 'missing'],
   ['whats-new.html footer', whatsNew.includes(`Now at v${version}.`), 'missing'],
   ['README.md version badge', readme.includes(`badge/version-${version}-`), 'missing'],
 ];

@@ -4,18 +4,33 @@
 //
 // Determinism: entries are sorted, every timestamp is pinned to 1980-01-01 (the
 // ZIP epoch), permissions are a fixed 0644, and nothing host-specific (uid,
-// extra fields, comments) is written. The same tree on the same Node major
+// extra fields, comments) is written. The same tree on the same Node/zlib versions
 // produces a byte-identical archive.
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, lstatSync, existsSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import { deflateRawSync } from 'node:zlib';
 
 // Everything the extension loads at runtime. Anything outside these roots
 // (tests, docs, website, mcp, demos, tooling, lockfiles) never reaches users.
-export const PACKAGE_ROOTS = ['manifest.json', 'LICENSE', 'CHANGELOG.md', 'src', 'icons', 'vendor'];
-// Root-level extension pages and stylesheets are matched by extension.
-const ROOT_EXTENSIONS = ['.html', '.css'];
+export const PACKAGE_ROOTS = [
+  'manifest.json',
+  'LICENSE',
+  'CHANGELOG.md',
+  'src',
+  'icons',
+  'vendor',
+  'batch.html',
+  'library.html',
+  'options.html',
+  'output-tab.html',
+  'share.html',
+  'stack-tab.html',
+  'whats-new.html',
+  'mascot.css',
+  'palette.css',
+  'themes.css',
+];
 
 // Defence in depth: a file matching any of these is a packaging bug even if a
 // root above accidentally starts covering it.
@@ -23,7 +38,18 @@ const FORBIDDEN = [
   /(^|\/)\./, // dotfiles and dot-directories
   /(^|\/)(node_modules|tests?|coverage|website|mcp|docs|demos|tools|dist)\//,
   /(^|\/)(package(-lock)?\.json|eslint\.config\.js|vitest\.config\.js)$/,
-  /\.(map|zip|log|md\.bak)$/,
+  /\.(map|zip|log|bak|pem|key|p12|pfx|sqlite|db)$/i,
+  /(^|\/)(?:secrets?|credentials?)(?:[.-]|$)/i,
+  /\.(?:test|spec)\.[cm]?js$/,
+];
+
+// High-confidence signatures only; never echo matched credentials in diagnostics.
+// This is a release guard, not a guarantee that arbitrary secrets are detectable.
+const SECRET_SIGNATURES = [
+  /-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----/,
+  /\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,})\b/,
+  /\b(?:sk-(?:proj-|ant-api\d+-)?[A-Za-z0-9_-]{32,}|AIza[A-Za-z0-9_-]{35}|AKIA[A-Z0-9]{16})\b/,
+  /\b(?:api[_-]?key|client[_-]?secret|access[_-]?token|refresh[_-]?token)\s*["']?\s*[:=]\s*["'][A-Za-z0-9_+/.=-]{24,}["']/i,
 ];
 
 export const REQUIRED_ICON_SIZES = [16, 32, 48, 128];
@@ -34,24 +60,23 @@ export function collectPackageFiles(rootDir) {
   const files = [];
   const walk = (rel) => {
     const abs = join(rootDir, rel);
-    if (statSync(abs).isDirectory()) {
+    const stat = lstatSync(abs);
+    if (stat.isSymbolicLink()) throw new Error(`Symlink is not allowed in package: ${rel}`);
+    if (stat.isDirectory()) {
       for (const name of readdirSync(abs)) walk(posix.join(rel, name));
-    } else {
+    } else if (stat.isFile()) {
       files.push(rel);
+    } else {
+      throw new Error(`Not a regular package file: ${rel}`);
     }
   };
   for (const root of PACKAGE_ROOTS) {
     if (existsSync(join(rootDir, root))) walk(root);
   }
-  for (const name of readdirSync(rootDir)) {
-    if (ROOT_EXTENSIONS.some((ext) => name.endsWith(ext)) && statSync(join(rootDir, name)).isFile()) {
-      files.push(name);
-    }
-  }
   return [...new Set(files)].filter((f) => !f.split('/').some((p) => p === '.DS_Store')).sort();
 }
 
-function pngSize(buf) {
+export function pngSize(buf) {
   const sig = '89504e470d0a1a0a';
   if (buf.length < 24 || buf.subarray(0, 8).toString('hex') !== sig) return null;
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
@@ -72,7 +97,7 @@ function resolveFrom(file, ref) {
 /**
  * Validates a package file set against the rules the Chrome Web Store (and a
  * working MV3 extension) depend on. Returns a list of human-readable errors;
- * an empty list means the package is releasable.
+ * an empty list means these automated checks passed, not that store approval is guaranteed.
  *
  * @param {object} opts
  * @param {(rel: string) => Buffer} opts.read      reads a file by package path
@@ -87,6 +112,15 @@ export function validatePackage({ read, files, packageVersion, permissionsDoc })
 
   for (const f of files) {
     if (FORBIDDEN.some((re) => re.test(f))) errors.push(`forbidden file in package: ${f}`);
+    if (posix.normalize(f) !== f || f.startsWith('/') || f.startsWith('../') || f.includes('\\')) {
+      errors.push(`unsafe package path: ${f}`);
+    }
+    if (!/\.(?:png|svg|html|css|m?js|json|md)$/.test(f) && f !== 'LICENSE') {
+      errors.push(`unexpected file type in package: ${f}`);
+    }
+    if (SECRET_SIGNATURES.some((re) => re.test(read(f).toString('utf8')))) {
+      errors.push(`possible embedded secret in package: ${f}`);
+    }
   }
   if (!has('manifest.json')) return [...errors, 'manifest.json missing'];
 
@@ -99,8 +133,14 @@ export function validatePackage({ read, files, packageVersion, permissionsDoc })
 
   // ── Manifest shape ────────────────────────────────────────────────────────
   if (manifest.manifest_version !== 3) errors.push('manifest_version must be 3');
-  if (!/^\d+\.\d+\.\d+$/.test(manifest.version || '')) {
-    errors.push(`manifest version "${manifest.version}" must be MAJOR.MINOR.PATCH`);
+  if (
+    !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(manifest.version || '') ||
+    manifest.version.split('.').some((part) => Number(part) > 65535) ||
+    manifest.version === '0.0.0'
+  ) {
+    errors.push(
+      `manifest version "${manifest.version}" must be MAJOR.MINOR.PATCH, each 0–65535, not all zero`
+    );
   }
   if (packageVersion && manifest.version !== packageVersion) {
     errors.push(`manifest version ${manifest.version} != package.json version ${packageVersion}`);
@@ -155,6 +195,12 @@ export function validatePackage({ read, files, packageVersion, permissionsDoc })
   const csp = manifest.content_security_policy?.extension_pages || '';
   if (/unsafe-(inline|eval)|https?:/.test(csp)) {
     errors.push(`extension_pages CSP must not allow inline/eval/remote script: ${csp}`);
+  }
+  const hosts = [...(manifest.host_permissions || []), ...(manifest.optional_host_permissions || [])];
+  for (const host of hosts) {
+    if (!host.startsWith('https://') && !['http://localhost/*', 'http://127.0.0.1/*'].includes(host)) {
+      errors.push(`host permission must use HTTPS or explicit loopback: ${host}`);
+    }
   }
   for (const file of files.filter((f) => f.endsWith('.html'))) {
     const html = read(file).toString('utf8');

@@ -12,6 +12,10 @@ import {
   getEgoGraph,
   saveCollection,
   listCollections,
+  setMastery,
+  getAllMastery,
+  setConcepts,
+  getAllConcepts,
 } from '../src/store.js';
 import { idbClear } from '../src/store/idb.js';
 
@@ -50,6 +54,14 @@ describe('store backup — exportStores', () => {
 });
 
 describe('store backup — importStores', () => {
+  it('clearing the library also deletes learning progress and concepts', async () => {
+    await setMastery('a/one', { level: 'understood' });
+    await setConcepts('b/two', { atoms: [{ id: 'router', name: 'Router' }] });
+    await clearLibrary();
+    expect(await getAllMastery()).toEqual({});
+    expect(await getAllConcepts()).toEqual({});
+  });
+
   beforeEach(async () => {
     await idbClear('repos');
     await idbClear('nodes');

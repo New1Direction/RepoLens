@@ -153,13 +153,16 @@ describe('URL normalization', () => {
 });
 
 describe('custom endpoint policy', () => {
-  it('blocks private/internal endpoints and allows public http(s)', () => {
+  it('requires public HTTPS without embedded credentials', () => {
     expect(isDangerousEndpointUrl('http://localhost:11434')).toBe(true);
     expect(isDangerousEndpointUrl('http://127.0.0.1:11434')).toBe(true);
     expect(isDangerousEndpointUrl('http://10.0.0.2/v1')).toBe(true);
     expect(isDangerousEndpointUrl('https://model.internal/v1')).toBe(true);
     expect(isDangerousEndpointUrl('https://intranet/v1')).toBe(true);
     expect(isAllowedCustomEndpointUrl('https://models.example.com/v1')).toBe(true);
+    expect(isAllowedCustomEndpointUrl('http://models.example.com/v1')).toBe(false);
+    expect(isAllowedCustomEndpointUrl('https://user:password@models.example.com/v1')).toBe(false);
+    expect(compatEndpoint('deepseek', { deepseekBaseUrl: 'http://models.example.com/v1' })).toBe('');
     expect(isAllowedCustomEndpointUrl('file:///tmp/model.sock')).toBe(false);
     expect(CUSTOM_ENDPOINT_POLICY_MESSAGE).toMatch(/Ollama provider/);
   });

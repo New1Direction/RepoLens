@@ -13,20 +13,27 @@ export type Release = {
 };
 
 export const LATEST: Release = {
-  version: '3.2.0',
-  theme: 'Store Ready',
-  date: 'Oct 13, 2026',
+  version: '3.2.1',
+  theme: 'Store Submission Kit',
+  date: 'Oct 14, 2026',
   summary:
-    'The first build packaged for the Chrome Web Store: fewer permissions, a privacy policy, a validated deterministic release zip, and fixes for three extension pages that failed to load or run their scripts.',
-  highlights: [
-    'No more "read your browsing history" prompt — RepoLens dropped the tabs and webNavigation permissions and three unused hosts.',
-    'Library, share cards, and What\u2019s New load again: a stale vendor import and inline scripts blocked by the MV3 CSP are fixed.',
-    'Review Queue in Library narrows to pending Trial/Hold decisions and scans older than 14 days.',
-    'Free and local defaults: OpenRouter starts on a structured free model, Ollama on llama3.2:3b, with a clear fix when Ollama blocks the extension.',
-  ],
+    'HTTPS-only custom AI endpoints, complete local-library deletion, corrected privacy disclosures, real UI store screenshots, and stronger package checks. Store submission remains an owner action.',
 };
 
 export const RELEASES: Release[] = [
+  {
+    version: '3.2.0',
+    theme: 'Store Ready',
+    date: 'Oct 13, 2026',
+    summary:
+      'The first build packaged for the Chrome Web Store: fewer permissions, a privacy policy, a validated deterministic release zip, and fixes for three extension pages that failed to load or run their scripts.',
+    highlights: [
+      'No more "read your browsing history" prompt — RepoLens dropped the tabs and webNavigation permissions and three unused hosts.',
+      'Library, share cards, and What\u2019s New load again: a stale vendor import and inline scripts blocked by the MV3 CSP are fixed.',
+      'Review Queue in Library narrows to pending Trial/Hold decisions and scans older than 14 days.',
+      'Free and local defaults: OpenRouter starts on a structured free model, Ollama on llama3.2:3b, with a clear fix when Ollama blocks the extension.',
+    ],
+  },
   {
     version: '3.1.1',
     theme: 'Subscription Auth Fix',
@@ -51,14 +58,13 @@ export const RELEASES: Release[] = [
     version: '3.0.0',
     theme: 'Discover',
     date: 'Jun 14, 2026',
-    summary:
-      'Five features that turn your library from a passive catalogue into an active research tool.',
+    summary: 'Five features that turn your library from a passive catalogue into an active research tool.',
     highlights: [
       "Discovery mode — search GitHub from inside the extension; results filtered to repos you don't already have.",
-      "Recommendations — peers suggested from your own adopted and trial decisions.",
-      "N-way compare — any 2–10 repos as columns in a structured matrix, exportable to CSV or Markdown.",
-      "Decision-matrix export — the full visible library with fit, health, decisions, and per-rubric eval scores.",
-      "Drift alerts — a daily background check flags repos that have gone stale.",
+      'Recommendations — peers suggested from your own adopted and trial decisions.',
+      'N-way compare — any 2–10 repos as columns in a structured matrix, exportable to CSV or Markdown.',
+      'Decision-matrix export — the full visible library with fit, health, decisions, and per-rubric eval scores.',
+      'Drift alerts — a daily background check flags repos that have gone stale.',
     ],
   },
   {
@@ -66,7 +72,7 @@ export const RELEASES: Release[] = [
     theme: 'Evaluate',
     date: 'Jun 14, 2026',
     summary:
-      "Evaluations Workbench: score repos 1–5 against a custom weighted rubric, a weighted-average badge on every card, sort by eval score, an evaluated-only filter, and a one-command auto-decide from Vee\u2019s fit suggestion.",
+      'Evaluations Workbench: score repos 1–5 against a custom weighted rubric, a weighted-average badge on every card, sort by eval score, an evaluated-only filter, and a one-command auto-decide from Vee\u2019s fit suggestion.',
   },
   {
     version: '2.8.0',

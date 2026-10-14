@@ -541,5 +541,7 @@ export async function clearLibrary() {
     idbClear('decisions'),
     idbClear('snapshots'),
     idbClear('scenes'),
+    idbClear('mastery'),
+    idbClear('concepts'),
   ]);
 }
